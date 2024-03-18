@@ -370,9 +370,10 @@ Moved to [`README-frida.md`](README-frida.md)
 
 # HomeAssistant
 
-The following is an example mqtt.yaml configuration to setup a Cooker Hood as a fan entity:
+The following is an example mqtt.yaml configuration to setup a Cooker Hood as a fan entity, Refrigerator and Freezer as a door:
 
-```fan:
+```
+fan:
   - name: "Hood"
     state_topic: "homeconnect/hood/state"
     state_value_template: "{{ value_json.PowerState }}"
@@ -380,4 +381,19 @@ The following is an example mqtt.yaml configuration to setup a Cooker Hood as a 
     command_template: "{{ iif(value == 'On', '{\"uid\":539,\"value\":2}', '{\"uid\":539,\"value\":1}') }}"
     payload_on: "On"
     payload_off: "Off"
+binary_sensor:
+  - name: "Freezer Door"
+    state_topic: "homeconnect/freezer/state"
+    value_template: "{{ value_json.Freezer }}"
+    payload_on: "Open"
+    payload_off: "Closed"
+    device_class: door
+    json_attributes_topic: "homeconnect/freezer/state"
+  - name: "Fridge Door"
+    state_topic: "homeconnect/refrigerator/state"
+    value_template: "{{ value_json.DoorState }}" # Also Refrigerator
+    payload_on: "Open"
+    payload_off: "Closed"
+    device_class: door
+    json_attributes_topic: "homeconnect/refrigerator/state"
 ```
