@@ -367,3 +367,17 @@ The coffee machine needs a better mapping to MQTT messages.
 ## FRIDA tools
 
 Moved to [`README-frida.md`](README-frida.md)
+
+# HomeAssistant
+
+The following is an example mqtt.yaml configuration to setup a Cooker Hood as a fan entity:
+
+```fan:
+  - name: "Hood"
+    state_topic: "homeconnect/hood/state"
+    state_value_template: "{{ value_json.PowerState }}"
+    command_topic: "homeconnect/hood/set"
+    command_template: "{{ iif(value == 'On', '{\"uid\":539,\"value\":2}', '{\"uid\":539,\"value\":1}') }}"
+    payload_on: "On"
+    payload_off: "Off"
+```
