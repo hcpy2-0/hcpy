@@ -382,7 +382,7 @@ fan:
     payload_on: "On"
     payload_off: "Off"
 light:
-  - name: "Hood Work Light" # We can only turn the light on, but not off. 
+  - name: "Hood Work Light" # We can only turn the light on, but not off as no command_template
     state_topic: "homeconnect/hood/state"
     state_value_template: "{{ value_json.Lighting }}"
     brightness_state_topic: "homeconnect/hood/state"
@@ -410,4 +410,16 @@ binary_sensor:
     payload_off: "Closed"
     device_class: door
     json_attributes_topic: "homeconnect/refrigerator/state"
+  - name: "Dishwasher"
+    state_topic: "homeconnect/dishwasher/state"
+    value_template: "{{ value_json.PowerState }}"
+    payload_on: "On"
+    payload_off: "Off"
+    json_attributes_topic: "homeconnect/dishwasher/state"
+  - name: "Dishwasher Door"
+    state_topic: "homeconnect/dishwasher/state"
+    value_template: "{{ value_json.DoorState }}"
+    payload_on: "Open"
+    payload_off: "Closed"
+    device_class: door
 ```
