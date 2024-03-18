@@ -381,6 +381,20 @@ fan:
     command_template: "{{ iif(value == 'On', '{\"uid\":539,\"value\":2}', '{\"uid\":539,\"value\":1}') }}"
     payload_on: "On"
     payload_off: "Off"
+light:
+  - name: "Hood Work Light" # We can only turn the light on, but not off. 
+    state_topic: "homeconnect/hood/state"
+    state_value_template: "{{ value_json.Lighting }}"
+    brightness_state_topic: "homeconnect/hood/state"
+    brightness_value_template: "{{ value_json.LightingBrightness }}"
+    brightness_command_topic: "homeconnect/hood/set"
+    brightness_command_template: "{{ '{\"uid\":53254,\"value\":' + value|string + '}'  }}"
+    brightness_scale: 100
+    command_topic: "homeconnect/hood/set"
+    on_command_type: brightness
+    #command_template: "{{ iif(value == 'on', '{\"uid\":53253,\"value\":true}', '{\"uid\":53253,\"value\":false}') }}" WIP - MQTT doesn't allow this to be configured
+    payload_on: true
+    payload_off: false
 binary_sensor:
   - name: "Freezer Door"
     state_topic: "homeconnect/freezer/state"
