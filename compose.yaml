@@ -4,4 +4,4 @@ services:
     build: .
     restart: on-failure
     volumes:
-      - ./config:/config
+      - ./config:/app/config

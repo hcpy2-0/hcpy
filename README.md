@@ -65,10 +65,10 @@ your mDNS or DNS server resolves the names correctly.
 
 ## Home Connect to MQTT
 
-Use the following config/config.ini example:
+Use the following ./config/config.ini example:
 
 ```
-devices_file = "/config/devices.json"
+devices_file = "./config/devices.json"
 mqtt_host = "localhost"
 mqtt_username = "mqtt"
 mqtt_password = "password"
