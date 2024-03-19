@@ -4,6 +4,7 @@
 import json
 import sys
 import time
+import ssl
 from threading import Thread
 
 import click
@@ -67,11 +68,11 @@ def client_connect(client, device, mqtt_topic):
 		print(msg.topic)
 		mqtt_state = msg.payload.decode()
 		mqtt_topic = msg.topic.split('/')
-		print(now(),f"received mqtt message {mqtt_state}")
+		print(now(), f"received mqtt message {mqtt_state}")
 		try:
 			msg = json.loads(mqtt_state)
 			if 'uid' in msg:
-				dev[mqtt_topic[-2]].get("/ro/values",1,"POST",msg)
+				dev[mqtt_topic[-2]].get("/ro/values", 1, "POST", msg)
 			else:
 				raise Exception(f"Payload {msg} is not correctly formatted")
 		except Exception as e:
