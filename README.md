@@ -47,7 +47,7 @@ hc-login $USERNAME $PASSWORD > config/config.json
 or
 
 ```bash
-docker-compose run app hc-login $USERNAME $PASSWORD > config/config.json
+docker-compose run -T app hc-login $USERNAME $PASSWORD > config/config.json
 ```
 
 The `hc-login` script perfoms the OAuth process to login to your
