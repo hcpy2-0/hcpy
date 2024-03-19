@@ -47,6 +47,7 @@ hc-login $USERNAME $PASSWORD > config/devices.json
 or
 
 ```bash
+docker-compose build
 docker-compose run -T app hc-login $USERNAME $PASSWORD > config/devices.json
 ```
 
@@ -82,6 +83,12 @@ mqtt_clientname="hcpy"
 
 ```bash
 hc2mqtt --config config/config.ini
+```
+
+or
+
+```bash
+docker-compose up
 ```
 
 This tool will establish websockets to the local devices and
