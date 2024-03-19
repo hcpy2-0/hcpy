@@ -17,7 +17,7 @@ and should prevent most any random attacker on your network from being able to
 ## Setup
 
 To avoid running into issues later with your default python installs, it's recommended to use a py virtual env for doing this. Go to your desired test directory, and:
-```
+```bash
 python3 -m venv venv
 source venv/bin/activate
 git clone https://github.com/osresearch/hcpy
@@ -163,7 +163,6 @@ Example message published to `homeconnect/dishwasher`:
     'SilenceOnDemand': False
 }
 ```
-
 </details>
 
 ### Clothes washer
@@ -256,14 +255,13 @@ Example message published to `homeconnect/washer`:
     'SelectedProgram': 28718
 }
 ```
-
 </details>
 
 ### Coffee Machine
 
 ![Image of the coffee machine from the Siemens website](images/coffee.jpg)
 
-The coffee machine needs a better mapping to MQTT messages.
+Example message published to `homeconnect/coffeemaker`:
 
 <details>
 <summary>Full state information</summary>
@@ -361,9 +359,70 @@ The coffee machine needs a better mapping to MQTT messages.
     'ProcessPhase': 'None'
 }
 ```
-
 </details>
+
+## Posting to the appliance
+
+Whereas the reading of de status is very beta, this is very very alpha. There is some basic error handling, but don't expect that everything will work.
+
+In your config file you can find items that contain `readWrite` or `writeOnly`, some of them contain values so you know what to provide, ie:
+
+```json
+"539": {
+	"name": "BSH.Common.Setting.PowerState",
+	"access": "readWrite",
+	"available": "true",
+	"refCID": "03",
+	"refDID": "80",
+	"values": {
+		"2": "On",
+		"3": "Standby"
+	}
+},
+```
+
+With this information you can build the JSON object you can send over mqtt to change the power state
+
+Topic: `homeconnect/[devicename]/set`, ie `homeconnect/coffeemaker/set`
+
+Payload:
+
+```json
+{"uid":539,"value":2}
+```
+As for now, the results will be displayed by the script only, there is no response to an mqtt topic.
+
+There are properties that do not require predefined values, debugging is required to see what is needed. Here are some of those values found through debugging:
+
+Set the time:
+
+```json
+{"uid":520,"value":"2023-07-07T15:01:21"}
+```
+
+Synchronize with time server, `false` is disabled
+
+```json
+{"uid":547,"value":false}
+```
 
 ## FRIDA tools
 
 Moved to [`README-frida.md`](README-frida.md)
+
+## Home assistant
+
+For integration with Home Assistant, the following MQTT sensor can be used to create a read only sensor
+
+```yaml
+- unique_id: "coffee_machine"
+  name: "Coffee Machine"
+  state_topic: "homeconnect/coffeemaker/state"
+  value_template: "{{ value_json.PowerState }}"
+  json_attributes_topic: "homeconnect/coffeemaker/state"
+  json_attributes_template: "{{ value_json | tojson }}"
+```
+
+## Notes
+- Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
+- There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
