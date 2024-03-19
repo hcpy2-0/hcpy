@@ -385,7 +385,7 @@ Example message published to `homeconnect/coffeemaker`:
 
 ## Posting to the appliance
 
-Whereas the reading of de status is very beta, this is very very alpha. There is some basic error handling, but don't expect that everything will work.
+Whereas the reading of the status is very beta, this is very very alpha. There is some basic error handling, but don't expect that everything will work.
 
 In your config file you can find items that contain `readWrite` or `writeOnly`, some of them contain values so you know what to provide, ie:
 

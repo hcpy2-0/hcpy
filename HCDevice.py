@@ -98,7 +98,7 @@ class HCDevice:
 		if 'uid' not in data:
 			raise Exception("{self.name}. Unable to configure appliance. UID is required.")
 
-		if isinstance(data['uid'], int) == False:
+		if isinstance(data['uid'], int) is False:
 			raise Exception("{self.name}. Unable to configure appliance. UID must be an integer.")
 
 		if 'value' not in data:
@@ -122,7 +122,7 @@ class HCDevice:
 
 		# check if selected list with values is allowed
 		if 'values' in feature:
-			if isinstance(data['value'], int) == False:
+			if isinstance(data['value'], int) is False:
 				raise Exception(f"Unable to configure appliance. The value {data['value']} must be an integer. Allowed values are {feature['values']}.")
 			value = str(data['value']) # values are strings in the feature list, but always seem to be an integer. An integer must be provided
 			if value not in feature['values']:
@@ -131,7 +131,7 @@ class HCDevice:
 		if 'min' in feature:
 			min = int(feature['min'])
 			max = int(feature['max'])
-			if isinstance(data['value'], int) == False or data['value'] < min or data['value'] > max:
+			if isinstance(data['value'], int) is False or data['value'] < min or data['value'] > max:
 				raise Exception(f"{self.name}. Unable to configure appliance. Value {data['value']} is not a valid value. The value must be an integer in the range {min} and {max}.")
 
 		return True
@@ -174,7 +174,7 @@ class HCDevice:
 
 		if data is not None:
 			if action == "POST":
-				if self.test_feature(data) != True:
+				if self.test_feature(data) is False:
 					return
 				msg["data"] = [data]
 			else:
