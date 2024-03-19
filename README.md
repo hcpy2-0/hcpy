@@ -416,19 +416,6 @@ Synchronize with time server, `false` is disabled
 
 Moved to [`README-frida.md`](README-frida.md)
 
-## Home assistant
-
-For integration with Home Assistant, the following MQTT sensor can be used to create a read only sensor
-
-```yaml
-- unique_id: "coffee_machine"
-  name: "Coffee Machine"
-  state_topic: "homeconnect/coffeemaker/state"
-  value_template: "{{ value_json.PowerState }}"
-  json_attributes_topic: "homeconnect/coffeemaker/state"
-  json_attributes_template: "{{ value_json | tojson }}"
-```
-
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
 - There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
