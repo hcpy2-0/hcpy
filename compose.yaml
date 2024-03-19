@@ -1,0 +1,6 @@
+services:
+  app:
+    build: .
+    restart: on-failure
+    volumes:
+     - ./config:/config

@@ -17,7 +17,7 @@ and should prevent most any random attacker on your network from being able to
 ## Setup
 
 To avoid running into issues later with your default python installs, it's recommended to use a py virtual env for doing this. Go to your desired test directory, and:
-```
+```bash
 python3 -m venv venv
 source venv/bin/activate
 git clone https://github.com/osresearch/hcpy
@@ -33,7 +33,7 @@ and we might need to revisit it later.
 Installing `sslpsk` needs some extra steps:
 
 1. The openssl package installed via brew: `brew install openssl`, and
-1. Install `saslpsk` separately with flags: `LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" pip3 install sslpsk`
+1. Install `sslpsk` separately with flags: `LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" pip3 install sslpsk`
 1. Rest of the requirements should be fine with `pip3 install -r requirements.txt`
 
 ## Authenticate to the cloud servers
@@ -41,7 +41,13 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 ```bash
-hc-login $USERNAME $PASSWORD > config.json
+hc-login $USERNAME $PASSWORD > config/config.json
+```
+
+or
+
+```bash
+docker-compose run -T app hc-login $USERNAME $PASSWORD > config/config.json
 ```
 
 The `hc-login` script perfoms the OAuth process to login to your
@@ -163,7 +169,6 @@ Example message published to `homeconnect/dishwasher`:
     'SilenceOnDemand': False
 }
 ```
-
 </details>
 
 ### Clothes washer
@@ -256,14 +261,13 @@ Example message published to `homeconnect/washer`:
     'SelectedProgram': 28718
 }
 ```
-
 </details>
 
 ### Coffee Machine
 
 ![Image of the coffee machine from the Siemens website](images/coffee.jpg)
 
-The coffee machine needs a better mapping to MQTT messages.
+Example message published to `homeconnect/coffeemaker`:
 
 <details>
 <summary>Full state information</summary>
@@ -361,18 +365,76 @@ The coffee machine needs a better mapping to MQTT messages.
     'ProcessPhase': 'None'
 }
 ```
-
 </details>
+
+## Posting to the appliance
+
+Whereas the reading of the status is very beta, this is very very alpha. There is some basic error handling, but don't expect that everything will work.
+
+In your config file you can find items that contain `readWrite` or `writeOnly`, some of them contain values so you know what to provide, ie:
+
+```json
+"539": {
+	"name": "BSH.Common.Setting.PowerState",
+	"access": "readWrite",
+	"available": "true",
+	"refCID": "03",
+	"refDID": "80",
+	"values": {
+		"2": "On",
+		"3": "Standby"
+	}
+},
+```
+
+With this information you can build the JSON object you can send over mqtt to change the power state
+
+Topic: `homeconnect/[devicename]/set`, ie `homeconnect/coffeemaker/set`
+
+Payload:
+
+```json
+{"uid":539,"value":2}
+```
+As for now, the results will be displayed by the script only, there is no response to an mqtt topic.
+
+There are properties that do not require predefined values, debugging is required to see what is needed. Here are some of those values found through debugging:
+
+Set the time:
+
+```json
+{"uid":520,"value":"2023-07-07T15:01:21"}
+```
+
+Synchronize with time server, `false` is disabled
+
+```json
+{"uid":547,"value":false}
+```
 
 ## FRIDA tools
 
 Moved to [`README-frida.md`](README-frida.md)
 
-# HomeAssistant
+# Home assistant
 
-The following is an example mqtt.yaml configuration to setup a Cooker Hood as a fan entity, Refrigerator and Freezer as a door:
+For integration with Home Assistant, the following MQTT examples can be used to create entities:
 
+
+## Coffee Machine
+
+```yaml
+- unique_id: "coffee_machine"
+  name: "Coffee Machine"
+  state_topic: "homeconnect/coffeemaker/state"
+  value_template: "{{ value_json.PowerState }}"
+  json_attributes_topic: "homeconnect/coffeemaker/state"
+  json_attributes_template: "{{ value_json | tojson }}"
 ```
+
+## Extractor Fan
+
+```yaml
 fan:
   - name: "Hood"
     state_topic: "homeconnect/hood/state"
@@ -395,6 +457,11 @@ light:
     #command_template: "{{ iif(value == 'on', '{\"uid\":53253,\"value\":true}', '{\"uid\":53253,\"value\":false}') }}" WIP - MQTT doesn't allow this to be configured
     payload_on: true
     payload_off: false
+```
+
+## Refrigerator/Freezers
+
+```yaml
 binary_sensor:
   - name: "Freezer Door"
     state_topic: "homeconnect/freezer/state"
@@ -410,6 +477,11 @@ binary_sensor:
     payload_off: "Closed"
     device_class: door
     json_attributes_topic: "homeconnect/refrigerator/state"
+```
+
+## Dishwasher
+
+```yaml
   - name: "Dishwasher"
     state_topic: "homeconnect/dishwasher/state"
     value_template: "{{ value_json.PowerState }}"
@@ -423,3 +495,7 @@ binary_sensor:
     payload_off: "Closed"
     device_class: door
 ```
+
+# Notes
+- Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
+- There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
