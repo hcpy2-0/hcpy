@@ -66,6 +66,7 @@ def hc2mqtt(
         else:
             client.tls_set(cert_reqs=ssl.CERT_NONE)
 
+    client.will_set(f"{mqtt_prefix}status", payload="Offline", qos=0, retain=True)
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
     for device in devices:
