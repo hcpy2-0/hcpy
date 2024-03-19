@@ -8,13 +8,14 @@ import ssl
 from threading import Thread
 
 import click
+import click_config_file
 import paho.mqtt.client as mqtt
 
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
 
 @click.command()
-@click.argument("config_file")
+@click.option("-d", "--devices_file", default="config/devices.json")
 @click.option("-h", "--mqtt_host", default="localhost")
 @click.option("-p", "--mqtt_prefix", default="homeconnect/")
 @click.option("--mqtt_port", default=1883, type=int)
@@ -25,13 +26,14 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
 @click.option("--mqtt_clientname", default="hcpy")
+@click_config_file.configuration_option()
 
-def hc2mqtt(config_file: str, mqtt_host: str, mqtt_prefix: str, mqtt_port: int, mqtt_username: str,
+def hc2mqtt(devices_file: str, mqtt_host: str, mqtt_prefix: str, mqtt_port: int, mqtt_username: str,
 			mqtt_password: str, mqtt_ssl: bool, mqtt_cafile: str, mqtt_certfile: str, mqtt_keyfile: str, mqtt_clientname: str):
-	click.echo(f"Hello {config_file=} {mqtt_host=} {mqtt_prefix=} {mqtt_port=} {mqtt_username=} {mqtt_password=} "
+	click.echo(f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} {mqtt_port=} {mqtt_username=} {mqtt_password=} "
 			   f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}")
 
-	with open(config_file, "r") as f:
+	with open(devices_file, "r") as f:
 		devices = json.load(f)
 
 	client = mqtt.Client(mqtt_clientname)
@@ -121,8 +123,8 @@ def client_connect(client, device, mqtt_topic):
 
 				#	new_topic = topics[topic]
 				#	if new_topic == "remaining":
-				# 		state["remainingseconds"] = value
-				# 		value = "%d:%02d" % (value / 60 / 60, (value / 60) % 60)
+				#		state["remainingseconds"] = value
+				#		value = "%d:%02d" % (value / 60 / 60, (value / 60) % 60)
 
 					new_topic = device_topics[topic]
 					state[new_topic] = value

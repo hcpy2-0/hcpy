@@ -41,13 +41,14 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 ```bash
-hc-login $USERNAME $PASSWORD > config/config.json
+hc-login $USERNAME $PASSWORD > config/devices.json
 ```
 
 or
 
 ```bash
-docker-compose run -T app hc-login $USERNAME $PASSWORD > config/config.json
+docker-compose build
+docker-compose run -T app hc-login $USERNAME $PASSWORD > config/devices.json
 ```
 
 The `hc-login` script perfoms the OAuth process to login to your
@@ -64,8 +65,30 @@ your mDNS or DNS server resolves the names correctly.
 
 ## Home Connect to MQTT
 
+Use the following config/config.ini example:
+
+```
+devices_file = "/config/devices.json"
+mqtt_host = "localhost"
+mqtt_username = "mqtt"
+mqtt_password = "password"
+mqtt_port = 1883
+mqtt_prefix = "homeconnect/"
+mqtt_ssl = False
+mqtt_cafile = None
+mqtt_certfile = None
+mqtt_keyfile = None
+mqtt_clientname="hcpy"
+```
+
 ```bash
-hc2mqtt config.json
+hc2mqtt --config config/config.ini
+```
+
+or
+
+```bash
+docker-compose up
 ```
 
 This tool will establish websockets to the local devices and
