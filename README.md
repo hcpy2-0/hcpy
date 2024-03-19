@@ -20,14 +20,14 @@ To avoid running into issues later with your default python installs, it's recom
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-git clone https://github.com/osresearch/hcpy
+git clone https://github.com/hcpy2-0/hcpy
 cd hcpy
 pip3 install -r requirements.txt
 ```
-
 Install the Python dependencies; the `sslpsk` one is a little weird
 and we might need to revisit it later.
 
+Alternatively an environment can be built with docker and/or docker-compose which has the necessary dependencies.
 
 ### For Mac Users
 Installing `sslpsk` needs some extra steps:
