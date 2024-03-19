@@ -113,7 +113,7 @@ class HCDevice:
         if uid not in self.features:
             raise Exception(
                 f"{self.name}. Unable to configure appliance. Program UID {uid} is not valid"
-                                                                            "for this device."
+                "for this device."
             )
 
         feature = self.features[uid]
@@ -123,7 +123,7 @@ class HCDevice:
         if ".Program." not in feature["name"]:
             raise Exception(
                 f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid"
-                                                                                     "program."
+                "program."
             )
 
         if "options" in data:
@@ -131,7 +131,7 @@ class HCDevice:
                 if str(option_uid) not in self.features:
                     raise Exception(
                         f"{self.name}. Unable to configure appliance. Option UID {uid} is not"
-                                                                      "valid for this device."
+                        "valid for this device."
                     )
 
     # Test the feature of an appliance agains a data object
