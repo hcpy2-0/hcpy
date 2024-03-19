@@ -41,7 +41,7 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 ```bash
-hc-login $USERNAME $PASSWORD > config.json
+hc-login $USERNAME $PASSWORD > config/config.json
 ```
 
 The `hc-login` script perfoms the OAuth process to login to your
