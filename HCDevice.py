@@ -98,7 +98,7 @@ class HCDevice:
 		if 'uid' not in data:
 			raise Exception("{self.name}. Unable to configure appliance. UID is required.")
 
-		if isinstance(data['uid'], int) == False:
+		if isinstance(data['uid'], int) is False:
 			raise Exception("{self.name}. Unable to configure appliance. UID must be an integer.")
 
 		if 'value' not in data:
