@@ -95,26 +95,18 @@ class HCDevice:
     # Test the feature of an appliance agains a data object
     def test_feature(self, data):
         if "uid" not in data:
-            raise Exception(
-                "{self.name}. Unable to configure appliance. UID is required."
-            )
+            raise Exception("{self.name}. Unable to configure appliance. UID is required.")
 
         if isinstance(data["uid"], int) is False:
-            raise Exception(
-                "{self.name}. Unable to configure appliance. UID must be an integer."
-            )
+            raise Exception("{self.name}. Unable to configure appliance. UID must be an integer.")
 
         if "value" not in data:
-            raise Exception(
-                "{self.name}. Unable to configure appliance. Value is required."
-            )
+            raise Exception("{self.name}. Unable to configure appliance. Value is required.")
 
         # Check if the uid is present for this appliance
         uid = str(data["uid"])
         if uid not in self.features:
-            raise Exception(
-                f"{self.name}. Unable to configure appliance. UID {uid} is not valid."
-            )
+            raise Exception(f"{self.name}. Unable to configure appliance. UID {uid} is not valid.")
 
         feature = self.features[uid]
 
@@ -122,27 +114,32 @@ class HCDevice:
         print(now(), self.name, f"Processing feature {feature['name']} with uid {uid}")
         if "access" not in feature:
             raise Exception(
-                f"{self.name}. Unable to configure appliance. Feature {feature['name']} with uid {uid} does not have access."
+                f"{self.name}. Unable to configure appliance."
+                f"Feature {feature['name']} with uid {uid} does not have access."
             )
 
         access = feature["access"].lower()
         if access != "readwrite" and access != "writeonly":
             raise Exception(
-                f"{self.name}. Unable to configure appliance. Feature {feature['name']} with uid {uid} has got access {feature['access']}."
+                f"{self.name}. Unable to configure appliance."
+                f"Feature {feature['name']} with uid {uid} has got access {feature['access']}."
             )
 
         # check if selected list with values is allowed
         if "values" in feature:
             if isinstance(data["value"], int) is False:
                 raise Exception(
-                    f"Unable to configure appliance. The value {data['value']} must be an integer. Allowed values are {feature['values']}."
+                    f"Unable to configure appliance. The value {data['value']} must be an integer."
+                    f"Allowed values are {feature['values']}."
                 )
-            value = str(
-                data["value"]
-            )  # values are strings in the feature list, but always seem to be an integer. An integer must be provided
+            value = str(data["value"])
+            # values are strings in the feature list,
+            # but always seem to be an integer. An integer must be provided
             if value not in feature["values"]:
                 raise Exception(
-                    f"{self.name}. Unable to configure appliance. Value {data['value']} is not a valid value. Allowed values are {feature['values']}."
+                    f"{self.name}. Unable to configure appliance."
+                    f"Value {data['value']} is not a valid value."
+                    f"Allowed values are {feature['values']}."
                 )
 
         if "min" in feature:
@@ -154,7 +151,9 @@ class HCDevice:
                 or data["value"] > max
             ):
                 raise Exception(
-                    f"{self.name}. Unable to configure appliance. Value {data['value']} is not a valid value. The value must be an integer in the range {min} and {max}."
+                    f"{self.name}. Unable to configure appliance."
+                    f"Value {data['value']} is not a valid value."
+                    f"The value must be an integer in the range {min} and {max}."
                 )
 
         return True
@@ -272,10 +271,7 @@ class HCDevice:
                 # we could validate that this matches our machine
                 pass
 
-            elif (
-                resource == "/ro/descriptionChange"
-                or resource == "/ro/allDescriptionChanges"
-            ):
+            elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
                 # we asked for these but don't know have to parse yet
                 pass
 

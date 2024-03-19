@@ -42,7 +42,8 @@ def hc2mqtt(
     mqtt_clientname: str,
 ):
     click.echo(
-        f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} {mqtt_port=} {mqtt_username=} {mqtt_password=} "
+        f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
+        f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
         f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
     )
 
@@ -128,9 +129,7 @@ def client_connect(client, device, mqtt_topic):
         try:
             print(now(), device["name"], f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None))
-            dev[device["name"]] = HCDevice(
-                ws, device.get("features", None), device["name"]
-            )
+            dev[device["name"]] = HCDevice(ws, device.get("features", None), device["name"])
 
             # ws.debug = True
             ws.reconnect()

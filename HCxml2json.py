@@ -21,7 +21,7 @@ def parse_xml_list(codes, entries, enums):
         # not sure how to parse refCID and refDID
         uid = int(el.attrib["uid"], 16)
 
-        if not uid in codes:
+        if uid not in codes:
             print("UID", uid, " not known!", file=sys.stderr)
 
         data = codes[uid]

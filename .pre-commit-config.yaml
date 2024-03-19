@@ -13,6 +13,8 @@ repos:
       - id: black
         args:
           - --quiet
+          - --line-length
+          - '99'
   - repo: https://github.com/PyCQA/flake8
     rev: 7.0.0
     hooks:

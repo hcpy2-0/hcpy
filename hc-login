@@ -46,7 +46,6 @@ session.headers.update(headers)
 base_url = "https://api.home-connect.com/security/oauth/"
 asset_url = "https://prod.reu.rest.homeconnectegw.com/"
 
-##############3
 #
 # Start by fetching the old login page, which gives
 # us the verifier and challenge for getting the token,
@@ -161,9 +160,7 @@ session.headers.update(headers)
 debug("--------")
 
 soup = BeautifulSoup(r.text, "html.parser")
-requestVerificationToken = soup.find(
-    "input", {"name": "__RequestVerificationToken"}
-).get("value")
+requestVerificationToken = soup.find("input", {"name": "__RequestVerificationToken"}).get("value")
 r = session.post(
     preauth_url,
     data={
@@ -179,9 +176,7 @@ if not bool(urlparse(password_url).netloc):
 
 r = session.get(password_url, allow_redirects=False)
 soup = BeautifulSoup(r.text, "html.parser")
-requestVerificationToken = soup.find(
-    "input", {"name": "__RequestVerificationToken"}
-).get("value")
+requestVerificationToken = soup.find("input", {"name": "__RequestVerificationToken"}).get("value")
 
 r = session.post(
     password_url,
