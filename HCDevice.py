@@ -117,7 +117,6 @@ class HCDevice:
             raise Exception(f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid program.")
 
         if 'options' in data:
-            ## TODO: Check to see if options is mandatory
             for option_uid in data['options']:
                 if str(option_uid) not in self.features:
                     raise Exception(f"{self.name}. Unable to configure appliance. Option UID {uid} is not valid for this device.")
@@ -233,7 +232,7 @@ class HCDevice:
                     # Raises exception on failure
                     self.test_program_data(data)
 
-                msg["data"] = [data]
+            msg["data"] = [data]
 
         try:
             self.ws.send(msg)
@@ -325,17 +324,6 @@ class HCDevice:
                     self.services[service["service"]] = {
                         "version": service["version"],
                     }
-                # print(self.name, now(), "services", self.services)
-
-                # we should figure out which ones to query now
-        #               if "iz" in self.services:
-        #                   self.get("/iz/info", version=self.services["iz"]["version"])
-        #               if "ni" in self.services:
-        #                   self.get("/ni/info", version=self.services["ni"]["version"])
-        #               if "ei" in self.services:
-        #                   self.get("/ei/deviceReady", version=self.services["ei"]["version"], action="NOTIFY")
-
-        # self.get("/if/info")
 
         else:
             print(now(), self.name, "Unknown", msg)
