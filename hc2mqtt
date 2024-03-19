@@ -115,7 +115,8 @@ def client_connect(client, device, mqtt_topic):
     active_program = False
 
     for value in device["features"]:
-        # If the device has the ActiveProgram feature it allows programs to be started and scheduled via /ro/activeProgram
+        # If the device has the ActiveProgram feature it allows programs to be started and 
+        # scheduled via /ro/activeProgram
         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
             active_program = True
         if (

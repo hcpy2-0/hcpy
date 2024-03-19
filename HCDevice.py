@@ -92,7 +92,7 @@ class HCDevice:
 
         return result
 
-    # Based on PR submitted https://github.com/Skons/hcpy/pull/1/files#diff-f68bc58ad15ebfcb2b6ceca7c538e00790a6093c67c7c84ebcefb0c9756d3c0eR112-R139
+    # Based on PR submitted https://github.com/Skons/hcpy/pull/1
     def test_program_data(self, data):
         if "program" not in data:
             raise Exception("{self.name}. Message data invalid, no program specified.")
@@ -100,7 +100,7 @@ class HCDevice:
         if isinstance(data["program"], str):
             try:
                 data["program"] = int(data["program"])
-            except Exception as e:
+            except Exception:
                 raise Exception(
                     "{self.name}. Message data invalid, UID in 'program' must be an integer."
                 )
@@ -112,7 +112,8 @@ class HCDevice:
         uid = str(data["program"])
         if uid not in self.features:
             raise Exception(
-                f"{self.name}. Unable to configure appliance. Program UID {uid} is not valid for this device."
+                f"{self.name}. Unable to configure appliance. Program UID {uid} is not valid"
+                                                                            "for this device."
             )
 
         feature = self.features[uid]
@@ -121,14 +122,16 @@ class HCDevice:
         # May also be in the format BSH.Common.Program.Favorite.001
         if ".Program." not in feature["name"]:
             raise Exception(
-                f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid program."
+                f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid"
+                                                                                     "program."
             )
 
         if "options" in data:
             for option_uid in data["options"]:
                 if str(option_uid) not in self.features:
                     raise Exception(
-                        f"{self.name}. Unable to configure appliance. Option UID {uid} is not valid for this device."
+                        f"{self.name}. Unable to configure appliance. Option UID {uid} is not"
+                                                                      "valid for this device."
                     )
 
     # Test the feature of an appliance agains a data object
