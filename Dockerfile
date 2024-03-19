@@ -10,7 +10,7 @@ RUN apt-get update && \
   apt-get remove -y gcc python3-dev libssl-dev && \
   apt-get autoremove -y
 
-COPY hc2mqtt hc-login HCDevice.py HCSocket.py ./
+COPY hc2mqtt hc-login HCDevice.py HCSocket.py HCxml2json.py ./
 
 ENTRYPOINT ["python3"]
 CMD ["hc2mqtt", "/config/config.json"]

@@ -44,6 +44,12 @@ Installing `sslpsk` needs some extra steps:
 hc-login $USERNAME $PASSWORD > config/config.json
 ```
 
+or
+
+```bash
+docker-compose run app hc-login $USERNAME $PASSWORD > config/config.json
+```
+
 The `hc-login` script perfoms the OAuth process to login to your
 Home Connect account with your usename and password.  It
 receives a bearer token that can then be used to retrieves
