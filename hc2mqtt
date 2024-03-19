@@ -92,10 +92,19 @@ def client_connect(client, device, mqtt_topic):
         mqtt_state = msg.payload.decode()
         mqtt_topic = msg.topic.split("/")
         print(now(), f"received mqtt message {mqtt_state}")
+
+        if len(mqtt_topic) >= 2:
+            device_name = mqtt_topic[-2]
+            topic = mqtt_topic[-1]
+        else:
+            raise Exception(f"Invalid mqtt topic {msg.topic}")
+
         try:
             msg = json.loads(mqtt_state)
-            if "uid" in msg:
-                dev[mqtt_topic[-2]].get("/ro/values", 1, "POST", msg)
+            if topic == 'set' and 'uid' in msg:
+                dev[device_name].get("/ro/values", 1, "POST", msg)
+            elif topic == 'activeProgram':
+                dev[device_name].get("/ro/activeProgram", 1, "POST", msg)
             else:
                 raise Exception(f"Payload {msg} is not correctly formatted")
         except Exception as e:
@@ -147,10 +156,10 @@ def client_connect(client, device, mqtt_topic):
                     if value is None:
                         continue
 
-                    # 	new_topic = topics[topic]
-                    # 	if new_topic == "remaining":
-                    # 		state["remainingseconds"] = value
-                    # 		value = "%d:%02d" % (value / 60 / 60, (value / 60) % 60)
+                    #   new_topic = topics[topic]
+                    #   if new_topic == "remaining":
+                    #       state["remainingseconds"] = value
+                    #       value = "%d:%02d" % (value / 60 / 60, (value / 60) % 60)
 
                     new_topic = device_topics[topic]
                     state[new_topic] = value
