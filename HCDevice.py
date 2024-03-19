@@ -130,7 +130,7 @@ class HCDevice:
 
 		if 'min' in feature:
 			min = int(feature['min'])
-			max = int(feature['min'])
+			max = int(feature['max'])
 			if isinstance(data['value'], int) == False or data['value'] < min or data['value'] > max:
 				raise Exception(f"{self.name}. Unable to configure appliance. Value {data['value']} is not a valid value. The value must be an integer in the range {min} and {max}.")
 
