@@ -23,7 +23,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_cafile")
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
-@click.option("--mqtt_clientname")
+@click.option("--mqtt_clientname", default="hcpy")
 
 def hc2mqtt(config_file: str, mqtt_host: str, mqtt_prefix: str, mqtt_port: int, mqtt_username: str,
 			mqtt_password: str, mqtt_ssl: bool, mqtt_cafile: str, mqtt_certfile: str, mqtt_keyfile: str, mqtt_clientname: str):
