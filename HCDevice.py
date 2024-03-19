@@ -94,32 +94,42 @@ class HCDevice:
 
     # Based on PR submitted https://github.com/Skons/hcpy/pull/1/files#diff-f68bc58ad15ebfcb2b6ceca7c538e00790a6093c67c7c84ebcefb0c9756d3c0eR112-R139
     def test_program_data(self, data):
-        if 'program' not in data:
+        if "program" not in data:
             raise Exception("{self.name}. Message data invalid, no program specified.")
 
-        if isinstance(data['program'], str):
+        if isinstance(data["program"], str):
             try:
-                data['program'] = int(data['program'])
+                data["program"] = int(data["program"])
             except Exception as e:
-                raise Exception("{self.name}. Message data invalid, UID in 'program' must be an integer.")
-        elif isinstance(data['program'], int) is False:
-            raise Exception("{self.name}. Message data invalid. UID in 'program' must be an integer.")
+                raise Exception(
+                    "{self.name}. Message data invalid, UID in 'program' must be an integer."
+                )
+        elif isinstance(data["program"], int) is False:
+            raise Exception(
+                "{self.name}. Message data invalid. UID in 'program' must be an integer."
+            )
 
-        uid = str(data['program'])
+        uid = str(data["program"])
         if uid not in self.features:
-            raise Exception(f"{self.name}. Unable to configure appliance. Program UID {uid} is not valid for this device.")
+            raise Exception(
+                f"{self.name}. Unable to configure appliance. Program UID {uid} is not valid for this device."
+            )
 
         feature = self.features[uid]
         # Diswasher is Dishcare.Dishwasher.Program.{name}
         # Hood is Cooking.Common.Program.{name}
         # May also be in the format BSH.Common.Program.Favorite.001
-        if ".Program." not in feature['name']:
-            raise Exception(f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid program.")
+        if ".Program." not in feature["name"]:
+            raise Exception(
+                f"{self.name}. Unable to configure appliance. Program UID {uid} is not a valid program."
+            )
 
-        if 'options' in data:
-            for option_uid in data['options']:
+        if "options" in data:
+            for option_uid in data["options"]:
                 if str(option_uid) not in self.features:
-                    raise Exception(f"{self.name}. Unable to configure appliance. Option UID {uid} is not valid for this device.")
+                    raise Exception(
+                        f"{self.name}. Unable to configure appliance. Option UID {uid} is not valid for this device."
+                    )
 
     # Test the feature of an appliance agains a data object
     def test_feature(self, data):
@@ -225,10 +235,10 @@ class HCDevice:
 
         if data is not None:
             if action == "POST":
-                if 'resource' == '/ro/values':
+                if "resource" == "/ro/values":
                     # Raises exceptions on failure
                     self.test_feature(data)
-                elif 'resource' == '/ro/activeProgram':
+                elif "resource" == "/ro/activeProgram":
                     # Raises exception on failure
                     self.test_program_data(data)
 

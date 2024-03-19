@@ -101,9 +101,9 @@ def client_connect(client, device, mqtt_topic):
 
         try:
             msg = json.loads(mqtt_state)
-            if topic == 'set' and 'uid' in msg:
+            if topic == "set" and "uid" in msg:
                 dev[device_name].get("/ro/values", 1, "POST", msg)
-            elif topic == 'activeProgram':
+            elif topic == "activeProgram":
                 dev[device_name].get("/ro/activeProgram", 1, "POST", msg)
             else:
                 raise Exception(f"Payload {msg} is not correctly formatted")
@@ -116,7 +116,7 @@ def client_connect(client, device, mqtt_topic):
 
     for value in device["features"]:
         # If the device has the ActiveProgram feature it allows programs to be started and scheduled via /ro/activeProgram
-        if "BSH.Common.Root.ActiveProgram" == device['features'][value]['name']:
+        if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
             active_program = True
         if (
             "access" in device["features"][value]
