@@ -119,13 +119,14 @@ class HCDevice:
                     f" program - {feature['name']}."
                 )
 
-            if "options" in data:
-                for option_uid in data["options"]:
-                    if str(option_uid) not in self.features:
-                        raise ValueError(
-                            f"Unable to configure appliance. Option UID {uid} is not"
-                            " valid for this device."
-                        )
+	    if "options" in data:
+	        for option in data["options"]:
+		    option_uid = option["uid"]
+		    if str(option_uid) not in self.features:
+		        raise ValueError(
+		            f"Unable to configure appliance. Option UID {option_uid} is not"
+		            " valid for this device."
+		        )
 
     # Test the feature of an appliance agains a data object
     def test_feature(self, data_array):
@@ -165,18 +166,18 @@ class HCDevice:
             if "values" in feature:
                 if isinstance(data["value"], int) is False:
                     raise Exception(
-                        f"Unable to configure appliance. The value {data['value']} must"
-                        f" be an integer. Allowed values are {feature['values']}."
+                        f"Unable to configure appliance. The value {data['value']} must be an integer."
+                        f" Allowed values are {feature['values']}."
                     )
-                value = str(data["value"])
-                # values are strings in the feature list,
-                # but always seem to be an integer. An integer must be provided
-                if value not in feature["values"]:
-                    raise Exception(
-                        "Unable to configure appliance. "
-                        f"Value {data['value']} is not a valid value. "
-                        f"Allowed values are {feature['values']}. "
-                    )
+            value = str(data["value"])
+            # values are strings in the feature list,
+            # but always seem to be an integer. An integer must be provided
+            if value not in feature["values"]:
+                raise Exception(
+                    "Unable to configure appliance. "
+                    f"Value {data['value']} is not a valid value. "
+                    f"Allowed values are {feature['values']}. "
+                )
 
             if "min" in feature:
                 min = int(feature["min"])
