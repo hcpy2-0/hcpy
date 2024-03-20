@@ -43,7 +43,16 @@ def hc2mqtt(
 ):
 
     def on_connect(client, userdata, flags, rc):
-        client.publish(f"{mqtt_prefix}LWT", payload="Online", qos=0, retain=True)
+        if rc == 5:
+            print(now(), f"ERROR MQTT connection failed: unauthorized - {rc}")
+        elif rc == 0:
+            print(now(), f"MQTT connection established: {rc}")
+            client.publish(f"{mqtt_prefix}LWT", payload="Online", qos=0, retain=True)
+        else:
+            print(now(), f"ERROR MQTT connection failed: {rc}")
+
+    def on_disconnect(client, userdata, rc):
+        print(now(), "ERROR MQTT client disconnected")
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
@@ -72,6 +81,7 @@ def hc2mqtt(
 
     client.will_set(f"{mqtt_prefix}LWT", payload="Offline", qos=0, retain=True)
     client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
     for device in devices:
