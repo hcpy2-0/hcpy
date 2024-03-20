@@ -119,10 +119,11 @@ class HCDevice:
             )
 
         if "options" in data:
-            for option_uid in data["options"]:
+            for option in data["options"]:
+                option_uid = option["uid"]
                 if str(option_uid) not in self.features:
-                    raise ValueError(
-                        f"Unable to configure appliance. Option UID {uid} is not"
+                     raise ValueError(
+                        f"Unable to configure appliance. Option UID {option_uid} is not"
                         " valid for this device."
                     )
 
