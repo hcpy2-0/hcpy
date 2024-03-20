@@ -52,11 +52,47 @@ def hc2mqtt(
                 mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
                 print(now(), device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
+                for value in device["features"]:
+                    # If the device has the ActiveProgram feature it allows programs to be started and
+                    # scheduled via /ro/activeProgram
+                    if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
+                        mqtt_active_program_topic = f"{mqtt_prefix}{device['name']}/activeProgram"
+                        print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
+                        client.subscribe(mqtt_active_program_topic)
         else:
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
     def on_disconnect(client, userdata, rc):
         print(now(), "ERROR MQTT client disconnected")
+
+    def on_message(client, userdata, msg):
+        mqtt_state = msg.payload.decode()
+        mqtt_topic = msg.topic.split("/")
+        print(now(), f"{msg.topic} received mqtt message {mqtt_state}")
+
+        try:
+            if len(mqtt_topic) >= 2:
+                device_name = mqtt_topic[-2]
+                topic = mqtt_topic[-1]
+            else:
+                raise Exception(f"Invalid mqtt topic {msg.topic}.")
+
+            try:
+                msg = json.loads(mqtt_state)
+            except ValueError as e:
+                raise ValueError(f"Invalid JSON in message: {mqtt_state}.") from e
+
+            if topic == "set":
+                resource = "/ro/values"
+            elif topic == "activeProgram":
+                resource = "/ro/activeProgram"
+            else:
+                raise Exception(f"Payload topic {topic} is unknown.")
+
+            dev[device_name].get(resource, 1, "POST", msg)
+        except Exception as e:
+            print(now(), device_name, "ERROR", e, file=sys.stderr)
+
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
@@ -86,6 +122,7 @@ def hc2mqtt(
     client.will_set(f"{mqtt_prefix}LWT", payload="Offline", qos=0, retain=True)
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
+    client.on_message = on_message
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
     for device in devices:
@@ -107,44 +144,11 @@ dev = {}
 
 
 def client_connect(client, device, mqtt_topic):
-    def on_message(client, userdata, msg):
-        print(msg.topic)
-        mqtt_state = msg.payload.decode()
-        mqtt_topic = msg.topic.split("/")
-        print(now(), f"{msg.topic} received mqtt message {mqtt_state}")
-
-        try:
-            if len(mqtt_topic) >= 2:
-                device_name = mqtt_topic[-2]
-                topic = mqtt_topic[-1]
-            else:
-                raise Exception(f"Invalid mqtt topic {msg.topic}.")
-
-            try:
-                msg = json.loads(mqtt_state)
-            except ValueError as e:
-                raise ValueError(f"Invalid JSON in message: {mqtt_state}.") from e
-
-            if topic == "set":
-                resource = "/ro/values"
-            elif topic == "activeProgram":
-                resource = "/ro/activeProgram"
-            else:
-                raise Exception(f"Payload topic {topic} is unknown.")
-
-            dev[device_name].get(resource, 1, "POST", msg)
-        except Exception as e:
-            print(now(), device_name, "ERROR", e, file=sys.stderr)
-
     host = device["host"]
     device_topics = topics
     active_program = False
 
     for value in device["features"]:
-        # If the device has the ActiveProgram feature it allows programs to be started and
-        # scheduled via /ro/activeProgram
-        if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
-            active_program = True
         if (
             "access" in device["features"][value]
             and "read" in device["features"][value]["access"].lower()
@@ -163,13 +167,6 @@ def client_connect(client, device, mqtt_topic):
     mqtt_set_topic = mqtt_topic + "/set"
     print(now(), device["name"], f"set topic: {mqtt_set_topic}")
     client.subscribe(mqtt_set_topic)
-
-    if active_program:
-        mqtt_active_program_topic = mqtt_topic + "/activeProgram"
-        print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
-        client.subscribe(mqtt_active_program_topic)
-
-    client.on_message = on_message
 
     while True:
         try:
@@ -203,14 +200,14 @@ def client_connect(client, device, mqtt_topic):
                 if client.is_connected():
                     msg = json.dumps(state)
                     print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
-                    client.publish(mqtt_topic + "/state", msg)
+                    client.publish(f"{mqtt_topic}/state", msg)
                 else:
-                    raise Exception("Unable to publish update as mqtt is not connected.")
+                    print(now(), device["name"], "ERROR Unable to publish update as mqtt is not connected.")
 
         except Exception as e:
-            print("ERROR", device["name"], e, file=sys.stderr)
+            print(device["name"], "ERROR", e, file=sys.stderr)
 
-        time.sleep(5)
+        time.sleep(60)
 
 
 if __name__ == "__main__":
