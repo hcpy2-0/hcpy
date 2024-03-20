@@ -94,7 +94,6 @@ def hc2mqtt(
         except Exception as e:
             print(now(), device_name, "ERROR", e, file=sys.stderr)
 
-
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
         f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
@@ -202,7 +201,11 @@ def client_connect(client, device, mqtt_topic):
                     print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
                     client.publish(f"{mqtt_topic}/state", msg)
                 else:
-                    print(now(), device["name"], "ERROR Unable to publish update as mqtt is not connected.")
+                    print(
+                        now(),
+                        device["name"],
+                        "ERROR Unable to publish update as mqtt is not connected.",
+                    )
 
         except Exception as e:
             print(device["name"], "ERROR", e, file=sys.stderr)
