@@ -166,8 +166,8 @@ class HCDevice:
             if "values" in feature:
                 if isinstance(data["value"], int) is False:
                     raise Exception(
-                        f"Unable to configure appliance. The value {data['value']} must be an integer."
-                        f" Allowed values are {feature['values']}."
+                        f"Unable to configure appliance. The value {data['value']} must "
+                        f"be an integer. Allowed values are {feature['values']}."
                     )
 
                 value = str(data["value"])
