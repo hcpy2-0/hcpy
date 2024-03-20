@@ -91,7 +91,7 @@ def client_connect(client, device, mqtt_topic):
         mqtt_state = msg.payload.decode()
         mqtt_topic = msg.topic.split("/")
         print(now(), f"{msg.topic} received mqtt message {mqtt_state}")
-        
+
         try:
             if len(mqtt_topic) >= 2:
                 device_name = mqtt_topic[-2]

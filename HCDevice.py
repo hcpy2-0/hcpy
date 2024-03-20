@@ -97,11 +97,8 @@ class HCDevice:
         if "program" not in data:
             raise TypeError("Message data invalid, no program specified.")
 
-        
-        if isinstance(data["program"],int) is False:
-            raise TypeError(
-                f"Message data invalid, UID in 'program' must be an integer."
-            )
+        if isinstance(data["program"], int) is False:
+            raise TypeError(f"Message data invalid, UID in 'program' must be an integer.")
 
         # devices.json stores UID as string
         uid = str(data["program"])
@@ -239,7 +236,6 @@ class HCDevice:
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
                     self.test_program_data(data)
-
 
             msg["data"] = [data]
 
