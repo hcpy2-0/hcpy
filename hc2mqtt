@@ -168,6 +168,7 @@ def client_connect(client, device, mqtt_topic):
     client.subscribe(mqtt_set_topic)
 
     while True:
+        time.sleep(20)
         try:
             print(now(), device["name"], f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None))
@@ -210,7 +211,7 @@ def client_connect(client, device, mqtt_topic):
         except Exception as e:
             print(device["name"], "ERROR", e, file=sys.stderr)
 
-        time.sleep(60)
+        time.sleep(40)
 
 
 if __name__ == "__main__":
