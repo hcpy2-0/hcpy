@@ -47,7 +47,7 @@ def hc2mqtt(
             print(now(), f"ERROR MQTT connection failed: unauthorized - {rc}")
         elif rc == 0:
             print(now(), f"MQTT connection established: {rc}")
-            client.publish(f"{mqtt_prefix}LWT", payload="Online", qos=0, retain=True)
+            client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
                 mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
@@ -119,7 +119,7 @@ def hc2mqtt(
         else:
             client.tls_set(cert_reqs=ssl.CERT_NONE)
 
-    client.will_set(f"{mqtt_prefix}LWT", payload="Offline", qos=0, retain=True)
+    client.will_set(f"{mqtt_prefix}LWT", payload="offline", qos=0, retain=True)
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.on_message = on_message
