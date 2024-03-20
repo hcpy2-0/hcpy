@@ -55,7 +55,7 @@ def hc2mqtt(
                 client.subscribe(mqtt_set_topic)
                 for value in device["features"]:
                     # If the device has the ActiveProgram feature it allows programs to be started
-                    # andi scheduled via /ro/activeProgram
+                    # and scheduled via /ro/activeProgram
                     if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
                         mqtt_active_program_topic = f"{mqtt_prefix}{device['name']}/activeProgram"
                         print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
