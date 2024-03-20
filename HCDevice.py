@@ -98,7 +98,7 @@ class HCDevice:
             raise TypeError("Message data invalid, no program specified.")
 
         if isinstance(data["program"], int) is False:
-            raise TypeError(f"Message data invalid, UID in 'program' must be an integer.")
+            raise TypeError("Message data invalid, UID in 'program' must be an integer.")
 
         # devices.json stores UID as string
         uid = str(data["program"])
@@ -163,8 +163,8 @@ class HCDevice:
         if "values" in feature:
             if isinstance(data["value"], int) is False:
                 raise Exception(
-                    f"Unable to configure appliance. The value {data['value']} must be an integer. "
-                    f"Allowed values are {feature['values']}."
+                    f"Unable to configure appliance. The value {data['value']} must be an integer."
+                    f" Allowed values are {feature['values']}."
                 )
             value = str(data["value"])
             # values are strings in the feature list,
