@@ -116,7 +116,7 @@ def client_connect(client, device, mqtt_topic):
             print(now(), device_name, "ERROR", e, file=sys.stderr)
 
     host = device["host"]
-    device_topics = topics
+    device_topics = topics.copy()
     active_program = False
 
     for value in device["features"]:
