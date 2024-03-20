@@ -41,6 +41,10 @@ def hc2mqtt(
     mqtt_keyfile: str,
     mqtt_clientname: str,
 ):
+
+    def on_connect(client, userdata, flags, rc):
+        client.publish(f"{mqtt_prefix}LWT", payload="Online", qos=0, retain=True)
+
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
         f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
@@ -66,7 +70,8 @@ def hc2mqtt(
         else:
             client.tls_set(cert_reqs=ssl.CERT_NONE)
 
-    client.will_set(f"{mqtt_prefix}status", payload="Offline", qos=0, retain=True)
+    client.will_set(f"{mqtt_prefix}LWT", payload="Offline", qos=0, retain=True)
+    client.on_connect = on_connect
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
     for device in devices:
