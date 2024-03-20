@@ -20,14 +20,14 @@ To avoid running into issues later with your default python installs, it's recom
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-git clone https://github.com/osresearch/hcpy
+git clone https://github.com/hcpy2-0/hcpy
 cd hcpy
 pip3 install -r requirements.txt
 ```
-
 Install the Python dependencies; the `sslpsk` one is a little weird
 and we might need to revisit it later.
 
+Alternatively an environment can be built with docker and/or docker-compose which has the necessary dependencies.
 
 ### For Mac Users
 Installing `sslpsk` needs some extra steps:
@@ -65,10 +65,10 @@ your mDNS or DNS server resolves the names correctly.
 
 ## Home Connect to MQTT
 
-Use the following config/config.ini example:
+Use the following ./config/config.ini example:
 
 ```
-devices_file = "/config/devices.json"
+devices_file = "./config/devices.json"
 mqtt_host = "localhost"
 mqtt_username = "mqtt"
 mqtt_password = "password"
@@ -433,6 +433,24 @@ Synchronize with time server, `false` is disabled
 
 ```json
 {"uid":547,"value":false}
+```
+
+### Starting a Program
+
+The MQTT client listens on /{prefix}/{devicename}/activeProgram for a JSON message to start a program. The JSON should be in the following format:
+
+```json
+{"program":{uid},"options":[{"uid":{uid},"value":{value}}]}
+```
+
+To start a dishwasher on eco mode (`Dishcare.Dishwasher.Program.Eco50`):
+```json
+{"program":8196}
+```
+
+To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelative`):
+```json
+{"program":8196,"options":[{"uid":558,"value":600}]}
 ```
 
 ## FRIDA tools

@@ -13,4 +13,4 @@ RUN apt-get update && \
 COPY hc2mqtt hc-login HCDevice.py HCSocket.py HCxml2json.py ./
 
 ENTRYPOINT ["python3"]
-CMD ["hc2mqtt", "--config", "/config/config.ini"]
+CMD ["hc2mqtt", "--config", "./config/config.ini"]
