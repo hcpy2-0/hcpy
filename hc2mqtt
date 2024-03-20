@@ -145,7 +145,7 @@ dev = {}
 
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
-    device_topics = topics
+    device_topics = topics.copy()
 
     for value in device["features"]:
         if (
@@ -212,7 +212,6 @@ def client_connect(client, device, mqtt_topic):
             print(device["name"], "ERROR", e, file=sys.stderr)
 
         time.sleep(40)
-
 
 if __name__ == "__main__":
     hc2mqtt()
