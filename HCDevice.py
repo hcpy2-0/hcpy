@@ -93,102 +93,104 @@ class HCDevice:
         return result
 
     # Based on PR submitted https://github.com/Skons/hcpy/pull/1
-    def test_program_data(self, data):
-        if "program" not in data:
-            raise TypeError("Message data invalid, no program specified.")
+    def test_program_data(self, data_array):
+        for data in data_array:
+            if "program" not in data:
+                raise TypeError("Message data invalid, no program specified.")
 
-        if isinstance(data["program"], int) is False:
-            raise TypeError("Message data invalid, UID in 'program' must be an integer.")
+            if isinstance(data["program"], int) is False:
+                raise TypeError("Message data invalid, UID in 'program' must be an integer.")
 
-        # devices.json stores UID as string
-        uid = str(data["program"])
-        if uid not in self.features:
-            raise ValueError(
-                f"Unable to configure appliance. Program UID {uid} is not valid"
-                " for this device."
-            )
+            # devices.json stores UID as string
+            uid = str(data["program"])
+            if uid not in self.features:
+                raise ValueError(
+                    f"Unable to configure appliance. Program UID {uid} is not valid"
+                    " for this device."
+                )
 
-        feature = self.features[uid]
-        # Diswasher is Dishcare.Dishwasher.Program.{name}
-        # Hood is Cooking.Common.Program.{name}
-        # May also be in the format BSH.Common.Program.Favorite.001
-        if ".Program." not in feature["name"]:
-            raise ValueError(
-                f"Unable to configure appliance. Program UID {uid} is not a valid"
-                f" program - {feature['name']}."
-            )
+            feature = self.features[uid]
+            # Diswasher is Dishcare.Dishwasher.Program.{name}
+            # Hood is Cooking.Common.Program.{name}
+            # May also be in the format BSH.Common.Program.Favorite.001
+            if ".Program." not in feature["name"]:
+                raise ValueError(
+                    f"Unable to configure appliance. Program UID {uid} is not a valid"
+                    f" program - {feature['name']}."
+                )
 
-        if "options" in data:
-            for option_uid in data["options"]:
-                if str(option_uid) not in self.features:
-                    raise ValueError(
-                        f"Unable to configure appliance. Option UID {uid} is not"
-                        " valid for this device."
-                    )
+            if "options" in data:
+                for option_uid in data["options"]:
+                    if str(option_uid) not in self.features:
+                        raise ValueError(
+                            f"Unable to configure appliance. Option UID {uid} is not"
+                            " valid for this device."
+                        )
 
     # Test the feature of an appliance agains a data object
-    def test_feature(self, data):
-        if "uid" not in data:
-            raise Exception("Unable to configure appliance. UID is required.")
+    def test_feature(self, data_array):
+        for data in data_array:
+            if "uid" not in data:
+                raise Exception("Unable to configure appliance. UID is required.")
 
-        if isinstance(data["uid"], int) is False:
-            raise Exception("Unable to configure appliance. UID must be an integer.")
+            if isinstance(data["uid"], int) is False:
+                raise Exception("Unable to configure appliance. UID must be an integer.")
 
-        if "value" not in data:
-            raise Exception("Unable to configure appliance. Value is required.")
+            if "value" not in data:
+                raise Exception("Unable to configure appliance. Value is required.")
 
-        # Check if the uid is present for this appliance
-        uid = str(data["uid"])
-        if uid not in self.features:
-            raise Exception(f"Unable to configure appliance. UID {uid} is not valid.")
+            # Check if the uid is present for this appliance
+            uid = str(data["uid"])
+            if uid not in self.features:
+                raise Exception(f"Unable to configure appliance. UID {uid} is not valid.")
 
-        feature = self.features[uid]
+            feature = self.features[uid]
 
-        # check the access level of the feature
-        print(now(), self.name, f"Processing feature {feature['name']} with uid {uid}")
-        if "access" not in feature:
-            raise Exception(
-                "Unable to configure appliance. "
-                f"Feature {feature['name']} with uid {uid} does not have access."
-            )
-
-        access = feature["access"].lower()
-        if access != "readwrite" and access != "writeonly":
-            raise Exception(
-                "Unable to configure appliance. "
-                f"Feature {feature['name']} with uid {uid} has got access {feature['access']}."
-            )
-
-        # check if selected list with values is allowed
-        if "values" in feature:
-            if isinstance(data["value"], int) is False:
-                raise Exception(
-                    f"Unable to configure appliance. The value {data['value']} must be an integer."
-                    f" Allowed values are {feature['values']}."
-                )
-            value = str(data["value"])
-            # values are strings in the feature list,
-            # but always seem to be an integer. An integer must be provided
-            if value not in feature["values"]:
+            # check the access level of the feature
+            print(now(), self.name, f"Processing feature {feature['name']} with uid {uid}")
+            if "access" not in feature:
                 raise Exception(
                     "Unable to configure appliance. "
-                    f"Value {data['value']} is not a valid value. "
-                    f"Allowed values are {feature['values']}. "
+                    f"Feature {feature['name']} with uid {uid} does not have access."
                 )
 
-        if "min" in feature:
-            min = int(feature["min"])
-            max = int(feature["max"])
-            if (
-                isinstance(data["value"], int) is False
-                or data["value"] < min
-                or data["value"] > max
-            ):
+            access = feature["access"].lower()
+            if access != "readwrite" and access != "writeonly":
                 raise Exception(
                     "Unable to configure appliance. "
-                    f"Value {data['value']} is not a valid value. "
-                    f"The value must be an integer in the range {min} and {max}."
+                    f"Feature {feature['name']} with uid {uid} has got access {feature['access']}."
                 )
+
+            # check if selected list with values is allowed
+            if "values" in feature:
+                if isinstance(data["value"], int) is False:
+                    raise Exception(
+                        f"Unable to configure appliance. The value {data['value']} must be an integer."
+                        f" Allowed values are {feature['values']}."
+                    )
+                value = str(data["value"])
+                # values are strings in the feature list,
+                # but always seem to be an integer. An integer must be provided
+                if value not in feature["values"]:
+                    raise Exception(
+                        "Unable to configure appliance. "
+                        f"Value {data['value']} is not a valid value. "
+                        f"Allowed values are {feature['values']}. "
+                    )
+
+            if "min" in feature:
+                min = int(feature["min"])
+                max = int(feature["max"])
+                if (
+                    isinstance(data["value"], int) is False
+                    or data["value"] < min
+                    or data["value"] > max
+                ):
+                    raise Exception(
+                        "Unable to configure appliance. "
+                        f"Value {data['value']} is not a valid value. "
+                        f"The value must be an integer in the range {min} and {max}."
+                    )
 
     def recv(self):
         try:
@@ -229,6 +231,9 @@ class HCDevice:
         }
 
         if data is not None:
+            if isinstance(data, list) is False:
+                data = [data]
+
             if action == "POST":
                 if resource == "/ro/values":
                     # Raises exceptions on failure
@@ -237,7 +242,7 @@ class HCDevice:
                     # Raises exception on failure
                     self.test_program_data(data)
 
-            msg["data"] = [data]
+            msg["data"] = data
 
         try:
             self.ws.send(msg)
