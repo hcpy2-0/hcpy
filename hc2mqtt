@@ -213,5 +213,6 @@ def client_connect(client, device, mqtt_topic):
 
         time.sleep(40)
 
+
 if __name__ == "__main__":
     hc2mqtt()
