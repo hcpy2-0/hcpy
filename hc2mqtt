@@ -88,27 +88,32 @@ dev = {}
 
 def client_connect(client, device, mqtt_topic):
     def on_message(client, userdata, msg):
-        print(msg.topic)
         mqtt_state = msg.payload.decode()
         mqtt_topic = msg.topic.split("/")
-        print(now(), f"received mqtt message {mqtt_state}")
-
-        if len(mqtt_topic) >= 2:
-            device_name = mqtt_topic[-2]
-            topic = mqtt_topic[-1]
-        else:
-            raise Exception(f"Invalid mqtt topic {msg.topic}")
-
+        print(now(), f"{msg.topic} received mqtt message {mqtt_state}")
+        
         try:
-            msg = json.loads(mqtt_state)
-            if topic == "set" and "uid" in msg:
-                dev[device_name].get("/ro/values", 1, "POST", msg)
-            elif topic == "activeProgram":
-                dev[device_name].get("/ro/activeProgram", 1, "POST", msg)
+            if len(mqtt_topic) >= 2:
+                device_name = mqtt_topic[-2]
+                topic = mqtt_topic[-1]
             else:
-                raise Exception(f"Payload {msg} is not correctly formatted")
+                raise Exception(f"Invalid mqtt topic {msg.topic}.")
+
+            try:
+                msg = json.loads(mqtt_state)
+            except ValueError as e:
+                raise ValueError(f"Invalid JSON in message: {mqtt_state}.") from e
+
+            if topic == "set":
+                resource = "/ro/values"
+            elif topic == "activeProgram":
+                resource = "/ro/activeProgram"
+            else:
+                raise Exception(f"Payload topic {topic} is unknown.")
+
+            dev[device_name].get(resource, 1, "POST", msg)
         except Exception as e:
-            print("ERROR", e, file=sys.stderr)
+            print(now(), device_name, "ERROR", e, file=sys.stderr)
 
     host = device["host"]
     device_topics = topics
