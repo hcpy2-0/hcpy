@@ -435,6 +435,24 @@ Synchronize with time server, `false` is disabled
 {"uid":547,"value":false}
 ```
 
+### Starting a Program
+
+The MQTT client listens on /{prefix}/{devicename}/activeProgram for a JSON message to start a program. The JSON should be in the following format:
+
+```json
+{"program":{uid},"options":[{"uid":{uid},"value":{value}}]}
+```
+
+To start a dishwasher on eco mode (`Dishcare.Dishwasher.Program.Eco50`):
+```json
+{"program":8196}
+```
+
+To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelative`):
+```json
+{"program":8196,"options":[{"uid":558,"value":600}]}
+```
+
 ## FRIDA tools
 
 Moved to [`README-frida.md`](README-frida.md)
