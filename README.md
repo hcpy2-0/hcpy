@@ -41,17 +41,17 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 ```bash
-hc-login $USERNAME $PASSWORD > config/devices.json
+hc-login.py $USERNAME $PASSWORD > config/devices.json
 ```
 
 or
 
 ```bash
 docker-compose build
-docker-compose run -T app hc-login $USERNAME $PASSWORD > config/devices.json
+docker-compose run -T app hc-login.py $USERNAME $PASSWORD > config/devices.json
 ```
 
-The `hc-login` script perfoms the OAuth process to login to your
+The `hc-login.py ` script perfoms the OAuth process to login to your
 Home Connect account with your usename and password.  It
 receives a bearer token that can then be used to retrieves
 a list of all the connected devices, their authentication
@@ -82,7 +82,7 @@ mqtt_clientname="hcpy"
 ```
 
 ```bash
-hc2mqtt --config config/config.ini
+hc2mqtt.py --config config/config.ini
 ```
 
 or
