@@ -347,7 +347,7 @@ class HCDevice:
                     values = msg["data"][0]
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
-                ### we asked for these but don't know have to parse yet
+                # we asked for these but don't know have to parse yet
                 pass
 
             elif resource == "/ni/info":

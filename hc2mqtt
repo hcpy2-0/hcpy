@@ -134,18 +134,11 @@ def hc2mqtt(
     client.loop_forever()
 
 
-# Map their value names to easier state names
-topics = {
-    "InternalError": "Error",
-    "FatalErrorOccured": "Error",
-}
 global dev
 dev = {}
 
-
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
-    device_topics = topics.copy()
 
     state = {}
 
