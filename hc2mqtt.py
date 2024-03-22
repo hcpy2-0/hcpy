@@ -41,52 +41,31 @@ def hc2mqtt(
     mqtt_keyfile: str,
     mqtt_clientname: str,
 ):
-    click.echo(
-        f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
-        f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
-        f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
-    )
 
-    with open(devices_file, "r") as f:
-        devices = json.load(f)
-
-    client = mqtt.Client(mqtt_clientname)
-
-    if mqtt_username and mqtt_password:
-        client.username_pw_set(mqtt_username, mqtt_password)
-
-    if mqtt_ssl:
-        if mqtt_cafile and mqtt_certfile and mqtt_keyfile:
-            client.tls_set(
-                ca_certs=mqtt_cafile,
-                certfile=mqtt_certfile,
-                keyfile=mqtt_keyfile,
-                cert_reqs=ssl.CERT_REQUIRED,
-            )
+    def on_connect(client, userdata, flags, rc):
+        if rc == 5:
+            print(now(), f"ERROR MQTT connection failed: unauthorized - {rc}")
+        elif rc == 0:
+            print(now(), f"MQTT connection established: {rc}")
+            client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
+            # Re-subscribe to all device topics on reconnection
+            for device in devices:
+                mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
+                print(now(), device["name"], f"set topic: {mqtt_set_topic}")
+                client.subscribe(mqtt_set_topic)
+                for value in device["features"]:
+                    # If the device has the ActiveProgram feature it allows programs to be started
+                    # and scheduled via /ro/activeProgram
+                    if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
+                        mqtt_active_program_topic = f"{mqtt_prefix}{device['name']}/activeProgram"
+                        print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
+                        client.subscribe(mqtt_active_program_topic)
         else:
-            client.tls_set(cert_reqs=ssl.CERT_NONE)
+            print(now(), f"ERROR MQTT connection failed: {rc}")
 
-    client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
+    def on_disconnect(client, userdata, rc):
+        print(now(), "ERROR MQTT client disconnected")
 
-    for device in devices:
-        mqtt_topic = mqtt_prefix + device["name"]
-        print(now(), f"topic: {mqtt_topic}")
-        thread = Thread(target=client_connect, args=(client, device, mqtt_topic))
-        thread.start()
-
-    client.loop_forever()
-
-
-# Map their value names to easier state names
-topics = {
-    "InternalError": "Error",
-    "FatalErrorOccured": "Error",
-}
-global dev
-dev = {}
-
-
-def client_connect(client, device, mqtt_topic):
     def on_message(client, userdata, msg):
         mqtt_state = msg.payload.decode()
         mqtt_topic = msg.topic.split("/")
@@ -115,15 +94,60 @@ def client_connect(client, device, mqtt_topic):
         except Exception as e:
             print(now(), device_name, "ERROR", e, file=sys.stderr)
 
+    click.echo(
+        f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
+        f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
+        f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
+    )
+
+    with open(devices_file, "r") as f:
+        devices = json.load(f)
+
+    client = mqtt.Client(mqtt_clientname)
+
+    if mqtt_username and mqtt_password:
+        client.username_pw_set(mqtt_username, mqtt_password)
+
+    if mqtt_ssl:
+        if mqtt_cafile and mqtt_certfile and mqtt_keyfile:
+            client.tls_set(
+                ca_certs=mqtt_cafile,
+                certfile=mqtt_certfile,
+                keyfile=mqtt_keyfile,
+                cert_reqs=ssl.CERT_REQUIRED,
+            )
+        else:
+            client.tls_set(cert_reqs=ssl.CERT_NONE)
+
+    client.will_set(f"{mqtt_prefix}LWT", payload="offline", qos=0, retain=True)
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_message = on_message
+    client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
+
+    for device in devices:
+        mqtt_topic = mqtt_prefix + device["name"]
+        print(now(), f"topic: {mqtt_topic}")
+        thread = Thread(target=client_connect, args=(client, device, mqtt_topic))
+        thread.start()
+
+    client.loop_forever()
+
+
+# Map their value names to easier state names
+topics = {
+    "InternalError": "Error",
+    "FatalErrorOccured": "Error",
+}
+global dev
+dev = {}
+
+
+def client_connect(client, device, mqtt_topic):
     host = device["host"]
     device_topics = topics.copy()
-    active_program = False
 
     for value in device["features"]:
-        # If the device has the ActiveProgram feature it allows programs to be started and
-        # scheduled via /ro/activeProgram
-        if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
-            active_program = True
         if (
             "access" in device["features"][value]
             and "read" in device["features"][value]["access"].lower()
@@ -143,14 +167,8 @@ def client_connect(client, device, mqtt_topic):
     print(now(), device["name"], f"set topic: {mqtt_set_topic}")
     client.subscribe(mqtt_set_topic)
 
-    if active_program:
-        mqtt_active_program_topic = mqtt_topic + "/activeProgram"
-        print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
-        client.subscribe(mqtt_active_program_topic)
-
-    client.on_message = on_message
-
     while True:
+        time.sleep(20)
         try:
             print(now(), device["name"], f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None))
@@ -179,14 +197,21 @@ def client_connect(client, device, mqtt_topic):
                 if not update:
                     continue
 
-                msg = json.dumps(state)
-                print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
-                client.publish(mqtt_topic + "/state", msg)
+                if client.is_connected():
+                    msg = json.dumps(state)
+                    print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
+                    client.publish(f"{mqtt_topic}/state", msg)
+                else:
+                    print(
+                        now(),
+                        device["name"],
+                        "ERROR Unable to publish update as mqtt is not connected.",
+                    )
 
         except Exception as e:
-            print("ERROR", host, e, file=sys.stderr)
+            print(device["name"], "ERROR", e, file=sys.stderr)
 
-        time.sleep(5)
+        time.sleep(40)
 
 
 if __name__ == "__main__":
