@@ -292,7 +292,7 @@ class HCDevice:
         self.get("/iz/info")  # dish washer
 
         # Retrieves registered clients like phone/hcpy itself
-        #self.get("/ci/registeredDevices")
+        # self.get("/ci/registeredDevices")
 
         # tzInfo all returns empty?
         # self.get("/ci/tzInfo")
@@ -302,7 +302,7 @@ class HCDevice:
         self.get("/ni/info")
         # self.get("/ni/config", data={"interfaceID": 0})
 
-        #self.get("/ro/allDescriptionChanges")
+        # self.get("/ro/allDescriptionChanges")
         self.get("/ro/allMandatoryValues")
         self.get("/ro/values")
 
