@@ -265,7 +265,6 @@ class HCDevice:
             print(self.name, "Failed to send", e, msg, traceback.format_exc())
         self.tx_msg_id += 1
 
-
     def reconnect(self):
         self.ws.reconnect()
         # Receive initialization message /ei/initialValues
@@ -291,21 +290,21 @@ class HCDevice:
 
         self.get("/ci/info")  # clothes washer
         self.get("/iz/info")  # dish washer
-        
+
         # Retrieves registered clients like phone/hcpy itself
         self.get("/ci/registeredDevices")
 
         # tzInfo all returns empty?
-        #self.get("/ci/tzInfo")
+        # self.get("/ci/tzInfo")
 
         # We need to send deviceReady for some devices or /ni/ will come back as 403 unauth
         self.get("/ei/deviceReady", version=2, action="NOTIFY")
         self.get("/ni/info")
-        #self.get("/ni/config", data={"interfaceID": 0})
+        # self.get("/ni/config", data={"interfaceID": 0})
 
-        #self.get("/ro/allDescriptionChanges")
+        # self.get("/ro/allDescriptionChanges")
         self.get("/ro/allMandatoryValues")
-        #self.get("/ro/values")
+        # self.get("/ro/values")
 
     def handle_message(self, buf):
         msg = json.loads(buf)
@@ -344,7 +343,7 @@ class HCDevice:
         elif action == "RESPONSE" or action == "NOTIFY":
             if resource == "/iz/info" or resource == "/ci/info":
                 if "data" in msg and len(msg["data"]) > 0:
-                    # Return Device Information such as Serial Number, SW Versions, MAC Address 
+                    # Return Device Information such as Serial Number, SW Versions, MAC Address
                     values = msg["data"][0]
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
@@ -389,7 +388,6 @@ class HCDevice:
 
             else:
                 print(now(), self.name, "Unknown response or notify:", msg)
-                pass
 
         else:
             print(now(), self.name, "Unknown message", msg)
