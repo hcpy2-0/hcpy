@@ -137,6 +137,7 @@ def hc2mqtt(
 global dev
 dev = {}
 
+
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
 
