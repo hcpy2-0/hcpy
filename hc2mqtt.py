@@ -64,7 +64,7 @@ def hc2mqtt(
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print(now(), "ERROR MQTT client disconnected")
+        print(now(), f"ERROR MQTT client disconnected: {rc}")
 
     def on_message(client, userdata, msg):
         mqtt_state = msg.payload.decode()
@@ -178,7 +178,13 @@ def client_connect(client, device, mqtt_topic):
             ws.reconnect()
 
             while True:
+                if client.is_connected():
+                    client.publish(f"{mqtt_topic}/LWT", "", retain=True)
+                    break
+
+            while True:
                 msg = dev[device["name"]].recv()
+                client.publish(f"{mqtt_topic}/LWT", "online")
                 if msg is None:
                     break
                 if len(msg) > 0:
@@ -200,7 +206,7 @@ def client_connect(client, device, mqtt_topic):
                 if client.is_connected():
                     msg = json.dumps(state)
                     print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
-                    client.publish(f"{mqtt_topic}/state", msg)
+                    client.publish(f"{mqtt_topic}/state", msg, retain=True)
                 else:
                     print(
                         now(),
@@ -209,7 +215,8 @@ def client_connect(client, device, mqtt_topic):
                     )
 
         except Exception as e:
-            print(device["name"], "ERROR", e, file=sys.stderr)
+            print(now(), device["name"], "ERROR", e, file=sys.stderr)
+            client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
 
         time.sleep(40)
 
