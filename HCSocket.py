@@ -131,6 +131,10 @@ class HCSocket:
     def reconnect(self):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 3)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
         sock.connect((self.host, self.port))
 
         if not self.http:
@@ -146,7 +150,7 @@ class HCSocket:
         self.ws.connect(
             self.uri,
             socket=sock,
-            origin="",
+            origin=""
         )
 
     def send(self, msg):

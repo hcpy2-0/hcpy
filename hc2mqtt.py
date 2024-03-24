@@ -26,7 +26,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_cafile")
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
-@click.option("--mqtt_clientname", default="hcpy11233")
+@click.option("--mqtt_clientname", default="hcpy")
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -64,7 +64,7 @@ def hc2mqtt(
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print(now(), f"ERROR MQTT client disconnected {rc}")
+        print(now(), f"ERROR MQTT client disconnected: {rc}")
 
     def on_message(client, userdata, msg):
         mqtt_state = msg.payload.decode()
@@ -168,7 +168,7 @@ def client_connect(client, device, mqtt_topic):
     client.subscribe(mqtt_set_topic)
 
     while True:
-        time.sleep(3)
+        time.sleep(20)
         try:
             print(now(), device["name"], f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None))
