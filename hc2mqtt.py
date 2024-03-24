@@ -210,7 +210,7 @@ def client_connect(client, device, mqtt_topic):
                     )
 
         except Exception as e:
-            print(device["name"], "ERROR", e, file=sys.stderr)
+            print(now(), device["name"], "ERROR", e, file=sys.stderr)
             client.publish(F"{mqtt_topic}/LWT", "offline", retain=True)
 
         time.sleep(40)
