@@ -147,11 +147,7 @@ class HCSocket:
 
         print(now(), "CON:", self.uri)
         self.ws = websocket.WebSocket()
-        self.ws.connect(
-            self.uri,
-            socket=sock,
-            origin=""
-        )
+        self.ws.connect(self.uri, socket=sock, origin="")
 
     def send(self, msg):
         buf = json.dumps(msg, separators=(",", ":"))
