@@ -26,7 +26,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_cafile")
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
-@click.option("--mqtt_clientname", default="hcpy")
+@click.option("--mqtt_clientname", default="hcpy1")
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -64,7 +64,7 @@ def hc2mqtt(
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print(now(), "ERROR MQTT client disconnected")
+        print(now(), f"ERROR MQTT client disconnected: {rc}")
 
     def on_message(client, userdata, msg):
         mqtt_state = msg.payload.decode()
@@ -90,7 +90,10 @@ def hc2mqtt(
             else:
                 raise Exception(f"Payload topic {topic} is unknown.")
 
-            dev[device_name].get(resource, 1, "POST", msg)
+            if dev[device_name].connected:
+                dev[device_name].get(resource, 1, "POST", msg)
+            else:
+                print(now(), device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
             print(now(), device_name, "ERROR", e, file=sys.stderr)
 
@@ -127,91 +130,77 @@ def hc2mqtt(
 
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
-        print(now(), f"topic: {mqtt_topic}")
         thread = Thread(target=client_connect, args=(client, device, mqtt_topic))
         thread.start()
 
     client.loop_forever()
 
 
-# Map their value names to easier state names
-topics = {
-    "InternalError": "Error",
-    "FatalErrorOccured": "Error",
-}
 global dev
 dev = {}
 
 
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
-    device_topics = topics.copy()
+    name = device["name"]
 
-    for value in device["features"]:
-        if (
-            "access" in device["features"][value]
-            and "read" in device["features"][value]["access"].lower()
-        ):
-            name = device["features"][value]["name"].split(".")
-            device_topics[name[-1]] = name[-1]
-            device_topics[value] = name[
-                -1
-            ]  # sometimes the returned key is a digit, making translation possible
-
+    # HCDevice should maintain its own state?
     state = {}
-    for topic in device_topics:
-        if not topic.isdigit():  # We only want the named topics
-            state[device_topics[topic]] = None
 
-    mqtt_set_topic = mqtt_topic + "/set"
-    print(now(), device["name"], f"set topic: {mqtt_set_topic}")
-    client.subscribe(mqtt_set_topic)
-
-    while True:
-        time.sleep(20)
-        try:
-            print(now(), device["name"], f"connecting to {host}")
-            ws = HCSocket(host, device["key"], device.get("iv", None))
-            dev[device["name"]] = HCDevice(ws, device.get("features", None), device["name"])
-
-            # ws.debug = True
-            ws.reconnect()
-
-            while True:
-                msg = dev[device["name"]].recv()
-                if msg is None:
-                    break
-                if len(msg) > 0:
-                    print(now(), device["name"], msg)
+    def on_message(msg):
+        if msg is not None:
+            if len(msg) > 0:
+                print(now(), name, msg)
 
                 update = False
-                for topic in device_topics:
-                    value = msg.get(topic, None)
-                    if value is None:
-                        continue
-
-                    new_topic = device_topics[topic]
-                    state[new_topic] = value
-                    update = True
+                for key in msg.keys():
+                    val = msg.get(key, None)
+                    if key in state:
+                        # Override existing values with None if they have changed
+                        state[key] = val
+                        update = True
+                    else:
+                        # Dont store None values until something useful is populated?
+                        if val is None:
+                            continue
+                        else:
+                            state[key] = val
+                            update = True
 
                 if not update:
-                    continue
+                    return
 
                 if client.is_connected():
                     msg = json.dumps(state)
-                    print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
-                    client.publish(f"{mqtt_topic}/state", msg)
+                    print(now(), name, f"publish to {mqtt_topic} with {msg}")
+                    client.publish(f"{mqtt_topic}/state", msg, retain=True)
                 else:
                     print(
                         now(),
-                        device["name"],
+                        name,
                         "ERROR Unable to publish update as mqtt is not connected.",
                     )
 
-        except Exception as e:
-            print(device["name"], "ERROR", e, file=sys.stderr)
+    def on_open(ws):
+        client.publish(f"{mqtt_topic}/LWT", "", retain=True)
+        client.publish(f"{mqtt_topic}/LWT", "online")
 
-        time.sleep(40)
+    def on_close(ws, code, message):
+        client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
+        print(now(), device["name"], "websocket closed, reconnecting...")
+
+    while True:
+        time.sleep(3)
+        try:
+            print(now(), name, f"connecting to {host}")
+            ws = HCSocket(host, device["key"], device.get("iv", None))
+            dev[name] = HCDevice(ws, device)
+            dev[name].run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
+        except Exception as e:
+            print(now(), device["name"], "ERROR", e, file=sys.stderr)
+            client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
+
+        time.sleep(57)
 
 
 if __name__ == "__main__":

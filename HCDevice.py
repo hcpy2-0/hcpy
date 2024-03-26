@@ -36,12 +36,15 @@
 # /ce/status
 #
 # /ni/config
+# /ni/info
 #
 # /iz/services
 
 import json
 import re
 import sys
+import threading
+import time
 import traceback
 from base64 import urlsafe_b64encode as base64url_encode
 from datetime import datetime
@@ -54,15 +57,19 @@ def now():
 
 
 class HCDevice:
-    def __init__(self, ws, features, name):
+    def __init__(self, ws, device):
         self.ws = ws
-        self.features = features
+        self.features = device.get("features")
+        self.name = device.get("name")
         self.session_id = None
         self.tx_msg_id = None
         self.device_name = "hcpy"
         self.device_id = "0badcafe"
         self.debug = False
-        self.name = name
+        self.services_initialized = False
+        self.services = {}
+        self.token = None
+        self.connected = False
 
     def parse_values(self, values):
         if not self.features:
@@ -148,7 +155,7 @@ class HCDevice:
             feature = self.features[uid]
 
             # check the access level of the feature
-            print(now(), self.name, f"Processing feature {feature['name']} with uid {uid}")
+            self.print(f"Processing feature {feature['name']} with uid {uid}")
             if "access" not in feature:
                 raise Exception(
                     "Unable to configure appliance. "
@@ -200,13 +207,12 @@ class HCDevice:
             if buf is None:
                 return None
         except Exception as e:
-            print(self.name, "receive error", e, traceback.format_exc())
-            return None
+            raise e
 
         try:
             return self.handle_message(buf)
         except Exception as e:
-            print(self.name, "error handling msg", e, buf, traceback.format_exc())
+            self.print("error handling msg", e, buf, traceback.format_exc())
             return None
 
     # reply to a POST or GET message with new data
@@ -224,6 +230,15 @@ class HCDevice:
 
     # send a message to the device
     def get(self, resource, version=1, action="GET", data=None):
+        if self.services_initialized:
+            resource_parts = resource.split("/")
+            if len(resource_parts) > 1:
+                service = resource.split("/")[1]
+                if service in self.services.keys():
+                    version = self.services[service]["version"]
+                else:
+                    self.print("ERROR service not known")
+
         msg = {
             "sID": self.session_id,
             "msgID": self.tx_msg_id,
@@ -252,10 +267,49 @@ class HCDevice:
             print(self.name, "Failed to send", e, msg, traceback.format_exc())
         self.tx_msg_id += 1
 
+    def reconnect(self):
+        # Receive initialization message /ei/initialValues
+        # Automatically responds in the handle_message function
+
+        # ask the device which services it supports
+        # registered devices gets pushed down too hence the loop
+        self.get("/ci/services")
+        while True:
+            time.sleep(1)
+            if self.services_initialized:
+                break
+
+        # We override the version based on the registered services received above
+
+        # the clothes washer wants this, the token doesn't matter,
+        # although they do not handle padding characters
+        # they send a response, not sure how to interpet it
+        self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
+        self.token = re.sub(r"=", "", self.token)
+        self.get("/ci/authentication", version=2, data={"nonce": self.token})
+
+        self.get("/ci/info")  # clothes washer
+        self.get("/iz/info")  # dish washer
+
+        # Retrieves registered clients like phone/hcpy itself
+        # self.get("/ci/registeredDevices")
+
+        # tzInfo all returns empty?
+        # self.get("/ci/tzInfo")
+
+        # We need to send deviceReady for some devices or /ni/ will come back as 403 unauth
+        self.get("/ei/deviceReady", version=2, action="NOTIFY")
+        self.get("/ni/info")
+        # self.get("/ni/config", data={"interfaceID": 0})
+
+        # self.get("/ro/allDescriptionChanges")
+        self.get("/ro/allMandatoryValues")
+        self.get("/ro/values")
+
     def handle_message(self, buf):
         msg = json.loads(buf)
         if self.debug:
-            print(now(), self.name, "RX:", msg)
+            self.print("RX:", msg)
         sys.stdout.flush()
 
         resource = msg["resource"]
@@ -264,7 +318,6 @@ class HCDevice:
         values = {}
 
         if "code" in msg:
-            print(now(), self.name, "ERROR", msg["code"])
             values = {
                 "error": msg["code"],
                 "resource": msg.get("resource", ""),
@@ -285,60 +338,84 @@ class HCDevice:
                     },
                 )
 
-                # ask the device which services it supports
-                self.get("/ci/services")
-
-                # the clothes washer wants this, the token doesn't matter,
-                # although they do not handle padding characters
-                # they send a response, not sure how to interpet it
-                token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
-                token = re.sub(r"=", "", token)
-                self.get("/ci/authentication", version=2, data={"nonce": token})
-
-                self.get("/ci/info", version=2)  # clothes washer
-                self.get("/iz/info")  # dish washer
-                # self.get("/ci/tzInfo", version=2)
-                self.get("/ni/info")
-                # self.get("/ni/config", data={"interfaceID": 0})
-                self.get("/ei/deviceReady", version=2, action="NOTIFY")
-                self.get("/ro/allDescriptionChanges")
-                self.get("/ro/allDescriptionChanges")
-                self.get("/ro/allMandatoryValues")
-                # self.get("/ro/values")
+                threading.Thread(target=self.reconnect).start()
             else:
-                print(now(), self.name, "Unknown resource", resource, file=sys.stderr)
+                self.print("Unknown resource", resource, file=sys.stderr)
 
         elif action == "RESPONSE" or action == "NOTIFY":
             if resource == "/iz/info" or resource == "/ci/info":
-                # we could validate that this matches our machine
-                pass
+                if "data" in msg and len(msg["data"]) > 0:
+                    # Return Device Information such as Serial Number, SW Versions, MAC Address
+                    values = msg["data"][0]
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
                 # we asked for these but don't know have to parse yet
                 pass
 
             elif resource == "/ni/info":
-                # we're already talking, so maybe we don't care?
+                if "data" in msg and len(msg["data"]) > 0:
+                    # Return Network Information/IP Address etc
+                    values = msg["data"][0]
+
+            elif resource == "/ni/config":
+                # Returns some data about network interfaces e.g.
+                # [{'interfaceID': 0, 'automaticIPv4': True, 'automaticIPv6': True}]
                 pass
 
             elif resource == "/ro/allMandatoryValues" or resource == "/ro/values":
                 if "data" in msg:
                     values = self.parse_values(msg["data"])
                 else:
-                    print(now(), self.name, f"received {msg}")
+                    self.print(f"received {msg}")
+
             elif resource == "/ci/registeredDevices":
-                # we don't care
+                # This contains details of Phone/HCPY registered as clients to the device
                 pass
 
+            elif resource == "/ci/tzInfo":
+                pass
+
+            elif resource == "/ci/authentication":
+                if "data" in msg and len(msg["data"]) > 0:
+                    # Grab authentication token - unsure if this is for us to use
+                    # or to authenticate the server. Doesn't appear to be needed
+                    self.token = msg["data"][0]["response"]
+
             elif resource == "/ci/services":
-                self.services = {}
                 for service in msg["data"]:
                     self.services[service["service"]] = {
                         "version": service["version"],
                     }
+                self.services_initialized = True
+
+            else:
+                self.print("Unknown response or notify:", msg)
 
         else:
-            print(now(), self.name, "Unknown", msg)
+            self.print("Unknown message", msg)
 
         # return whatever we've parsed out of it
         return values
+
+    def run_forever(self, on_message, on_open, on_close):
+        def _on_message(ws, message):
+            values = self.handle_message(message)
+            on_message(values)
+
+        def _on_open(ws):
+            self.connected = True
+            on_open(ws)
+
+        def _on_close(ws, code, message):
+            self.connected = False
+            on_close(ws, code, message)
+
+        def on_error(ws, message):
+            self.print("Websocket error:", message)
+
+        self.ws.run_forever(
+            on_message=_on_message, on_open=_on_open, on_close=_on_close, on_error=on_error
+        )
+
+    def print(self, *args):
+        print(now(), self.name, *args)
