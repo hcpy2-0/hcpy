@@ -43,9 +43,9 @@
 import json
 import re
 import sys
-import traceback
 import threading
 import time
+import traceback
 from base64 import urlsafe_b64encode as base64url_encode
 from datetime import datetime
 
@@ -338,7 +338,6 @@ class HCDevice:
                     },
                 )
 
-
                 threading.Thread(target=self.reconnect).start()
             else:
                 self.print("Unknown resource", resource, file=sys.stderr)
@@ -402,17 +401,21 @@ class HCDevice:
         def _on_message(ws, message):
             values = self.handle_message(message)
             on_message(values)
+
         def _on_open(ws):
             self.connected = True
             on_open(ws)
+
         def _on_close(ws, code, message):
             self.connected = False
             on_close(ws, code, message)
+
         def on_error(ws, message):
             self.print("Websocket error:", message)
 
-        self.ws.run_forever(on_message=_on_message, on_open=_on_open, on_close=_on_close,
-                on_error=on_error)
+        self.ws.run_forever(
+            on_message=_on_message, on_open=_on_open, on_close=_on_close, on_error=on_error
+        )
 
     def print(self, *args):
         print(now(), self.name, *args)

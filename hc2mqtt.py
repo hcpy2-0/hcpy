@@ -139,6 +139,7 @@ def hc2mqtt(
 global dev
 dev = {}
 
+
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
     name = device["name"]
@@ -200,6 +201,7 @@ def client_connect(client, device, mqtt_topic):
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
 
         time.sleep(57)
+
 
 if __name__ == "__main__":
     hc2mqtt()

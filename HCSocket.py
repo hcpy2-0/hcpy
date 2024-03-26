@@ -201,12 +201,13 @@ class HCSocket:
 
         print(now(), "CON:", self.uri)
         self.ws = websocket.WebSocketApp(
-                self.uri,
-                socket=sock,
-                on_open=_on_open,
-                on_message=_on_message,
-                on_close=_on_close,
-                on_error=_on_error)
+            self.uri,
+            socket=sock,
+            on_open=_on_open,
+            on_message=_on_message,
+            on_close=_on_close,
+            on_error=_on_error,
+        )
 
         websocket.setdefaulttimeout(30)
 
