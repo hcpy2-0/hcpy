@@ -204,4 +204,4 @@ def client_connect(client, device, mqtt_topic):
 
 
 if __name__ == "__main__":
-    hc2mqtt()
+    hc2mqtt(auto_envvar_prefix="HCPY")
