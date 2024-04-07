@@ -134,48 +134,28 @@ def hc2mqtt(
     client.loop_forever()
 
 
-# Map their value names to easier state names
-topics = {
-    "InternalError": "Error",
-    "FatalErrorOccured": "Error",
-}
 global dev
 dev = {}
 
 
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
-    device_topics = topics.copy()
-
-    for value in device["features"]:
-        if (
-            "access" in device["features"][value]
-            and "read" in device["features"][value]["access"].lower()
-        ):
-            name = device["features"][value]["name"].split(".")
-            device_topics[name[-1]] = name[-1]
-            device_topics[value] = name[
-                -1
-            ]  # sometimes the returned key is a digit, making translation possible
 
     state = {}
-    for topic in device_topics:
-        if not topic.isdigit():  # We only want the named topics
-            state[device_topics[topic]] = None
 
     mqtt_set_topic = mqtt_topic + "/set"
     print(now(), device["name"], f"set topic: {mqtt_set_topic}")
     client.subscribe(mqtt_set_topic)
 
     while True:
-        time.sleep(20)
+        time.sleep(3)
         try:
             print(now(), device["name"], f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None))
             dev[device["name"]] = HCDevice(ws, device.get("features", None), device["name"])
 
             # ws.debug = True
-            ws.reconnect()
+            dev[device["name"]].reconnect()
 
             while True:
                 msg = dev[device["name"]].recv()
@@ -185,14 +165,19 @@ def client_connect(client, device, mqtt_topic):
                     print(now(), device["name"], msg)
 
                 update = False
-                for topic in device_topics:
-                    value = msg.get(topic, None)
-                    if value is None:
-                        continue
-
-                    new_topic = device_topics[topic]
-                    state[new_topic] = value
-                    update = True
+                for key in msg.keys():
+                    val = msg.get(key, None)
+                    if key in state:
+                        # Override existing values with None if they have changed
+                        state[key] = val
+                        update = True
+                    else:
+                        # Dont store None values until something useful is populated?
+                        if val is None:
+                            continue
+                        else:
+                            state[key] = val
+                            update = True
 
                 if not update:
                     continue
@@ -211,7 +196,7 @@ def client_connect(client, device, mqtt_topic):
         except Exception as e:
             print(device["name"], "ERROR", e, file=sys.stderr)
 
-        time.sleep(40)
+        time.sleep(57)
 
 
 if __name__ == "__main__":
