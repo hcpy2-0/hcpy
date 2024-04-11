@@ -204,8 +204,7 @@ class HCDevice:
             if buf is None:
                 return None
         except Exception as e:
-            print(self.name, "receive error", e, traceback.format_exc())
-            return None
+            raise e
 
         try:
             return self.handle_message(buf)
