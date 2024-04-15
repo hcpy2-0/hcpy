@@ -43,6 +43,8 @@
 import json
 import re
 import sys
+import threading
+import time
 import traceback
 from base64 import urlsafe_b64encode as base64url_encode
 from datetime import datetime
@@ -55,18 +57,19 @@ def now():
 
 
 class HCDevice:
-    def __init__(self, ws, features, name):
+    def __init__(self, ws, device):
         self.ws = ws
-        self.features = features
+        self.features = device.get("features")
+        self.name = device.get("name")
         self.session_id = None
         self.tx_msg_id = None
         self.device_name = "hcpy"
         self.device_id = "0badcafe"
         self.debug = False
-        self.name = name
         self.services_initialized = False
         self.services = {}
         self.token = None
+        self.connected = False
 
     def parse_values(self, values):
         if not self.features:
@@ -152,7 +155,7 @@ class HCDevice:
             feature = self.features[uid]
 
             # check the access level of the feature
-            print(now(), self.name, f"Processing feature {feature['name']} with uid {uid}")
+            self.print(f"Processing feature {feature['name']} with uid {uid}")
             if "access" not in feature:
                 raise Exception(
                     "Unable to configure appliance. "
@@ -209,7 +212,7 @@ class HCDevice:
         try:
             return self.handle_message(buf)
         except Exception as e:
-            print(self.name, "error handling msg", e, buf, traceback.format_exc())
+            self.print("error handling msg", e, buf, traceback.format_exc())
             return None
 
     # reply to a POST or GET message with new data
@@ -234,7 +237,7 @@ class HCDevice:
                 if service in self.services.keys():
                     version = self.services[service]["version"]
                 else:
-                    print(now(), self.name, "ERROR service not known")
+                    self.print("ERROR service not known")
 
         msg = {
             "sID": self.session_id,
@@ -265,16 +268,14 @@ class HCDevice:
         self.tx_msg_id += 1
 
     def reconnect(self):
-        self.ws.reconnect()
         # Receive initialization message /ei/initialValues
         # Automatically responds in the handle_message function
-        self.recv()
 
         # ask the device which services it supports
         # registered devices gets pushed down too hence the loop
         self.get("/ci/services")
         while True:
-            self.recv()
+            time.sleep(1)
             if self.services_initialized:
                 break
 
@@ -308,7 +309,7 @@ class HCDevice:
     def handle_message(self, buf):
         msg = json.loads(buf)
         if self.debug:
-            print(now(), self.name, "RX:", msg)
+            self.print("RX:", msg)
         sys.stdout.flush()
 
         resource = msg["resource"]
@@ -336,8 +337,10 @@ class HCDevice:
                         "deviceID": self.device_id,
                     },
                 )
+
+                threading.Thread(target=self.reconnect).start()
             else:
-                print(now(), self.name, "Unknown resource", resource, file=sys.stderr)
+                self.print("Unknown resource", resource, file=sys.stderr)
 
         elif action == "RESPONSE" or action == "NOTIFY":
             if resource == "/iz/info" or resource == "/ci/info":
@@ -363,7 +366,7 @@ class HCDevice:
                 if "data" in msg:
                     values = self.parse_values(msg["data"])
                 else:
-                    print(now(), self.name, f"received {msg}")
+                    self.print(f"received {msg}")
 
             elif resource == "/ci/registeredDevices":
                 # This contains details of Phone/HCPY registered as clients to the device
@@ -386,10 +389,33 @@ class HCDevice:
                 self.services_initialized = True
 
             else:
-                print(now(), self.name, "Unknown response or notify:", msg)
+                self.print("Unknown response or notify:", msg)
 
         else:
-            print(now(), self.name, "Unknown message", msg)
+            self.print("Unknown message", msg)
 
         # return whatever we've parsed out of it
         return values
+
+    def run_forever(self, on_message, on_open, on_close):
+        def _on_message(ws, message):
+            values = self.handle_message(message)
+            on_message(values)
+
+        def _on_open(ws):
+            self.connected = True
+            on_open(ws)
+
+        def _on_close(ws, code, message):
+            self.connected = False
+            on_close(ws, code, message)
+
+        def on_error(ws, message):
+            self.print("Websocket error:", message)
+
+        self.ws.run_forever(
+            on_message=_on_message, on_open=_on_open, on_close=_on_close, on_error=on_error
+        )
+
+    def print(self, *args):
+        print(now(), self.name, *args)

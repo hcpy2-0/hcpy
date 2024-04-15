@@ -26,7 +26,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_cafile")
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
-@click.option("--mqtt_clientname", default="hcpy")
+@click.option("--mqtt_clientname", default="hcpy1")
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -90,7 +90,10 @@ def hc2mqtt(
             else:
                 raise Exception(f"Payload topic {topic} is unknown.")
 
-            dev[device_name].get(resource, 1, "POST", msg)
+            if dev[device_name].connected:
+                dev[device_name].get(resource, 1, "POST", msg)
+            else:
+                print(now(), device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
             print(now(), device_name, "ERROR", e, file=sys.stderr)
 
@@ -127,7 +130,6 @@ def hc2mqtt(
 
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
-        print(now(), f"topic: {mqtt_topic}")
         thread = Thread(target=client_connect, args=(client, device, mqtt_topic))
         thread.start()
 
@@ -140,35 +142,15 @@ dev = {}
 
 def client_connect(client, device, mqtt_topic):
     host = device["host"]
+    name = device["name"]
 
+    # HCDevice should maintain its own state?
     state = {}
 
-    mqtt_set_topic = mqtt_topic + "/set"
-    print(now(), device["name"], f"set topic: {mqtt_set_topic}")
-    client.subscribe(mqtt_set_topic)
-
-    while True:
-        time.sleep(3)
-        try:
-            print(now(), device["name"], f"connecting to {host}")
-            ws = HCSocket(host, device["key"], device.get("iv", None))
-            dev[device["name"]] = HCDevice(ws, device.get("features", None), device["name"])
-
-            # ws.debug = True
-            dev[device["name"]].reconnect()
-
-            while True:
-                if client.is_connected():
-                    client.publish(f"{mqtt_topic}/LWT", "", retain=True)
-                    break
-
-            while True:
-                msg = dev[device["name"]].recv()
-                client.publish(f"{mqtt_topic}/LWT", "online")
-                if msg is None:
-                    break
-                if len(msg) > 0:
-                    print(now(), device["name"], msg)
+    def on_message(msg):
+        if msg is not None:
+            if len(msg) > 0:
+                print(now(), name, msg)
 
                 update = False
                 for key in msg.keys():
@@ -186,19 +168,34 @@ def client_connect(client, device, mqtt_topic):
                             update = True
 
                 if not update:
-                    continue
+                    return
 
                 if client.is_connected():
                     msg = json.dumps(state)
-                    print(now(), device["name"], f"publish to {mqtt_topic} with {msg}")
+                    print(now(), name, f"publish to {mqtt_topic} with {msg}")
                     client.publish(f"{mqtt_topic}/state", msg, retain=True)
                 else:
                     print(
                         now(),
-                        device["name"],
+                        name,
                         "ERROR Unable to publish update as mqtt is not connected.",
                     )
 
+    def on_open(ws):
+        client.publish(f"{mqtt_topic}/LWT", "", retain=True)
+        client.publish(f"{mqtt_topic}/LWT", "online")
+
+    def on_close(ws, code, message):
+        client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
+        print(now(), device["name"], "websocket closed, reconnecting...")
+
+    while True:
+        time.sleep(3)
+        try:
+            print(now(), name, f"connecting to {host}")
+            ws = HCSocket(host, device["key"], device.get("iv", None))
+            dev[name] = HCDevice(ws, device)
+            dev[name].run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)

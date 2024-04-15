@@ -131,10 +131,6 @@ class HCSocket:
     def reconnect(self):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 3)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
         sock.connect((self.host, self.port))
 
         if not self.http:
@@ -153,10 +149,9 @@ class HCSocket:
         buf = json.dumps(msg, separators=(",", ":"))
         # swap " for '
         buf = re.sub("'", '"', buf)
-        if self.debug:
-            print(now(), "TX:", buf)
+        self.dprint("TX:", buf)
         if self.http:
-            self.ws.send_binary(self.encrypt(buf))
+            self.ws.send_bytes(self.encrypt(buf))
         else:
             self.ws.send(buf)
 
@@ -170,6 +165,55 @@ class HCSocket:
         if buf is None:
             return None
 
-        if self.debug:
-            print(now(), "RX:", buf)
+        self.dprint("RX:", buf)
         return buf
+
+    def run_forever(self, on_message, on_open, on_close, on_error):
+        self.reset()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.host, self.port))
+
+        if not self.http:
+            sock = sslpsk.wrap_socket(
+                sock,
+                ssl_version=ssl.PROTOCOL_TLSv1_2,
+                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
+                psk=self.psk,
+            )
+
+        def _on_open(ws):
+            self.dprint("on connect")
+            on_open(ws)
+
+        def _on_close(ws, close_status_code, close_msg):
+            self.dprint(f"close: {close_msg}")
+            on_close(ws, close_status_code, close_msg)
+
+        def _on_message(ws, message):
+            if self.http:
+                message = self.decrypt(message)
+            self.dprint("RX:", message)
+            on_message(ws, message)
+
+        def _on_error(ws, error):
+            self.dprint(f"error {error}")
+            on_error(ws, error)
+
+        print(now(), "CON:", self.uri)
+        self.ws = websocket.WebSocketApp(
+            self.uri,
+            socket=sock,
+            on_open=_on_open,
+            on_message=_on_message,
+            on_close=_on_close,
+            on_error=_on_error,
+        )
+
+        websocket.setdefaulttimeout(30)
+
+        self.ws.run_forever(ping_interval=120, ping_timeout=10)
+
+    # Debug print
+    def dprint(self, *args):
+        if self.debug:
+            print(now(), *args)
