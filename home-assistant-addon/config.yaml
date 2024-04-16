@@ -1,7 +1,7 @@
 ---
 name: "HCPY"
 description: "Run HCPY as addon"
-version: "v1.0.5"
+version: "v0.1.0"
 slug: "hcpy"
 image: ghcr.io/pmagyar/hcpy
 init: false
