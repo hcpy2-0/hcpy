@@ -3,7 +3,7 @@ name: "HCPY"
 description: "Run HCPY as addon"
 version: "v0.1.0"
 slug: "hcpy"
-image: ghcr.io/pmagyar/hcpy
+image: ghcr.io/hcpy2-0/hcpy
 init: false
 arch:
   - armhf
