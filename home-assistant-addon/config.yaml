@@ -1,0 +1,41 @@
+name: "HCPY"
+description: "Run HCPY as addon"
+version: "v1.0.5"
+slug: "hcpy"
+image: ghcr.io/pmagyar/hcpy
+init: false
+arch:
+  - armhf
+  - aarch64
+  - amd64
+  - armv7
+  - i386
+map:
+  - share
+url: https://github.com/hcpy2-0/hcpy
+panel_title: HCPY
+options:
+  HCPY_DEVICES_FILE: "config/devices.json"
+  HCPY_MQTT_HOST: localhost
+  HCPY_MQTT_PORT: 1883
+  HCPY_MQTT_PREFIX: "homeconnect/"
+  HCPY_MQTT_USERNAME: ""
+  HCPY_MQTT_PASSWORD: ""
+  HCPY_MQTT_SSL: false
+  HCPY_MQTT_CAFILE: ""
+  HCPY_MQTT_CERTFILE: ""
+  HCPY_MQTT_KEYFILE: ""
+  HCPY_MQTT_CLIENTNAME: "hcpy1"
+schema:
+  HCPY_DEVICES_FILE: str
+  HCPY_MQTT_HOST: str
+  HCPY_MQTT_PORT: int
+  HCPY_MQTT_PREFIX: str
+  HCPY_MQTT_USERNAME: str
+  HCPY_MQTT_PASSWORD: password
+  HCPY_MQTT_SSL: bool?
+  HCPY_MQTT_CAFILE: str
+  HCPY_MQTT_CERTFILE: str
+  HCPY_MQTT_KEYFILE: str
+  HCPY_MQTT_CLIENTNAME: str
+startup: services
