@@ -453,10 +453,6 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 {"program":8196,"options":[{"uid":558,"value":600}]}
 ```
 
-## FRIDA tools
-
-Moved to [`README-frida.md`](README-frida.md)
-
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
 - There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
