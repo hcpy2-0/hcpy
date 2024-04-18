@@ -1,5 +1,5 @@
 ---
-name: "HCPY"
+name: "HomeConnect2MQTT"
 description: "Run HCPY as addon"
 version: "v0.1.0"
 slug: "hcpy"
