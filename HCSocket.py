@@ -135,7 +135,7 @@ class HCSocket:
             sock.connect((self.host, self.port))
         except socket.gaierror as err:
             if err.errno == -2:
-                print(now(), f"Name resolution failed, attempting to connect with .local mDNS")
+                print(now(), "Name resolution failed, attempting to connect with .local mDNS")
                 sock.connect((f"{self.host}.local", self.port))
             else:
                 raise err
@@ -182,7 +182,7 @@ class HCSocket:
             sock.connect((self.host, self.port))
         except socket.gaierror as err:
             if err.errno == -2:
-                print(now(), f"Name resolution failed, attempting to connect with .local mDNS")
+                print(now(), "Name resolution failed, attempting to connect with .local mDNS")
                 sock.connect((f"{self.host}.local", self.port))
             else:
                 raise err
