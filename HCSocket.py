@@ -133,7 +133,7 @@ class HCSocket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.host, self.port))
-        except socket.gaierror as err:
+        except socket.gaierror:
             print(now(), "Name resolution failed, attempting to connect with .local mDNS")
             sock.connect((f"{self.host}.local", self.port))
 
@@ -177,7 +177,7 @@ class HCSocket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.host, self.port))
-        except socket.gaierror as err:
+        except socket.gaierror:
             print(now(), "Name resolution failed, attempting to connect with .local mDNS")
             sock.connect((f"{self.host}.local", self.port))
 
