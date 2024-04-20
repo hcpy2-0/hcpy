@@ -131,7 +131,14 @@ class HCSocket:
     def reconnect(self):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.host, self.port))
+        try:
+            sock.connect((self.host, self.port))
+        except socket.gaierror as err:
+            if err.errno == -2:
+                print(now(), f"Name resolution failed, attempting to connect with .local mDNS")
+                sock.connect((f"{self.host}.local", self.port))
+            else:
+                raise err
 
         if not self.http:
             sock = sslpsk.wrap_socket(
@@ -171,7 +178,14 @@ class HCSocket:
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.host, self.port))
+        try:
+            sock.connect((self.host, self.port))
+        except socket.gaierror as err:
+            if err.errno == -2:
+                print(now(), f"Name resolution failed, attempting to connect with .local mDNS")
+                sock.connect((f"{self.host}.local", self.port))
+            else:
+                raise err
 
         if not self.http:
             sock = sslpsk.wrap_socket(
