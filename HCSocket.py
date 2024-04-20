@@ -134,11 +134,8 @@ class HCSocket:
         try:
             sock.connect((self.host, self.port))
         except socket.gaierror as err:
-            if err.errno == -2:
-                print(now(), "Name resolution failed, attempting to connect with .local mDNS")
-                sock.connect((f"{self.host}.local", self.port))
-            else:
-                raise err
+            print(now(), "Name resolution failed, attempting to connect with .local mDNS")
+            sock.connect((f"{self.host}.local", self.port))
 
         if not self.http:
             sock = sslpsk.wrap_socket(
@@ -181,11 +178,8 @@ class HCSocket:
         try:
             sock.connect((self.host, self.port))
         except socket.gaierror as err:
-            if err.errno == -2:
-                print(now(), "Name resolution failed, attempting to connect with .local mDNS")
-                sock.connect((f"{self.host}.local", self.port))
-            else:
-                raise err
+            print(now(), "Name resolution failed, attempting to connect with .local mDNS")
+            sock.connect((f"{self.host}.local", self.port))
 
         if not self.http:
             sock = sslpsk.wrap_socket(
