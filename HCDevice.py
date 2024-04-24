@@ -305,6 +305,7 @@ class HCDevice:
         # self.get("/ro/allDescriptionChanges")
         self.get("/ro/allMandatoryValues")
         self.get("/ro/values")
+        self.get("/ro/allDescriptionChanges")
 
     def handle_message(self, buf):
         msg = json.loads(buf)
@@ -349,8 +350,23 @@ class HCDevice:
                     values = msg["data"][0]
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
-                # we asked for these but don't know have to parse yet
-                pass
+                if "data" in msg and len(msg["data"]) > 0:
+                    for change in msg["data"]:
+                        uid = str(change["uid"])
+                        if uid in self.features:
+                            if "access" in change:
+                                access = change["access"]
+                                self.features[uid]["access"] = access
+                                self.print(f"Access change for {uid} to {access}")
+                            if "available" in change:
+                                self.features[uid]["available"] = change["available"]
+                            if "min" in change:
+                                self.features[uid]["min"] = change["min"]
+                            if "max" in change:
+                                self.features[uid]["max"] = change["max"]
+                        else:
+                            #We wont have name for this item, so have to be careful when resolving elsewhere
+                            self.features[uid] = change
 
             elif resource == "/ni/info":
                 if "data" in msg and len(msg["data"]) > 0:
