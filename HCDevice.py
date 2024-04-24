@@ -365,8 +365,8 @@ class HCDevice:
                             if "max" in change:
                                 self.features[uid]["max"] = change["max"]
                         else:
-                            #We wont have name for this item, so have to be careful
-                            #when resolving elsewhere
+                            # We wont have name for this item, so have to be careful
+                            # when resolving elsewhere
                             self.features[uid] = change
 
             elif resource == "/ni/info":
