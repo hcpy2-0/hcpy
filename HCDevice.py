@@ -163,7 +163,10 @@ class HCDevice:
                 )
 
             access = feature["access"].lower()
-            if access != "readwrite" and access != "writeonly":
+            # currently known access values: none, read, readwrite, writeonly
+            # sometimes commands have "none" as access type but can be set
+            # e.g. "BSH.Common.Command.AbortProgram" for dishwashers.
+            if access == "read":
                 raise Exception(
                     "Unable to configure appliance. "
                     f"Feature {feature['name']} with uid {uid} has got access {feature['access']}."
