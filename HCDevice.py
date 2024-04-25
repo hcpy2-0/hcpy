@@ -90,7 +90,8 @@ class HCDevice:
                     status = self.features[uid]
 
             if status:
-                name = status["name"]
+                if "name" in status:
+                    name = status["name"]
                 if "values" in status and value_str in status["values"]:
                     value = status["values"][value_str]
 
@@ -122,11 +123,14 @@ class HCDevice:
                 # Diswasher is Dishcare.Dishwasher.Program.{name}
                 # Hood is Cooking.Common.Program.{name}
                 # May also be in the format BSH.Common.Program.Favorite.001
-                if ".Program." not in feature["name"]:
-                    raise ValueError(
-                        f"Unable to configure appliance. Program UID {uid} is not a valid"
-                        f" program - {feature['name']}."
-                    )
+                if "name" in feature:
+                    if ".Program." not in feature["name"]:
+                        raise ValueError(
+                            f"Unable to configure appliance. Program UID {uid} is not a valid"
+                            f" program - {feature['name']}."
+                        )
+                else:
+                    self.print(f"Unknown Program UID {uid}")
 
                 if "options" in data:
                     for option in data["options"]:
