@@ -48,7 +48,7 @@ or
 
 ```bash
 docker-compose build
-docker-compose run -T app hc-login.py $USERNAME $PASSWORD > config/devices.json
+docker-compose run -T app /app/hc-login.py $USERNAME $PASSWORD > config/devices.json
 ```
 
 The `hc-login.py ` script perfoms the OAuth process to login to your
