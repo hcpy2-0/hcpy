@@ -173,7 +173,8 @@ class HCDevice:
                 if access != "readwrite" and access != "writeonly":
                     raise Exception(
                         "Unable to configure appliance. "
-                        f"Feature {feature['name']} with uid {uid} has got access {feature['access']}."
+                        f"Feature {feature['name']} with uid {uid} "
+                        f"has got access {feature['access']}."
                     )
 
                 # check if selected list with values is allowed
