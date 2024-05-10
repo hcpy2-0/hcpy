@@ -44,7 +44,10 @@ session = requests.Session()
 session.headers.update(headers)
 
 base_url = "https://api.home-connect.com/security/oauth/"
-asset_url = "https://prod.reu.rest.homeconnectegw.com/"
+asset_urls = [
+    "https://prod.reu.rest.homeconnectegw.com/",  # EU
+    "https://prod.rna.rest.homeconnectegw.com/",  # US
+]
 
 #
 # Start by fetching the old login page, which gives
@@ -188,10 +191,9 @@ r = session.post(
     allow_redirects=False,
 )
 
-if return_url.startswith("/"):
-    return_url = singlekey_host + return_url
-
 while True:
+    if return_url.startswith("/"):
+        return_url = singlekey_host + return_url
     r = session.get(return_url, allow_redirects=False)
     debug(f"{return_url=}, {r} {r.text}")
     if r.status_code != 302:
@@ -205,6 +207,15 @@ debug("--------")
 
 url = urlparse(return_url)
 query = parse_qs(url.query)
+
+if query.get("ReturnUrl") is not None:
+    print("Wrong credentials.")
+    print(
+        "If you forgot your login/password, you can restore them by opening "
+        "https://singlekey-id.com/auth/en-us/login in browser"
+    )
+    exit(1)
+
 code = query.get("code")[0]
 state = query.get("state")[0]
 grant_type = query.get("grant_type")[0]  # "authorization_code"
@@ -239,8 +250,14 @@ headers = {
     "Authorization": "Bearer " + token,
 }
 
+
+# Try to request account details from all geos. Whichever works, we'll use next.
+for asset_url in asset_urls:
+    r = requests.get(asset_url + "account/details", headers=headers)
+    if r.status_code == requests.codes.ok:
+        break
+
 # now we can fetch the rest of the account info
-r = requests.get(asset_url + "account/details", headers=headers)
 if r.status_code != requests.codes.ok:
     print("unable to fetch account details", file=sys.stderr)
     print(r.headers, r.text)
