@@ -182,8 +182,7 @@ def client_connect(client, device, mqtt_topic):
                     )
 
     def on_open(ws):
-        client.publish(f"{mqtt_topic}/LWT", "", retain=True)
-        client.publish(f"{mqtt_topic}/LWT", "online")
+        client.publish(f"{mqtt_topic}/LWT", "online", retain=True)
 
     def on_close(ws, code, message):
         client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
