@@ -188,10 +188,9 @@ r = session.post(
     allow_redirects=False,
 )
 
-if return_url.startswith("/"):
-    return_url = singlekey_host + return_url
-
 while True:
+    if return_url.startswith("/"):
+        return_url = singlekey_host + return_url
     r = session.get(return_url, allow_redirects=False)
     debug(f"{return_url=}, {r} {r.text}")
     if r.status_code != 302:
@@ -205,6 +204,15 @@ debug("--------")
 
 url = urlparse(return_url)
 query = parse_qs(url.query)
+
+if query.get("ReturnUrl") is not None:
+    print("Wrong credentials.")
+    print(
+        "If you forgot your login/password, you can restore them by opening "
+        "https://singlekey-id.com/auth/en-us/login in browser"
+    )
+    exit(1)
+
 code = query.get("code")[0]
 state = query.get("state")[0]
 grant_type = query.get("grant_type")[0]  # "authorization_code"
