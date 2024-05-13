@@ -28,6 +28,7 @@ options:
   HCPY_MQTT_KEYFILE: ""
   HCPY_MQTT_CLIENTNAME: "hcpy1"
   HCPY_DOMAIN_SUFFIX: ""
+  HCPY_DEBUG: false
 schema:
   HCPY_DEVICES_FILE: str
   HCPY_MQTT_HOST: str
@@ -41,4 +42,5 @@ schema:
   HCPY_MQTT_KEYFILE: str
   HCPY_MQTT_CLIENTNAME: str
   HCPY_DOMAIN_SUFFIX: str
+  HCPY_DEBUG: bool?
 startup: services
