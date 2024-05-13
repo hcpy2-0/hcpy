@@ -259,15 +259,13 @@ class HCDevice:
             if isinstance(data, list) is False:
                 data = [data]
 
-            if action == "POST":
+            if action == "POST" and self.debug is False:
                 if resource == "/ro/values":
                     # Raises exceptions on failure
-                    if self.debug is False:
-                        self.test_feature(data)
+                    self.test_feature(data)
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
-                    if self.debug is False:
-                        self.test_program_data(data)
+                    self.test_program_data(data)
 
             msg["data"] = data
 
