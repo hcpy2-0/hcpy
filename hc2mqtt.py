@@ -135,7 +135,9 @@ def hc2mqtt(
 
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
-        thread = Thread(target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug))
+        thread = Thread(
+            target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug)
+        )
         thread.start()
 
     client.loop_forever()
