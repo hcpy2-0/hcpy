@@ -37,8 +37,11 @@ sslpsk.sslpsk._sslobj = _sslobj
 
 
 class HCSocket:
-    def __init__(self, host, psk64, iv64=None):
+    def __init__(self, host, psk64, iv64=None, domain_suffix=""):
         self.host = host
+        if domain_suffix:
+            self.host = f"{host}.{domain_suffix}"
+
         self.psk = base64url(psk64 + "===")
         self.debug = False
 
@@ -49,11 +52,11 @@ class HCSocket:
             self.enckey = hmac(self.psk, b"ENC")
             self.mackey = hmac(self.psk, b"MAC")
             self.port = 80
-            self.uri = "ws://" + host + ":80/homeconnect"
+            self.uri = f"ws://{host}:80/homeconnect"
         else:
             self.http = False
             self.port = 443
-            self.uri = "wss://" + host + ":443/homeconnect"
+            self.uri = f"wss://{host}:443/homeconnect"
 
         # don't connect automatically so that debug etc can be set
         # self.reconnect()
