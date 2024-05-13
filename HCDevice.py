@@ -57,7 +57,7 @@ def now():
 
 
 class HCDevice:
-    def __init__(self, ws, device):
+    def __init__(self, ws, device, debug=False):
         self.ws = ws
         self.features_lock = threading.Lock()
         self.features = device.get("features")
@@ -66,7 +66,7 @@ class HCDevice:
         self.tx_msg_id = None
         self.device_name = "hcpy"
         self.device_id = "0badcafe"
-        self.debug = False
+        self.debug = debug
         self.services_initialized = False
         self.services = {}
         self.token = None
@@ -262,14 +262,18 @@ class HCDevice:
             if action == "POST":
                 if resource == "/ro/values":
                     # Raises exceptions on failure
-                    self.test_feature(data)
+                    if self.debug is False:
+                        self.test_feature(data)
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
-                    self.test_program_data(data)
+                    if self.debug is False:
+                        self.test_program_data(data)
 
             msg["data"] = data
 
         try:
+            if self.debug:
+                self.print(f"TX: {msg}")
             self.ws.send(msg)
         except Exception as e:
             print(self.name, "Failed to send", e, msg, traceback.format_exc())
