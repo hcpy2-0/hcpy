@@ -41,7 +41,7 @@ def hc2mqtt(
     mqtt_certfile: str,
     mqtt_keyfile: str,
     mqtt_clientname: str,
-    debug: bool
+    debug: bool,
 ):
 
     def on_connect(client, userdata, flags, rc):
