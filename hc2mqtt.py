@@ -27,6 +27,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_certfile")
 @click.option("--mqtt_keyfile")
 @click.option("--mqtt_clientname", default="hcpy1")
+@click.option("--domain_suffix", default="")
 @click.option("--debug/--no-debug", default=False)
 @click_config_file.configuration_option()
 def hc2mqtt(
@@ -41,6 +42,7 @@ def hc2mqtt(
     mqtt_certfile: str,
     mqtt_keyfile: str,
     mqtt_clientname: str,
+    domain_suffix: str,
     debug: bool,
 ):
 
@@ -103,7 +105,7 @@ def hc2mqtt(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
         f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
         f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
-        f"{debug=}"
+        f"{domain_suffix=} {debug=}"
     )
 
     with open(devices_file, "r") as f:
@@ -133,7 +135,9 @@ def hc2mqtt(
 
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
-        thread = Thread(target=client_connect, args=(client, device, mqtt_topic, debug))
+        thread = Thread(
+            target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug)
+        )
         thread.start()
 
     client.loop_forever()
@@ -143,7 +147,7 @@ global dev
 dev = {}
 
 
-def client_connect(client, device, mqtt_topic, debug):
+def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
 
@@ -195,7 +199,7 @@ def client_connect(client, device, mqtt_topic, debug):
         time.sleep(3)
         try:
             print(now(), name, f"connecting to {host}")
-            ws = HCSocket(host, device["key"], device.get("iv", None))
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             dev[name] = HCDevice(ws, device, debug)
             dev[name].run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
         except Exception as e:
