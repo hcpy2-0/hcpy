@@ -13,7 +13,10 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 
 
 def publish_ha_states(state, client, mqtt_topic):
-    pass
+    for key, value in state.items():
+        state_topic = f"{mqtt_topic}/{key}"
+        print(f"{now()} Publishing state for {key} at {state_topic}")
+        client.publish(state_topic, json.dumps(value))
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
@@ -45,12 +48,12 @@ def publish_ha_discovery(device, client, mqtt_topic):
         if available and (access == "read" or access == "readWrite"):
             name_parts = feature["name"].split(".")
             name = name_parts[-1]
-            feature_type = name_parts[-2]
+            # feature_type = name_parts[-2]
 
             component_type = "sensor" # TODO use appropriate types
 
             discovery_topic = f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
-            state_topic = f"{mqtt_topic}/{feature_type}/{name}"
+            state_topic = f"{mqtt_topic}/{name}"
             # print(discovery_topic, state_topic)
 
             discovery_payload = json.dumps({
@@ -63,4 +66,4 @@ def publish_ha_discovery(device, client, mqtt_topic):
             print(discovery_topic)
             # print(discovery_payload)
 
-            client.publish(discovery_topic, discovery_payload, retain=False) # TODO make retain=True when stable
+            client.publish(discovery_topic, discovery_payload, retain=True)
