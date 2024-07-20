@@ -67,8 +67,12 @@ def hc2mqtt(
                     # If the device has the SelectedProgram feature it allows programs to be selected
                     # via /ro/selectedProgram
                     if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
-                        mqtt_selected_program_topic = f"{mqtt_prefix}{device['name']}/selectedProgram"
-                        print(now(), device["name"], f"program topic: {mqtt_selected_program_topic}")
+                        mqtt_selected_program_topic = (
+                            f"{mqtt_prefix}{device['name']}/selectedProgram"
+                        )
+                        print(
+                            now(), device["name"], f"program topic: {mqtt_selected_program_topic}"
+                        )
                         client.subscribe(mqtt_selected_program_topic)
         else:
             print(now(), f"ERROR MQTT connection failed: {rc}")
