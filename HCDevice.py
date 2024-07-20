@@ -266,6 +266,9 @@ class HCDevice:
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
                     self.test_program_data(data)
+                elif resource == "/ro/selectedProgram":
+                    # Raises exception on failure
+                    self.test_program_data(data)
 
             msg["data"] = data
 

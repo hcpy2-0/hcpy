@@ -64,6 +64,12 @@ def hc2mqtt(
                         mqtt_active_program_topic = f"{mqtt_prefix}{device['name']}/activeProgram"
                         print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
                         client.subscribe(mqtt_active_program_topic)
+                    # If the device has the SelectedProgram feature it allows programs to be selected
+                    # via /ro/selectedProgram
+                    if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
+                        mqtt_selected_program_topic = f"{mqtt_prefix}{device['name']}/selectedProgram"
+                        print(now(), device["name"], f"program topic: {mqtt_selected_program_topic}")
+                        client.subscribe(mqtt_selected_program_topic)
         else:
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
@@ -91,6 +97,8 @@ def hc2mqtt(
                 resource = "/ro/values"
             elif topic == "activeProgram":
                 resource = "/ro/activeProgram"
+            elif topic == "selectedProgram":
+                resource = "/ro/selectedProgram"
             else:
                 raise Exception(f"Payload topic {topic} is unknown.")
 
