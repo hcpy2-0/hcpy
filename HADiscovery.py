@@ -43,12 +43,15 @@ def publish_ha_discovery(device, client, mqtt_topic):
     }
 
     for feature in device["features"].values():
+        name_parts = feature["name"].split(".")
+        name = name_parts[-1]
+        feature_type = name_parts[-2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
-        if available and (access == "read" or access == "readWrite"):
-            name_parts = feature["name"].split(".")
-            name = name_parts[-1]
-            # feature_type = name_parts[-2]
+
+        if (feature_type == "Setting" and available and (access == "read" or access == "readWrite")) or \
+            feature_type == "Event" or \
+            feature_type == "Option":
 
             component_type = "sensor" # TODO use appropriate types
 
