@@ -46,21 +46,26 @@ def publish_ha_discovery(device, client, mqtt_topic):
             feature_type == "Event" or \
             feature_type == "Option":
 
-            component_type = "sensor" # TODO use appropriate types
+            component_type = "binary_sensor" if feature_type == "Event" else "sensor" # TODO use more appropriate types
 
             discovery_topic = f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
             # print(discovery_topic, state_topic)
 
-            discovery_payload = json.dumps({
+            discovery_payload = {
                 "name": decamelcase(name),
                 "device": device_info,
                 "state_topic": f"{mqtt_topic}/state",
-                "availability_topic": f"{mqtt_topic}/LWT",
+                # "availability_topic": f"{mqtt_topic}/LWT",
                 "value_template": "{{value_json." + name + "}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
-            })
+            }
+
+            if component_type == "binary_sensor":
+                discovery_payload["payload_on"] = "On"
+                discovery_payload["payload_off"] = "Off"
+
             print(discovery_topic)
             # print(discovery_payload)
 
-            client.publish(discovery_topic, discovery_payload, retain=True)
+            client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
