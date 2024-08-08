@@ -13,7 +13,7 @@ import paho.mqtt.client as mqtt
 
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
-from HADiscovery import publish_ha_states, publish_ha_discovery
+from HADiscovery import publish_ha_discovery
 
 
 @click.command()
@@ -153,7 +153,7 @@ def hc2mqtt(
     for device in devices:
         mqtt_topic = mqtt_prefix + device["host"]
         thread = Thread(
-            target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug, ha_discovery)
+            target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug)
         )
         thread.start()
 
@@ -164,7 +164,7 @@ global dev
 dev = {}
 
 
-def client_connect(client, device, mqtt_topic, domain_suffix, debug, ha_discovery):
+def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
 
@@ -198,8 +198,6 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug, ha_discover
                     msg = json.dumps(state)
                     print(now(), name, f"publish to {mqtt_topic} with {msg}")
                     client.publish(f"{mqtt_topic}/state", msg, retain=True)
-                    if ha_discovery:
-                        publish_ha_states(state, client, mqtt_topic)
                 else:
                     print(
                         now(),

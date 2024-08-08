@@ -12,13 +12,6 @@ def decamelcase(str):
 HA_DISCOVERY_PREFIX = "homeassistant"
 
 
-def publish_ha_states(state, client, mqtt_topic):
-    for key, value in state.items():
-        state_topic = f"{mqtt_topic}/{key}"
-        print(f"{now()} Publishing state for {key} at {state_topic}")
-        client.publish(state_topic, json.dumps(value))
-
-
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device}")
 
@@ -56,13 +49,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
             component_type = "sensor" # TODO use appropriate types
 
             discovery_topic = f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
-            state_topic = f"{mqtt_topic}/{name}"
             # print(discovery_topic, state_topic)
 
             discovery_payload = json.dumps({
                 "name": decamelcase(name),
                 "device": device_info,
-                "state_topic": state_topic,
+                "state_topic": f"{mqtt_topic}/state",
+                "availability_topic": f"{mqtt_topic}/LWT",
+                "value_template": "{{value_json." + name + "}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
             })
