@@ -202,9 +202,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             or feature_type == "Option"
         ):
 
-            default_component_type = (
-                "binary_sensor" if feature_type == "Event" else "sensor"
-            )  # TODO use more appropriate types
+            default_component_type = "binary_sensor" if feature_type == "Event" else "sensor"
 
             overrides = feature.get("discovery", {})
 
@@ -222,6 +220,11 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 "device": device_info,
                 "state_topic": f"{mqtt_topic}/state",
                 # "availability_topic": f"{mqtt_topic}/LWT",
+                # # I found the behaviour of `availability_topic` unsatisfactory -
+                # # since it would set all device attributes to "unavailable"
+                # # then back to their correct values on every disconnect/
+                # # reconnect. This leaves a lot of noise in the HA history, so
+                # # I felt things were better off without an `availability_topic`.
                 "value_template": "{{value_json." + name + " | default('unavailable')}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
