@@ -12,8 +12,14 @@ def decamelcase(str):
 HA_DISCOVERY_PREFIX = "homeassistant"
 
 
+# These "magic overrides" provide HA MQTT autodiscovery data that is injected
+# into devices.json when `hc-login.py` is run; the data is then read from
+# devices.json at runtime.
+#
+# Note: keys should be integer (not string) taken from a device's feature
+# mapping.
 MAGIC_OVERRIDES = {
-    "BackendConnected": {
+    5: {  # BSH.Common.Status.BackendConnected
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "connectivity",
@@ -21,14 +27,14 @@ MAGIC_OVERRIDES = {
             "payload_off": False
         }
     },
-    "SoftwareUpdateAvailable": {
+    21: {  # BSH.Common.Event.SoftwareUpdateAvailable
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "update",
             "payload_on": "Present"
         }
     },
-    "DoorState": {
+    527: {  # BSH.Common.Status.DoorState
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "door",
@@ -36,41 +42,41 @@ MAGIC_OVERRIDES = {
             "payload_off": "Closed"
         }
     },
-    "PowerState": {
+    539: {  # BSH.Common.Setting.PowerState
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "power"
         }
     },
-    "RinseAidLack": {
+    4612: {  # Dishcare.Dishwasher.Event.WaterheaterCalcified
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
         }
     },
-    "SaltLack": {
+    5624: {  # Dishcare.Dishwasher.Event.SaltLack
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
         }
     },
-    "RinseAidNearlyEmpty": {
+    5625: {  # Dishcare.Dishwasher.Event.RinseAidLack
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
         }
     },
-    "SaltNearlyEmpty": {
+    4626: {  # Dishcare.Dishwasher.Event.SaltNearlyEmpty
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
         }
     },
-    "WaterheaterCalcified": {
+    5627: {  # Dishcare.Dishwasher.Event.RinseAidNearlyEmpty
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
@@ -78,6 +84,13 @@ MAGIC_OVERRIDES = {
         }
     },
 }
+
+
+def augment_device_features(features):
+    for id, feature in features.items():
+        if id in MAGIC_OVERRIDES:
+            feature["discovery"] = MAGIC_OVERRIDES[id]
+    return features
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
@@ -117,7 +130,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
             default_component_type = "binary_sensor" if feature_type == "Event" else "sensor" # TODO use more appropriate types
 
-            overrides = MAGIC_OVERRIDES.get(name, {})
+            overrides = feature.get("discovery", {})
 
             component_type = overrides.get("component_type", default_component_type)
 

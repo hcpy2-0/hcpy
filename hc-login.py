@@ -17,6 +17,7 @@ from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
 from HCxml2json import xml2json
+from HADiscovery import augment_device_features
 
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
 # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
@@ -310,6 +311,6 @@ for app in account["data"]["homeAppliances"]:
 
     machine = xml2json(features, description)
     config["description"] = machine["description"]
-    config["features"] = machine["features"]
+    config["features"] = augment_device_features(machine["features"])
 
 print(json.dumps(configs, indent=4))
