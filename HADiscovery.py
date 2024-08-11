@@ -19,6 +19,13 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 # Note: keys should be integer (not string) taken from a device's feature
 # mapping.
 MAGIC_OVERRIDES = {
+    3: {  # BSH.Common.Setting.AllowBackendConnection
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
     5: {  # BSH.Common.Status.BackendConnected
         "component_type": "binary_sensor",
         "payload_values": {
@@ -31,6 +38,35 @@ MAGIC_OVERRIDES = {
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "update",
+            "payload_on": "Present"
+        }
+    },
+    523: {  # BSH.Common.Status.RemoteControlActive
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    524: {  # BSH.Common.Status.RemoteControlStartAllowed
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    524: {  # BSH.Common.Setting.ChildLock
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "lock",
+            "payload_on": False,  # Lock "on" means "unlocked" to HA
+            "payload_off": True,  # Lock "off" means "locked"
+        }
+    },
+    525: {  # BSH.Common.Event.AquaStopOccured
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
             "payload_on": "Present"
         }
     },
@@ -48,6 +84,91 @@ MAGIC_OVERRIDES = {
             "device_class": "power"
         }
     },
+    542: {  # BSH.Common.Option.ProgramProgress
+        "payload_values": {
+            "unit_of_measurement": "%"
+        }
+    },
+    543: {  # BSH.Common.Event.LowWaterPressure
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
+    544: {  # BSH.Common.Option.RemainingProgramTime
+        "payload_values": {
+            "unit_of_measurement": "s",
+            "device_class": "duration"
+        }
+    },
+    549: {  # BSH.Common.Option.RemainingProgramTimeIsEstimated
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    558: {  # BSH.Common.Option.StartInRelative
+        "payload_values": {
+            "unit_of_measurement": "s",
+            "device_class": "duration"
+        }
+    },
+    4101: {  # Dishcare.Dishwasher.Status.SilenceOnDemandRemainingTime
+        "payload_values": {
+            "unit_of_measurement": "s",
+            "device_class": "duration"
+        }
+    },
+    4103: {  # Dishcare.Dishwasher.Status.EcoDryActive
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    4382: {  # Dishcare.Dishwasher.Status.SilenceOnDemandDefaultTime
+        "payload_values": {
+            "unit_of_measurement": "s",
+            "device_class": "duration"
+        }
+    },
+    4384: {  # Dishcare.Dishwasher.Setting.SpeedOnDemand
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    4608: {  # Dishcare.Dishwasher.Event.InternalError
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
+    4609: {  # Dishcare.Dishwasher.Event.CheckFilterSystem
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
+    4610: {  # Dishcare.Dishwasher.Event.DrainingNotPossible
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
+    4611: {  # Dishcare.Dishwasher.Event.DrainPumpBlocked
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
     4612: {  # Dishcare.Dishwasher.Event.WaterheaterCalcified
         "component_type": "binary_sensor",
         "payload_values": {
@@ -55,14 +176,21 @@ MAGIC_OVERRIDES = {
             "payload_on": "Present"
         }
     },
-    5624: {  # Dishcare.Dishwasher.Event.SaltLack
+    4613: {  # Dishcare.Dishwasher.Event.LowVoltage
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
         }
     },
-    5625: {  # Dishcare.Dishwasher.Event.RinseAidLack
+    4624: {  # Dishcare.Dishwasher.Event.SaltLack
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "device_class": "problem",
+            "payload_on": "Present"
+        }
+    },
+    4625: {  # Dishcare.Dishwasher.Event.RinseAidLack
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
@@ -76,11 +204,39 @@ MAGIC_OVERRIDES = {
             "payload_on": "Present"
         }
     },
-    5627: {  # Dishcare.Dishwasher.Event.RinseAidNearlyEmpty
+    4627: {  # Dishcare.Dishwasher.Event.RinseAidNearlyEmpty
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "problem",
             "payload_on": "Present"
+        }
+    },
+    5121: {  # Dishcare.Dishwasher.Option.ExtraDry
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    5124: {  # Dishcare.Dishwasher.Option.HalfLoad
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    5127: {  # Dishcare.Dishwasher.Option.VarioSpeedPlus
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
+        }
+    },
+    5136: {  # Dishcare.Dishwasher.Option.SilenceOnDemand
+        "component_type": "binary_sensor",
+        "payload_values": {
+            "payload_on": True,
+            "payload_off": False
         }
     },
 }
@@ -90,6 +246,8 @@ def augment_device_features(features):
     for id, feature in features.items():
         if id in MAGIC_OVERRIDES:
             feature["discovery"] = MAGIC_OVERRIDES[id]
+        # else:
+        #     print(f"No discovery information for: {id} => {feature['name']}", file=sys.stderr)
     return features
 
 
