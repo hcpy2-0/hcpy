@@ -41,14 +41,14 @@ MAGIC_OVERRIDES = {
             "payload_on": "Present"
         }
     },
-    523: {  # BSH.Common.Status.RemoteControlActive
+    517: {  # BSH.Common.Status.RemoteControlStartAllowed
         "component_type": "binary_sensor",
         "payload_values": {
             "payload_on": True,
             "payload_off": False
         }
     },
-    524: {  # BSH.Common.Status.RemoteControlStartAllowed
+    523: {  # BSH.Common.Status.RemoteControlActive
         "component_type": "binary_sensor",
         "payload_values": {
             "payload_on": True,
