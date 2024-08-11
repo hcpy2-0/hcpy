@@ -5,7 +5,7 @@ from HCSocket import now
 
 
 def decamelcase(str):
-    split = re.findall(r'[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))', str)
+    split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
     return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
 
 
@@ -21,39 +21,27 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 MAGIC_OVERRIDES = {
     3: {  # BSH.Common.Setting.AllowBackendConnection
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     5: {  # BSH.Common.Status.BackendConnected
         "component_type": "binary_sensor",
         "payload_values": {
             "device_class": "connectivity",
             "payload_on": True,
-            "payload_off": False
-        }
+            "payload_off": False,
+        },
     },
     21: {  # BSH.Common.Event.SoftwareUpdateAvailable
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "update",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "update", "payload_on": "Present"},
     },
     517: {  # BSH.Common.Status.RemoteControlStartAllowed
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     523: {  # BSH.Common.Status.RemoteControlActive
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     524: {  # BSH.Common.Setting.ChildLock
         "component_type": "binary_sensor",
@@ -61,183 +49,104 @@ MAGIC_OVERRIDES = {
             "device_class": "lock",
             "payload_on": False,  # Lock "on" means "unlocked" to HA
             "payload_off": True,  # Lock "off" means "locked"
-        }
+        },
     },
     525: {  # BSH.Common.Event.AquaStopOccured
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     527: {  # BSH.Common.Status.DoorState
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "door",
-            "payload_on": "Open",
-            "payload_off": "Closed"
-        }
+        "payload_values": {"device_class": "door", "payload_on": "Open", "payload_off": "Closed"},
     },
     539: {  # BSH.Common.Setting.PowerState
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "power"
-        }
+        "payload_values": {"device_class": "power"},
     },
-    542: {  # BSH.Common.Option.ProgramProgress
-        "payload_values": {
-            "unit_of_measurement": "%"
-        }
-    },
+    542: {"payload_values": {"unit_of_measurement": "%"}},  # BSH.Common.Option.ProgramProgress
     543: {  # BSH.Common.Event.LowWaterPressure
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     544: {  # BSH.Common.Option.RemainingProgramTime
-        "payload_values": {
-            "unit_of_measurement": "s",
-            "device_class": "duration"
-        }
+        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
     549: {  # BSH.Common.Option.RemainingProgramTimeIsEstimated
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     558: {  # BSH.Common.Option.StartInRelative
-        "payload_values": {
-            "unit_of_measurement": "s",
-            "device_class": "duration"
-        }
+        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
     4101: {  # Dishcare.Dishwasher.Status.SilenceOnDemandRemainingTime
-        "payload_values": {
-            "unit_of_measurement": "s",
-            "device_class": "duration"
-        }
+        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
     4103: {  # Dishcare.Dishwasher.Status.EcoDryActive
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     4382: {  # Dishcare.Dishwasher.Status.SilenceOnDemandDefaultTime
-        "payload_values": {
-            "unit_of_measurement": "s",
-            "device_class": "duration"
-        }
+        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
     4384: {  # Dishcare.Dishwasher.Setting.SpeedOnDemand
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     4608: {  # Dishcare.Dishwasher.Event.InternalError
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4609: {  # Dishcare.Dishwasher.Event.CheckFilterSystem
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4610: {  # Dishcare.Dishwasher.Event.DrainingNotPossible
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4611: {  # Dishcare.Dishwasher.Event.DrainPumpBlocked
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4612: {  # Dishcare.Dishwasher.Event.WaterheaterCalcified
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4613: {  # Dishcare.Dishwasher.Event.LowVoltage
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4624: {  # Dishcare.Dishwasher.Event.SaltLack
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4625: {  # Dishcare.Dishwasher.Event.RinseAidLack
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4626: {  # Dishcare.Dishwasher.Event.SaltNearlyEmpty
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     4627: {  # Dishcare.Dishwasher.Event.RinseAidNearlyEmpty
         "component_type": "binary_sensor",
-        "payload_values": {
-            "device_class": "problem",
-            "payload_on": "Present"
-        }
+        "payload_values": {"device_class": "problem", "payload_on": "Present"},
     },
     5121: {  # Dishcare.Dishwasher.Option.ExtraDry
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     5124: {  # Dishcare.Dishwasher.Option.HalfLoad
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     5127: {  # Dishcare.Dishwasher.Option.VarioSpeedPlus
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
     5136: {  # Dishcare.Dishwasher.Option.SilenceOnDemand
         "component_type": "binary_sensor",
-        "payload_values": {
-            "payload_on": True,
-            "payload_off": False
-        }
+        "payload_values": {"payload_on": True, "payload_off": False},
     },
 }
 
@@ -259,11 +168,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
     device_description = device.get("description", {})
 
     version_parts = filter(
-        lambda d : d is not None,
-        [
-            device_description.get("version"),
-            device_description.get("revision")
-        ]
+        lambda d: d is not None,
+        [device_description.get("version"), device_description.get("revision")],
     )
 
     device_info = {
@@ -271,7 +177,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "name": device_name,
         "manufacturer": device_description.get("brand"),
         "model": device_description.get("model"),
-        "sw_version": ".".join(version_parts)
+        "sw_version": ".".join(version_parts),
     }
 
     for feature in device["features"].values():
@@ -281,12 +187,24 @@ def publish_ha_discovery(device, client, mqtt_topic):
         access = feature.get("access", "none")
         available = feature.get("available", False)
 
-        if (feature_type == "Setting" and available and (access == "read" or access == "readWrite")) or \
-            (feature_type == "Status" and available and (access == "read" or access == "readWrite")) or \
-            feature_type == "Event" or \
-            feature_type == "Option":
+        if (
+            (
+                feature_type == "Setting"
+                and available
+                and (access == "read" or access == "readWrite")
+            )
+            or (
+                feature_type == "Status"
+                and available
+                and (access == "read" or access == "readWrite")
+            )
+            or feature_type == "Event"
+            or feature_type == "Option"
+        ):
 
-            default_component_type = "binary_sensor" if feature_type == "Event" else "sensor" # TODO use more appropriate types
+            default_component_type = (
+                "binary_sensor" if feature_type == "Event" else "sensor"
+            )  # TODO use more appropriate types
 
             overrides = feature.get("discovery", {})
 
@@ -294,7 +212,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
             extra_payload_values = overrides.get("payload_values", {})
 
-            discovery_topic = f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
+            discovery_topic = (
+                f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
+            )
             # print(discovery_topic, state_topic)
 
             discovery_payload = {
@@ -305,7 +225,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 "value_template": "{{value_json." + name + " | default('unavailable')}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
-                **extra_payload_values
+                **extra_payload_values,
             }
 
             if component_type == "binary_sensor":

@@ -11,9 +11,9 @@ import click
 import click_config_file
 import paho.mqtt.client as mqtt
 
+from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
-from HADiscovery import publish_ha_discovery
 
 
 @click.command()
@@ -46,7 +46,7 @@ def hc2mqtt(
     mqtt_clientname: str,
     domain_suffix: str,
     debug: bool,
-    ha_discovery: bool
+    ha_discovery: bool,
 ):
 
     def on_connect(client, userdata, flags, rc):

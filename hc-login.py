@@ -16,8 +16,8 @@ from bs4 import BeautifulSoup
 from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
-from HCxml2json import xml2json
 from HADiscovery import augment_device_features
+from HCxml2json import xml2json
 
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
 # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
