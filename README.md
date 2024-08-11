@@ -79,6 +79,7 @@ mqtt_cafile = None
 mqtt_certfile = None
 mqtt_keyfile = None
 mqtt_clientname="hcpy"
+ha_discovery = True  # See section on "Home Assistant autodiscovery"
 ```
 
 ```bash
@@ -456,3 +457,48 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
 - There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
+
+## Home Assistant autodiscovery
+
+It's possible to allow Home Assistant to automatically discover the device using
+MQTT auto-discovery messages. With `ha_discovery = True` in `config.ini` or by
+passing `--ha-discovery` on the commandline, `hcpy` will publish
+[HA discovery messages](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery)
+for each recognised property of your devices.
+
+### Limitations
+
+Discovery messages currently only contain a `state` topic, not a `command` topic,
+so autodiscovered devices will be read-only. You can still use the method
+described in `Posting to the appliance` above.
+
+### Customising the discovery messages
+
+`hcpy` will make some attempt to use the correct [component](https://www.home-assistant.io/integrations/mqtt/#configuration)
+and for some devices set an appropriate [device class](https://www.home-assistant.io/integrations/binary_sensor/#device-class).
+You can customise these by editing your `devices.json` to add or edit the
+`discovery` section for each feature. For example:
+
+```json
+[
+    { // ...
+        "features": {
+            // ...
+            "549": {
+                "name": "BSH.Common.Option.RemainingProgramTimeIsEstimated",
+                "discovery": {
+                    "component_type": "binary_sensor",
+                    "payload_values": {
+                        "payload_on": true,
+                        "payload_off": false
+                    }
+                }
+            }
+        }
+    }
+]
+```
+
+You may include arbitrary `payload_values` that are included in the MQTT discovery
+messages published when `hcpy` starts. Default values are set in `HADiscovery.py`
+for known devices/attributes. No validation is performed against these values.
