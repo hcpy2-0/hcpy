@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
+from HADiscovery import augment_device_features
 from HCxml2json import xml2json
 
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
@@ -310,6 +311,6 @@ for app in account["data"]["homeAppliances"]:
 
     machine = xml2json(features, description)
     config["description"] = machine["description"]
-    config["features"] = machine["features"]
+    config["features"] = augment_device_features(machine["features"])
 
 print(json.dumps(configs, indent=4))

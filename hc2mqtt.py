@@ -11,6 +11,7 @@ import click
 import click_config_file
 import paho.mqtt.client as mqtt
 
+from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
 
@@ -29,6 +30,7 @@ from HCSocket import HCSocket, now
 @click.option("--mqtt_clientname", default="hcpy1")
 @click.option("--domain_suffix", default="")
 @click.option("--debug/--no-debug", default=False)
+@click.option("--ha-discovery", is_flag=True)
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -44,6 +46,7 @@ def hc2mqtt(
     mqtt_clientname: str,
     domain_suffix: str,
     debug: bool,
+    ha_discovery: bool,
 ):
 
     def on_connect(client, userdata, flags, rc):
@@ -74,6 +77,8 @@ def hc2mqtt(
                             now(), device["name"], f"program topic: {mqtt_selected_program_topic}"
                         )
                         client.subscribe(mqtt_selected_program_topic)
+                if ha_discovery:
+                    publish_ha_discovery(device, client, mqtt_topic)
         else:
             print(now(), f"ERROR MQTT connection failed: {rc}")
 
@@ -117,7 +122,7 @@ def hc2mqtt(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
         f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
         f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
-        f"{domain_suffix=} {debug=}"
+        f"{domain_suffix=} {debug=} {ha_discovery=}"
     )
 
     with open(devices_file, "r") as f:
@@ -146,7 +151,7 @@ def hc2mqtt(
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
     for device in devices:
-        mqtt_topic = mqtt_prefix + device["name"]
+        mqtt_topic = mqtt_prefix + device["host"]
         thread = Thread(
             target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug)
         )

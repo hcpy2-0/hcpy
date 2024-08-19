@@ -10,7 +10,7 @@ RUN apt-get update && \
   apt-get remove -y gcc python3-dev libssl-dev && \
   apt-get autoremove -y
 
-COPY hc2mqtt.py hc-login.py HCDevice.py HCSocket.py HCxml2json.py run.sh ./
+COPY hc2mqtt.py hc-login.py HADiscovery.py HCDevice.py HCSocket.py HCxml2json.py run.sh ./
 
 RUN chmod a+x ./run.sh
 
