@@ -57,6 +57,7 @@ def hc2mqtt(
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
+                mqtt_topic = f"{mqtt_prefix}{device['host']}"
                 mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
                 print(now(), device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
