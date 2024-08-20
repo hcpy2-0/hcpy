@@ -163,7 +163,7 @@ def augment_device_features(features):
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device}")
 
-    device_ident = device["host"].replace('.', '')
+    device_ident = device["host"].replace(".", "")
     device_name = device["name"]
     device_description = device.get("description", {})
 
