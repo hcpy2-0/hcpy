@@ -163,8 +163,7 @@ def augment_device_features(features):
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device}")
 
-    device_ident = device["host"]
-    device_name = device["name"]
+    device_ident = device["name"]
     device_description = device.get("description", {})
 
     version_parts = filter(
@@ -174,7 +173,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     device_info = {
         "identifiers": [device_ident],
-        "name": device_name,
+        "name": device_ident,
         "manufacturer": device_description.get("brand"),
         "model": device_description.get("model"),
         "sw_version": ".".join(version_parts),
