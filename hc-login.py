@@ -314,7 +314,11 @@ for app in account["data"]["homeAppliances"]:
     config["description"] = machine["description"]
     config["features"] = augment_device_features(machine["features"])
 
-with open(devicefile, 'w') as f:
+with open(devicefile, "w") as f:
     json.dump(configs, f, ensure_ascii=True, indent=4)
 
-print("Success. You can now edit "+devicefile+", if needed, and run hc2mqtt.py or start Home Assistant addon again")  
+print(
+    "Success. You can now edit "
+    + devicefile
+    + ", if needed, and run hc2mqtt.py or start Home Assistant addon again"
+)
