@@ -1,6 +1,7 @@
 #!/usr/bin/env bashio
 CONFIG_PATH=/data/options.json
 if [ -f ${CONFIG_PATH} ]; then
+
         set -o allexport
         HCPY_DEVICES_FILE="$(bashio::config 'HCPY_DEVICES_FILE')"
         HCPY_MQTT_HOST="$(bashio::config 'HCPY_MQTT_HOST')"
@@ -19,13 +20,12 @@ if [ -f ${CONFIG_PATH} ]; then
         HCPY_HOMECONNECT_EMAIL="$(bashio::config 'HCPY_HOMECONNECT_EMAIL')"
         HCPY_HOMECONNECT_PASSWORD="$(bashio::config 'HCPY_HOMECONNECT_PASSWORD')"
         set +o allexport
-fi
-if [ ! -f "${HCPY_DEVICES_FILE}" ]; then
-        echo "File not found ${HCPY_DEVICES_FILE}"
-        echo "Trying to retrieve devices.json"
-        exec python3 hc-login.py $HCPY_HOMECONNECT_EMAIL $HCPY_HOMECONNECT_PASSWORD ${HCPY_DEVICES_FILE}
-fi
-if [ -f ${CONFIG_PATH} ]; then
-    exec python3 hc2mqtt.py
+        
+        if [ ! -f "${HCPY_DEVICES_FILE}" ]; then
+                echo "File not found ${HCPY_DEVICES_FILE}"
+                echo "Trying to retrieve devices.json"
+                exec python3 hc-login.py $HCPY_HOMECONNECT_EMAIL $HCPY_HOMECONNECT_PASSWORD ${HCPY_DEVICES_FILE}
+        fi
+        exec python3 hc2mqtt.py
 fi
 exec python3 hc2mqtt.py --config ./config/config.ini
