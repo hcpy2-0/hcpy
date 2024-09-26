@@ -468,8 +468,7 @@ for each recognised property of your devices.
 
 ### Limitations
 
-Discovery messages currently only contain a `state` topic, not a `command` topic,
-so autodiscovered devices will be read-only. You can still use the method
+Command topic has been implemented only for Power control and Programs. If you need to control anything else you can still use the method
 described in `Posting to the appliance` above.
 
 ### Customising the discovery messages
