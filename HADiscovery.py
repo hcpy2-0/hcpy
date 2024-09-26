@@ -6,7 +6,7 @@ from HCSocket import now
 
 def decamelcase(str):
     split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
-    if len(split)==0:
+    if len(split) == 0:
         return str
     return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
 
@@ -61,9 +61,7 @@ MAGIC_OVERRIDES = {
         "component_type": "binary_sensor",
         "payload_values": {"device_class": "door", "payload_on": "Open", "payload_off": "Closed"},
     },
-    539: {  # BSH.Common.Setting.PowerState
-        "component_type": "switch"
-    },
+    539: {"component_type": "switch"},  # BSH.Common.Setting.PowerState
     542: {"payload_values": {"unit_of_measurement": "%"}},  # BSH.Common.Option.ProgramProgress
     543: {  # BSH.Common.Event.LowWaterPressure
         "component_type": "binary_sensor",
@@ -186,7 +184,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         feature_type = name_parts[2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
-        uid=int(uid)
+        uid = int(uid)
 
         if (
             (
@@ -245,11 +243,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
             if component_type == "switch":
                 discovery_payload.setdefault("payload_on", "On")
                 discovery_payload.setdefault("payload_off", "Off")
-                discovery_payload.setdefault("command_topic", f'{mqtt_topic}/set')
-                discovery_payload.setdefault("command_template", f'{{ "uid":{uid}, "value": {{{{ iif(value=="On", 2,1) }}}} }}')
+                discovery_payload.setdefault("command_topic", f"{mqtt_topic}/set")
+                discovery_payload.setdefault(
+                    "command_template",
+                    f'{{ "uid":{uid}, "value": {{{{ iif(value=="On", 2,1) }}}} }}',
+                )
 
             if component_type == "button":
-                discovery_payload.setdefault("command_topic", f'{mqtt_topic}/activeProgram')
+                discovery_payload.setdefault("command_topic", f"{mqtt_topic}/activeProgram")
                 discovery_payload.setdefault("command_template", f'{{ "program":{uid} }}')
 
             # print(discovery_topic)
