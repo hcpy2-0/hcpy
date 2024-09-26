@@ -6,6 +6,8 @@ from HCSocket import now
 
 def decamelcase(str):
     split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
+    if len(split) == 0:
+        return str
     return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
 
 
@@ -59,10 +61,7 @@ MAGIC_OVERRIDES = {
         "component_type": "binary_sensor",
         "payload_values": {"device_class": "door", "payload_on": "Open", "payload_off": "Closed"},
     },
-    539: {  # BSH.Common.Setting.PowerState
-        "component_type": "binary_sensor",
-        "payload_values": {"device_class": "power"},
-    },
+    539: {"component_type": "switch"},  # BSH.Common.Setting.PowerState
     542: {"payload_values": {"unit_of_measurement": "%"}},  # BSH.Common.Option.ProgramProgress
     543: {  # BSH.Common.Event.LowWaterPressure
         "component_type": "binary_sensor",
@@ -179,12 +178,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "sw_version": ".".join(version_parts),
     }
 
-    for feature in device["features"].values():
+    for uid, feature in device["features"].items():
         name_parts = feature["name"].split(".")
         name = name_parts[-1]
-        feature_type = name_parts[-2]
+        feature_type = name_parts[2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
+        uid = int(uid)
 
         if (
             (
@@ -199,9 +199,15 @@ def publish_ha_discovery(device, client, mqtt_topic):
             )
             or feature_type == "Event"
             or feature_type == "Option"
+            or feature_type == "Program"
         ):
 
-            default_component_type = "binary_sensor" if feature_type == "Event" else "sensor"
+            if feature_type == "Event":
+                default_component_type = "binary_sensor"
+            elif feature_type == "Program":
+                default_component_type = "button"
+            else:
+                default_component_type = "sensor"
 
             overrides = feature.get("discovery", {})
 
@@ -233,6 +239,19 @@ def publish_ha_discovery(device, client, mqtt_topic):
             if component_type == "binary_sensor":
                 discovery_payload.setdefault("payload_on", "On")
                 discovery_payload.setdefault("payload_off", "Off")
+
+            if component_type == "switch":
+                discovery_payload.setdefault("payload_on", "On")
+                discovery_payload.setdefault("payload_off", "Off")
+                discovery_payload.setdefault("command_topic", f"{mqtt_topic}/set")
+                discovery_payload.setdefault(
+                    "command_template",
+                    f'{{ "uid":{uid}, "value": {{{{ iif(value=="On", 2,1) }}}} }}',
+                )
+
+            if component_type == "button":
+                discovery_payload.setdefault("command_topic", f"{mqtt_topic}/activeProgram")
+                discovery_payload.setdefault("command_template", f'{{ "program":{uid} }}')
 
             # print(discovery_topic)
             # print(discovery_payload)
