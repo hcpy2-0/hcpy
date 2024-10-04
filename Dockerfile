@@ -1,6 +1,7 @@
 FROM python:3.10-slim
 
 ARG BASHIO_VERSION="v0.16.2"
+ARG BASHIO_SHA256="d0f0c780c4badd103c00c572b1bf9645520d15a8a8070d6e3d64e35cb9f583aa"
 
 WORKDIR /app
 
@@ -13,6 +14,7 @@ RUN apt-get update && \
   apt-get autoremove -y \
     && curl -J -L -o /tmp/bashio.tar.gz \
         "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" \
+    && echo "${BASHIO_SHA256} /tmp/bashio.tar.gz" | sha256sum --check \
     && mkdir /tmp/bashio \
     && tar zxvf \
         /tmp/bashio.tar.gz \
