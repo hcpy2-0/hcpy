@@ -41,7 +41,7 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 ```bash
-hc-login.py $USERNAME $PASSWORD > config/devices.json
+hc-login.py $USERNAME $PASSWORD config/devices.json
 ```
 
 or
