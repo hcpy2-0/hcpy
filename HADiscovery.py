@@ -252,6 +252,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
             if component_type == "button":
                 discovery_payload.setdefault("command_topic", f"{mqtt_topic}/activeProgram")
                 discovery_payload.setdefault("command_template", f'{{ "program":{uid} }}')
+                discovery_payload.setdefault("availability_topic ", f"{mqtt_topic}/state")
+                discovery_payload.setdefault("availability_template", "{{ 'online' if value_json.OperationState == 'Ready' else 'offline' }}")
 
             # print(discovery_topic)
             # print(discovery_payload)
