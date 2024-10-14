@@ -200,7 +200,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             or feature_type == "Event"
             or feature_type == "Option"
             # If it's a Program, check if BSH.Common.Status.OperationState has "Ready" as available option. If not, programs are read only.
-            or ( feature_type == "Program" and "1" in device["features"]["552"]["values"]) 
+            or (feature_type == "Program" and "1" in device["features"]["552"]["values"])
         ):
 
             if feature_type == "Event":
