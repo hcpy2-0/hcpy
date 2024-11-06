@@ -181,7 +181,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     for feature in device["features"].values():
         name_parts = feature["name"].split(".")
-        name = name_parts[-1]
+        name = feature["name"]
         feature_type = name_parts[-2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
@@ -224,7 +224,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 # # then back to their correct values on every disconnect/
                 # # reconnect. This leaves a lot of noise in the HA history, so
                 # # I felt things were better off without an `availability_topic`.
-                "value_template": "{{value_json." + name + " | default('unavailable')}}",
+                "value_template": "{{value_json['" + name + "'] | default('unavailable')}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
                 **extra_payload_values,
