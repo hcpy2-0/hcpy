@@ -3,12 +3,6 @@ import re
 
 from HCSocket import now
 
-
-def decamelcase(str):
-    split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
-    return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
-
-
 HA_DISCOVERY_PREFIX = "homeassistant"
 
 
@@ -215,7 +209,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             # print(discovery_topic, state_topic)
 
             discovery_payload = {
-                "name": decamelcase(name),
+                "name": name,
                 "device": device_info,
                 "state_topic": f"{mqtt_topic}/state",
                 # "availability_topic": f"{mqtt_topic}/LWT",
@@ -224,7 +218,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 # # then back to their correct values on every disconnect/
                 # # reconnect. This leaves a lot of noise in the HA history, so
                 # # I felt things were better off without an `availability_topic`.
-                "value_template": "{{value_json." + name + " | default('unavailable')}}",
+                "value_template": "{{value_json['" + name + "'] | default('unavailable')}}",
                 "object_id": f"{device_ident}_{name}",
                 "unique_id": f"{device_ident}_{name}",
                 **extra_payload_values,
