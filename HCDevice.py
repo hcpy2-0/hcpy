@@ -95,8 +95,6 @@ class HCDevice:
                 if "values" in status and value_str in status["values"]:
                     value = status["values"][value_str]
 
-            # trim everything off the name except the last part
-            name = re.sub(r"^.*\.", "", name)
             result[name] = value
 
         return result
