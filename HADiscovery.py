@@ -3,9 +3,11 @@ import re
 
 from HCSocket import now
 
+
 def decamelcase(str):
     split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
     return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
+
 
 HA_DISCOVERY_PREFIX = "homeassistant"
 
@@ -179,7 +181,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
     for feature in device["features"].values():
         name_parts = feature["name"].split(".")
         name = feature["name"]
-        feature_id = name.lower().replace('.','_')
+        feature_id = name.lower().replace(".", "_")
         feature_type = name_parts[-2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
