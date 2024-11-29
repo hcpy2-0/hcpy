@@ -18,6 +18,9 @@ import xml.etree.ElementTree as ET
 
 def parse_xml_list(codes, entries, enums):
     for el in entries:
+        if "uid" not in el.attrib:
+            continue
+
         # not sure how to parse refCID and refDID
         uid = int(el.attrib["uid"], 16)
 
@@ -40,6 +43,10 @@ def parse_xml_list(codes, entries, enums):
             data["values"] = enums[enum_id]["values"]
 
         # codes[uid] = data
+
+        # parse recursively to also resolve enums in elements in e.g. <optionList> elements
+        if len(el) > 0:
+            parse_xml_list(codes, el, enums)
 
 
 def parse_machine_description(entries):
@@ -96,8 +103,8 @@ def xml2json(features_xml, description_xml):
             "values": values,
         }
 
-    for i in range(4, 8):
-        parse_xml_list(features, description[i], enums)
+    for description_item in description:
+        parse_xml_list(features, description_item, enums)
 
     # remove the duplicate uid field
     for uid in features:
