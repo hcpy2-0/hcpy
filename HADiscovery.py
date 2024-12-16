@@ -11,7 +11,6 @@ def decamelcase(str):
 
 HA_DISCOVERY_PREFIX = "homeassistant"
 
-
 # These "magic overrides" provide HA MQTT autodiscovery data that is injected
 # into devices.json when `hc-login.py` is run; the data is then read from
 # devices.json at runtime.
@@ -161,7 +160,7 @@ def augment_device_features(features):
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
-    print(f"{now()} Publishing HA discovery for {device}")
+    print(f"{now()} Publishing HA discovery for {device['name']}")
 
     device_ident = device["name"]
     device_description = device.get("description", {})
@@ -181,7 +180,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     for feature in device["features"].values():
         name_parts = feature["name"].split(".")
-        name = name_parts[-1]
+        name = feature["name"]
+        feature_id = name.lower().replace(".", "_")
         feature_type = name_parts[-2]
         access = feature.get("access", "none")
         available = feature.get("available", False)
@@ -210,12 +210,12 @@ def publish_ha_discovery(device, client, mqtt_topic):
             extra_payload_values = overrides.get("payload_values", {})
 
             discovery_topic = (
-                f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{name}/config"
+                f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
             )
             # print(discovery_topic, state_topic)
 
             discovery_payload = {
-                "name": decamelcase(name),
+                "name": decamelcase(name_parts[-1]),
                 "device": device_info,
                 "state_topic": f"{mqtt_topic}/state",
                 # "availability_topic": f"{mqtt_topic}/LWT",
@@ -224,9 +224,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 # # then back to their correct values on every disconnect/
                 # # reconnect. This leaves a lot of noise in the HA history, so
                 # # I felt things were better off without an `availability_topic`.
-                "value_template": "{{value_json." + name + " | default('unavailable')}}",
-                "object_id": f"{device_ident}_{name}",
-                "unique_id": f"{device_ident}_{name}",
+                "value_template": "{{ value_json['" + name + "']|default('unavailable') }}",
+                "object_id": f"{device_ident}_{feature_id}",
+                "unique_id": f"{device_ident}_{feature_id}",
                 **extra_payload_values,
             }
 
