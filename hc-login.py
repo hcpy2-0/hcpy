@@ -8,7 +8,7 @@ import json
 import re
 import sys
 from base64 import urlsafe_b64encode as base64url_encode
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, unquote
 from zipfile import ZipFile
 
 import requests
@@ -40,7 +40,7 @@ email = sys.argv[1]
 password = sys.argv[2]
 devicefile = sys.argv[3]
 
-headers = {"User-Agent": "hc-login/1.0"}
+headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"}
 
 session = requests.Session()
 session.headers.update(headers)
@@ -101,126 +101,12 @@ login_query = {
 loginpage_url = base_url + "authorize?" + urlencode(login_query)
 token_url = base_url + "token"
 
-debug(f"{loginpage_url=}")
-r = session.get(loginpage_url)
-if r.status_code != requests.codes.ok:
-    print("error fetching login url!", loginpage_url, r.text, file=sys.stderr)
-    exit(1)
+print("Visit the following URL in the browser, use the F12 developer tools to monitor the network responses, and look for the request starting hcauth://auth for the relevant authentication tokens:")
+print(loginpage_url)
 
-# get the session from the text
-if not (match := re.search(r'"sessionId" value="(.*?)"', r.text)):
-    print("Unable to find session id in login page")
-    exit(1)
-session_id = match[1]
-if not (match := re.search(r'"sessionData" value="(.*?)"', r.text)):
-    print("Unable to find session data in login page")
-    exit(1)
-session_data = match[1]
-
-debug("--------")
-
-# now that we have a session id, contact the
-# single key host to start the new login flow
-singlekey_host = "https://singlekey-id.com"
-login_url = singlekey_host + "/auth/en-us/log-in/"
-
-preauth_url = singlekey_host + "/auth/connect/authorize"
-preauth_query = {
-    "client_id": "11F75C04-21C2-4DA9-A623-228B54E9A256",
-    "redirect_uri": "https://api.home-connect.com/security/oauth/redirect_target",
-    "response_type": "code",
-    "scope": "openid email profile offline_access homeconnect.general",
-    "prompt": "login",
-    "style_id": "bsh_hc_01",
-    "state": '{"session_id":"' + session_id + '"}',  # important: no spaces!
-}
-
-# fetch the preauth state to get the final callback url
-preauth_url += "?" + urlencode(preauth_query)
-
-# loop until we have the callback url
-while True:
-    debug(f"next {preauth_url=}")
-    r = session.get(preauth_url, allow_redirects=False)
-    if r.status_code == 200:
-        break
-    if r.status_code > 300 and r.status_code < 400:
-        preauth_url = r.headers["location"]
-        # Make relative locations absolute
-        if not bool(urlparse(preauth_url).netloc):
-            preauth_url = singlekey_host + preauth_url
-        continue
-    print(f"2: {preauth_url=}: failed to fetch {r} {r.text}", file=sys.stderr)
-    exit(1)
-
-# get the ReturnUrl from the response
-query = parse_qs(urlparse(preauth_url).query)
-return_url = query["ReturnUrl"][0]
-debug(f"{return_url=}")
-
-if "X-CSRF-FORM-TOKEN" in r.cookies:
-    headers["RequestVerificationToken"] = r.cookies["X-CSRF-FORM-TOKEN"]
-session.headers.update(headers)
-
-debug("--------")
-
-soup = BeautifulSoup(r.text, "html.parser")
-requestVerificationToken = soup.find("input", {"name": "__RequestVerificationToken"}).get("value")
-r = session.post(
-    preauth_url,
-    data={
-        "UserIdentifierInput.EmailInput.StringValue": email,
-        "__RequestVerificationToken": requestVerificationToken,
-    },
-    allow_redirects=False,
-)
-
-password_url = r.headers["location"]
-if not bool(urlparse(password_url).netloc):
-    password_url = singlekey_host + password_url
-
-r = session.get(password_url, allow_redirects=False)
-soup = BeautifulSoup(r.text, "html.parser")
-requestVerificationToken = soup.find("input", {"name": "__RequestVerificationToken"}).get("value")
-
-r = session.post(
-    password_url,
-    data={
-        "Password": password,
-        "RememberMe": "false",
-        "__RequestVerificationToken": requestVerificationToken,
-    },
-    allow_redirects=False,
-)
-
-while True:
-    if return_url.startswith("/"):
-        return_url = singlekey_host + return_url
-    r = session.get(return_url, allow_redirects=False)
-    debug(f"{return_url=}, {r} {r.text}")
-    if r.status_code != 302:
-        break
-    return_url = r.headers["location"]
-    if return_url.startswith("hcauth://"):
-        break
-debug(f"{return_url=}")
-
-debug("--------")
-
-url = urlparse(return_url)
-query = parse_qs(url.query)
-
-if query.get("ReturnUrl") is not None:
-    print("Wrong credentials.")
-    print(
-        "If you forgot your login/password, you can restore them by opening "
-        "https://singlekey-id.com/auth/en-us/login in browser"
-    )
-    exit(1)
-
-code = query.get("code")[0]
-state = query.get("state")[0]
-grant_type = query.get("grant_type")[0]  # "authorization_code"
+code = unquote(input("Input code:"))
+state = input("Input state:")
+grant_type = "authorization_code"
 
 debug(f"{code=} {grant_type=} {state=}")
 
