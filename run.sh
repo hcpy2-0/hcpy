@@ -17,14 +17,13 @@ if [ -f ${CONFIG_PATH} ]; then
         HCPY_HA_DISCOVERY="$(bashio::config 'HCPY_HA_DISCOVERY')"
         HCPY_DOMAIN_SUFFIX="$(bashio::config 'HCPY_DOMAIN_SUFFIX')"
         HCPY_DEBUG="$(bashio::config 'HCPY_DEBUG')"
-        HCPY_HOMECONNECT_EMAIL="$(bashio::config 'HCPY_HOMECONNECT_EMAIL')"
-        HCPY_HOMECONNECT_PASSWORD="$(bashio::config 'HCPY_HOMECONNECT_PASSWORD')"
+
         set +o allexport
         
         if [ ! -f "${HCPY_DEVICES_FILE}" ]; then
                 echo "File not found ${HCPY_DEVICES_FILE}"
-                echo "Trying to retrieve devices.json"
-                exec python3 hc-login.py $HCPY_HOMECONNECT_EMAIL $HCPY_HOMECONNECT_PASSWORD ${HCPY_DEVICES_FILE}
+                echo "Please supply a suitable devices file using hc-login.py"
+                exit 1
         fi
         exec python3 hc2mqtt.py
 fi
