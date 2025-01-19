@@ -39,12 +39,7 @@ email = sys.argv[1]
 password = sys.argv[2]
 devicefile = sys.argv[3]
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
-}
-
 session = requests.Session()
-session.headers.update(headers)
 
 base_url = "https://api.home-connect.com/security/oauth/"
 asset_urls = [
@@ -103,7 +98,9 @@ loginpage_url = base_url + "authorize?" + urlencode(login_query)
 token_url = base_url + "token"
 
 print(
-    "Visit the following URL in the browser, use the F12 developer tools to monitor the network responses, and look for the request starting hcauth://auth for the relevant authentication tokens:"
+    "Visit the following URL in the browser, use the F12 developer tools "
+    "to monitor the network responses, and look for the request starting "
+    "hcauth://auth for the relevant authentication tokens:"
 )
 print(loginpage_url)
 
