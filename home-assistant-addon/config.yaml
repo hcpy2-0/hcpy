@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
 description: "Run HCPY as addon"
-version: "v0.1.6"
+version: "v0.1.7"
 slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
