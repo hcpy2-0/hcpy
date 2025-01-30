@@ -23,6 +23,7 @@ def hmac(key, msg):
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
+
 class HCSocket:
     def __init__(self, host, psk64, iv64=None, domain_suffix=""):
         self.host = host
@@ -127,7 +128,7 @@ class HCSocket:
             context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            context.set_ciphers('ECDHE-PSK-CHACHA20-POLY1305')
+            context.set_ciphers("ECDHE-PSK-CHACHA20-POLY1305")
             context.set_psk_client_callback(lambda hint: (None, self.psk))
             sock = context.wrap_socket(sock, server_hostname=self.host)
 
@@ -167,7 +168,7 @@ class HCSocket:
             context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            context.set_ciphers('ECDHE-PSK-CHACHA20-POLY1305')
+            context.set_ciphers("ECDHE-PSK-CHACHA20-POLY1305")
             context.set_psk_client_callback(lambda hint: (None, self.psk))
             sock = context.wrap_socket(sock, server_hostname=self.host)
 
