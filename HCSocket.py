@@ -23,6 +23,7 @@ def hmac(key, msg):
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
+
 class HCSocket:
     def __init__(self, host, psk64, iv64=None, domain_suffix=""):
         self.host = host
