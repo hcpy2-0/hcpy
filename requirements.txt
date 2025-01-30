@@ -2,7 +2,6 @@ bs4
 requests
 pycryptodome
 websocket-client
-sslpsk
 paho.mqtt==1.6.1
 lxml
 click
