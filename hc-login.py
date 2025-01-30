@@ -98,7 +98,7 @@ loginpage_url = base_url + "authorize?" + urlencode(login_query)
 token_url = base_url + "token"
 
 print(
-    "Visit the following URL in the browser, use the F12 developer tools "
+    "Visit the following URL in Chrome, use the F12 developer tools "
     "to monitor the network responses, and look for the request starting "
     "hcauth://auth for the relevant authentication tokens:"
 )

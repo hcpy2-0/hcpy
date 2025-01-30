@@ -16,6 +16,12 @@ and should prevent most any random attacker on your network from being able to
 
 ## Setup
 
+### HomeAssistant Addon
+
+Follow the instructions in the [wiki](https://github.com/hcpy2-0/hcpy/wiki/HomeAssistant-Addon)
+
+### Locally
+
 To avoid running into issues later with your default python installs, it's recommended to use a py virtual env for doing this. Go to your desired test directory, and:
 ```bash
 python3 -m venv venv
@@ -41,7 +47,7 @@ Installing `sslpsk` needs some extra steps:
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
-a normal browser window, and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
+a normal browser window (Chromium), and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
 
 ![hc-login developer example](images/hclogin_dev_tools.png)
 
