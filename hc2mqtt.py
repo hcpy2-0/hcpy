@@ -66,8 +66,14 @@ def hc2mqtt(
                     # and scheduled via /ro/activeProgram
                     if "name" in device["features"][value]:
                         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
-                            mqtt_active_program_topic = f"{mqtt_prefix}{device['name']}/activeProgram"
-                            print(now(), device["name"], f"program topic: {mqtt_active_program_topic}")
+                            mqtt_active_program_topic = (
+                                f"{mqtt_prefix}{device['name']}/activeProgram"
+                            )
+                            print(
+                                now(),
+                                device["name"],
+                                f"program topic: {mqtt_active_program_topic}",
+                            )
                             client.subscribe(mqtt_active_program_topic)
                         # If the device has the SelectedProgram feature it allows programs to be
                         # selected via /ro/selectedProgram
@@ -76,7 +82,9 @@ def hc2mqtt(
                                 f"{mqtt_prefix}{device['name']}/selectedProgram"
                             )
                             print(
-                                now(), device["name"], f"program topic: {mqtt_selected_program_topic}"
+                                now(),
+                                device["name"],
+                                f"program topic: {mqtt_selected_program_topic}",
                             )
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
