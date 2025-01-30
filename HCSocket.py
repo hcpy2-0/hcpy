@@ -64,6 +64,12 @@ class HCSocket:
         hmac_msg = self.iv + direction + enc_msg
         return hmac(self.mackey, hmac_msg)[0:16]
 
+    def wrap_socket_psk(self, tcp_socket):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.set_ciphers('PSK') # Originally ECDHE-PSK-CHACHA20-POLY1305
+        context.set_psk_client_callback(lambda hint: (None, self.psk))
+        return context.wrap_socket(tcp_socket, server_hostname=self.host)
+
     def decrypt(self, buf):
         if len(buf) < 32:
             print("Short message?", buf.hex(), file=sys.stderr)
@@ -124,12 +130,7 @@ class HCSocket:
         sock.connect((self.host, self.port))
 
         if not self.http:
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            context.set_ciphers('ECDHE-PSK-CHACHA20-POLY1305')
-            context.set_psk_client_callback(lambda hint: (None, self.psk))
-            sock = context.wrap_socket(sock, server_hostname=self.host)
+            sock = self.wrap_socket_psk(sock)
 
         print(now(), "CON:", self.uri)
         self.ws = websocket.WebSocket()
@@ -158,18 +159,14 @@ class HCSocket:
         self.dprint("RX:", buf)
         return buf
 
+
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.host, self.port))
 
         if not self.http:
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            context.set_ciphers('ECDHE-PSK-CHACHA20-POLY1305')
-            context.set_psk_client_callback(lambda hint: (None, self.psk))
-            sock = context.wrap_socket(sock, server_hostname=self.host)
+            sock = self.wrap_socket_psk(sock)
 
         def _on_open(ws):
             self.dprint("on connect")
