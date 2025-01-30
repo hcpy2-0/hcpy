@@ -180,6 +180,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
     }
 
     for feature in device["features"].values():
+        if "name" not in feature:
+            continue
         name_parts = feature["name"].split(".")
         name = name_parts[-1]
         feature_type = name_parts[-2]
