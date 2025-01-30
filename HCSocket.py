@@ -66,6 +66,9 @@ class HCSocket:
         return hmac(self.mackey, hmac_msg)[0:16]
 
     def wrap_socket_psk(self, tcp_socket):
+        if not ssl.HAS_PSK:
+            raise NotImplementedError("OpenSSL library does not have support for TLS-PSK")
+
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
         context.set_psk_client_callback(lambda hint: (None, self.psk))
