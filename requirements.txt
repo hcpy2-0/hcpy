@@ -7,3 +7,4 @@ lxml
 click
 click-config-file
 requests
+sslpsk; python_version < '3.12'
