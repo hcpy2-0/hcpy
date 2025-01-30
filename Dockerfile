@@ -8,9 +8,9 @@ WORKDIR /app
 COPY requirements.txt ./
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends curl tar gcc python3-dev libssl-dev libxml2-dev libxslt-dev python3-dev jq && \
+  apt-get install -y --no-install-recommends curl tar gcc jq && \
   pip3 install -r requirements.txt && \
-  apt-get remove -y gcc python3-dev libssl-dev && \
+  apt-get remove -y gcc && \
   apt-get autoremove -y \
     && curl -J -L -o /tmp/bashio.tar.gz \
         "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" \
