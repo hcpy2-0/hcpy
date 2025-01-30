@@ -15,8 +15,10 @@ from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
 
+
 def hcprint(*args):
     print(now(), *args, flush=True)
+
 
 @click.command()
 @click.option("-d", "--devices_file", default="config/devices.json")
@@ -71,10 +73,7 @@ def hc2mqtt(
                             mqtt_active_program_topic = (
                                 f"{mqtt_prefix}{device['name']}/activeProgram"
                             )
-                            hcprint(
-                                device["name"],
-                                f"program topic: {mqtt_active_program_topic}"
-                            )
+                            hcprint(device["name"], f"program topic: {mqtt_active_program_topic}")
                             client.subscribe(mqtt_active_program_topic)
                         # If the device has the SelectedProgram feature it allows programs to be
                         # selected via /ro/selectedProgram
@@ -83,8 +82,7 @@ def hc2mqtt(
                                 f"{mqtt_prefix}{device['name']}/selectedProgram"
                             )
                             hcprint(
-                                device["name"],
-                                f"program topic: {mqtt_selected_program_topic}"
+                                device["name"], f"program topic: {mqtt_selected_program_topic}"
                             )
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
