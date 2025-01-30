@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
 description: "Run HCPY as addon"
-version: "v0.1.5"
+version: "v0.1.8"
 slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
@@ -31,8 +31,6 @@ options:
   HCPY_HA_DISCOVERY: true
   HCPY_DOMAIN_SUFFIX: ""
   HCPY_DEBUG: false
-  HCPY_HOMECONNECT_EMAIL: ""
-  HCPY_HOMECONNECT_PASSWORD: ""
 schema:
   HCPY_DEVICES_FILE: str
   HCPY_MQTT_HOST: str
@@ -48,6 +46,4 @@ schema:
   HCPY_DOMAIN_SUFFIX: str
   HCPY_HA_DISCOVERY: bool?
   HCPY_DEBUG: bool?
-  HCPY_HOMECONNECT_EMAIL: email
-  HCPY_HOMECONNECT_PASSWORD: password
 startup: services

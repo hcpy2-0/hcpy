@@ -16,6 +16,12 @@ and should prevent most any random attacker on your network from being able to
 
 ## Setup
 
+### HomeAssistant Addon
+
+Follow the instructions in the [wiki](https://github.com/hcpy2-0/hcpy/wiki/HomeAssistant-Addon)
+
+### Locally
+
 To avoid running into issues later with your default python installs, it's recommended to use a py virtual env for doing this. Go to your desired test directory, and:
 ```bash
 python3 -m venv venv
@@ -40,18 +46,28 @@ Installing `sslpsk` needs some extra steps:
 
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
+The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
+a normal browser window (Chromium), and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
+
+![hc-login developer example](images/hclogin_dev_tools.png)
+
 ```bash
 hc-login.py $USERNAME $PASSWORD config/devices.json
+
+Visit the following URL in the browser, use the F12 developer tools to monitor the network responses, and look for the request starting hcauth://auth for the relevant authentication tokens:
+https://api.home-connect.com/security/oauth/authorize?response_type=code&prompt=login&code_challenge=blah&code_challenge_method=S256&client_id=blah&scope=ReadOrigApi&nonce=blah&state=blah&redirect_uri=hcauth%3A%2F%2Fauth%2Fprod&redirect_target=icore
+Input code:eyJblah
+Input state:eXVblah
 ```
 
 or
 
 ```bash
-docker-compose build
-docker-compose run -T app /app/hc-login.py $USERNAME $PASSWORD > config/devices.json
+docker-compose -f compose.yaml build
+docker-compose -f compose.yaml run -Ti app /app/hc-login.py $USERNAME $PASSWORD config/devices.json
 ```
 
-The `hc-login.py ` script perfoms the OAuth process to login to your
+The `hc-login.py` script perfoms the OAuth process to login to your
 Home Connect account with your usename and password.  It
 receives a bearer token that can then be used to retrieves
 a list of all the connected devices, their authentication
@@ -89,7 +105,7 @@ hc2mqtt.py --config config/config.ini
 or
 
 ```bash
-docker-compose up
+docker-compose -f compose.yaml up
 ```
 
 This tool will establish websockets to the local devices and
