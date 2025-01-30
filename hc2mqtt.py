@@ -15,6 +15,8 @@ from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
 
+def hcprint(*args):
+    print(now(), *args, flush=True)
 
 @click.command()
 @click.option("-d", "--devices_file", default="config/devices.json")
@@ -51,15 +53,15 @@ def hc2mqtt(
 
     def on_connect(client, userdata, flags, rc):
         if rc == 5:
-            print(now(), f"ERROR MQTT connection failed: unauthorized - {rc}")
+            hcprint(f"ERROR MQTT connection failed: unauthorized - {rc}")
         elif rc == 0:
-            print(now(), f"MQTT connection established: {rc}")
+            hcprint(f"MQTT connection established: {rc}")
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
                 mqtt_topic = f"{mqtt_prefix}{device['name']}"
                 mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
-                print(now(), device["name"], f"set topic: {mqtt_set_topic}")
+                hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
                 for value in device["features"]:
                     # If the device has the ActiveProgram feature it allows programs to be started
@@ -69,10 +71,9 @@ def hc2mqtt(
                             mqtt_active_program_topic = (
                                 f"{mqtt_prefix}{device['name']}/activeProgram"
                             )
-                            print(
-                                now(),
+                            hcprint(
                                 device["name"],
-                                f"program topic: {mqtt_active_program_topic}",
+                                f"program topic: {mqtt_active_program_topic}"
                             )
                             client.subscribe(mqtt_active_program_topic)
                         # If the device has the SelectedProgram feature it allows programs to be
@@ -81,24 +82,23 @@ def hc2mqtt(
                             mqtt_selected_program_topic = (
                                 f"{mqtt_prefix}{device['name']}/selectedProgram"
                             )
-                            print(
-                                now(),
+                            hcprint(
                                 device["name"],
-                                f"program topic: {mqtt_selected_program_topic}",
+                                f"program topic: {mqtt_selected_program_topic}"
                             )
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
                     publish_ha_discovery(device, client, mqtt_topic)
         else:
-            print(now(), f"ERROR MQTT connection failed: {rc}")
+            hcprint(f"ERROR MQTT connection failed: {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print(now(), f"ERROR MQTT client disconnected: {rc}")
+        hcprint(f"ERROR MQTT client disconnected: {rc}")
 
     def on_message(client, userdata, msg):
         mqtt_state = msg.payload.decode()
         mqtt_topic = msg.topic.split("/")
-        print(now(), f"{msg.topic} received mqtt message {mqtt_state}")
+        hcprint(f"{msg.topic} received mqtt message {mqtt_state}")
 
         try:
             if len(mqtt_topic) >= 2:
@@ -124,9 +124,9 @@ def hc2mqtt(
             if dev[device_name].connected:
                 dev[device_name].get(resource, 1, "POST", msg)
             else:
-                print(now(), device_name, "ERROR cant send message as websocket is not connected")
+                hcprint(device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
-            print(now(), device_name, "ERROR", e, file=sys.stderr)
+            hcprint(device_name, "ERROR", e, file=sys.stderr)
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
@@ -184,7 +184,7 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     def on_message(msg):
         if msg is not None:
             if len(msg) > 0:
-                print(now(), name, msg)
+                hcprint(name, msg)
 
                 update = False
                 for key in msg.keys():
@@ -206,11 +206,10 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
 
                 if client.is_connected():
                     msg = json.dumps(state)
-                    print(now(), name, f"publish to {mqtt_topic} with {msg}")
+                    hcprint(name, f"publish to {mqtt_topic} with {msg}")
                     client.publish(f"{mqtt_topic}/state", msg, retain=True)
                 else:
-                    print(
-                        now(),
+                    hcprint(
                         name,
                         "ERROR Unable to publish update as mqtt is not connected.",
                     )
@@ -220,17 +219,17 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
 
     def on_close(ws, code, message):
         client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
-        print(now(), device["name"], "websocket closed, reconnecting...")
+        hcprint(device["name"], "websocket closed, reconnecting...")
 
     while True:
         time.sleep(3)
         try:
-            print(now(), name, f"connecting to {host}")
+            hcprint(name, f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             dev[name] = HCDevice(ws, device, debug)
             dev[name].run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
         except Exception as e:
-            print(now(), device["name"], "ERROR", e, file=sys.stderr)
+            print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
 
         time.sleep(57)
