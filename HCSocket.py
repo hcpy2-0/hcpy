@@ -67,7 +67,7 @@ class HCSocket:
 
     def wrap_socket_psk(self, tcp_socket):
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.set_ciphers('PSK') # Originally ECDHE-PSK-CHACHA20-POLY1305
+        context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
         context.set_psk_client_callback(lambda hint: (None, self.psk))
         return context.wrap_socket(tcp_socket, server_hostname=self.host)
 
@@ -159,7 +159,6 @@ class HCSocket:
 
         self.dprint("RX:", buf)
         return buf
-
 
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
