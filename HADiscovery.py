@@ -61,6 +61,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         
         name_parts = feature["name"].split(".")
         name = feature["name"]
+        extra_payload_values = {}
 
         # Skip Dishwasher Programs
         if ("Dishcare.Dishwasher.Program." in name or
@@ -81,7 +82,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
         event_types = None
-        extra_payload_values = {}
         value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default }}\n{% endif %}"
         state_topic = f"{mqtt_topic}/state"
 
