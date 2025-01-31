@@ -13,13 +13,11 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 
 # These "magic overrides" provide HA MQTT autodiscovery data.
 MAGIC_OVERRIDES = {
-    'BSH.Common.Option.ProgramProgress': {
-        "payload_values": {"unit_of_measurement": "%"}
-    }, 
-    'BSH.Common.Option.RemainingProgramTime': { 
+    "BSH.Common.Option.ProgramProgress": {"payload_values": {"unit_of_measurement": "%"}},
+    "BSH.Common.Option.RemainingProgramTime": {
         "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
-    'BSH.Common.Option.StartInRelative': {
+    "BSH.Common.Option.StartInRelative": {
         "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
 }
@@ -57,7 +55,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     for feature in device["features"].values():
         if "name" not in feature:
-        
+            continue  # TODO we could display things based on UID
+
         name_parts = feature["name"].split(".")
         name = feature["name"]
         extra_payload_values = {}
@@ -80,11 +79,20 @@ def publish_ha_discovery(device, client, mqtt_topic):
         available = feature.get("available", False)
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
-        value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default }}\n{% endif %}"
+        value_template = (
+            "{% if '"
+            + name
+            + "' in value_json %}\n{{ value_json['"
+            + name
+            + "']|default }}\n{% endif %}"
+        )
         state_topic = f"{mqtt_topic}/state"
 
-
-        if handling or refCID is None or (available and (access == "read" or access == "readwrite")): 
+        if (
+            handling
+            or refCID is None
+            or (available and (access == "read" or access == "readwrite"))
+        ):
             if refCID == "01" and refDID == "00":
                 component_type = "binary_sensor"
                 extra_payload_values["payload_on"] = True
@@ -93,11 +101,16 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 component_type = "event"
                 extra_payload_values["event_types"] = list(values.values())
                 extra_payload_values["platform"] = "event"
-                value_template = "{ {% if '" + name + "' in value_json %}\n\"event_type\":\"{{ value_json['" + name + "'] }}\"\n{% endif %} }"
+                value_template = (
+                    "{ {% if '"
+                    + name
+                    + '\' in value_json %}\n"event_type":"{{ value_json[\''
+                    + name
+                    + "'] }}\"\n{% endif %} }"
+                )
                 state_topic = f"{mqtt_topic}/event"
             else:
                 component_type = "sensor"
-
 
             defaultValue = None
             if initValue is not None:
@@ -107,15 +120,29 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     defaultValue = initValue == "1"
 
             if component_type != "event" and defaultValue is not None:
-                value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n{% endif %}"
+                value_template = (
+                    "{% if '"
+                    + name
+                    + "' in value_json %}\n{{ value_json['"
+                    + name
+                    + "']|default('"
+                    + str(defaultValue)
+                    + "') }}\n{% endif %}"
+                )
 
             # Temperature Sensor (assuming C?)
             if refCID == "07" and refDID == "A4":
-                extra_payload_values = extra_payload_values | {"unit_of_measurement": "°C", "device_class": "temperature"}
+                extra_payload_values = extra_payload_values | {
+                    "unit_of_measurement": "°C",
+                    "device_class": "temperature",
+                }
             elif refCID == "10" and refDID == "82":
-                extra_payload_values = extra_payload_values | {"unit_of_measurement": "s", "device_class": "duration"}
+                extra_payload_values = extra_payload_values | {
+                    "unit_of_measurement": "s",
+                    "device_class": "duration",
+                }
 
-#            component_type = overrides.get("component_type", default_component_type)
+            #            component_type = overrides.get("component_type", default_component_type)
 
             discovery_topic = (
                 f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
@@ -126,7 +153,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 "device": device_info,
                 "state_topic": state_topic,
                 "availability_mode": "all",
-                "availability": [{"topic":f"{base_topic}/LWT"}, {"topic":f"{mqtt_topic}/LWT"}],
+                "availability": [{"topic": f"{base_topic}/LWT"}, {"topic": f"{mqtt_topic}/LWT"}],
                 "value_template": value_template,
                 "object_id": f"{device_ident}_{feature_id}",
                 "unique_id": f"{device_ident}_{feature_id}",

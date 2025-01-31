@@ -15,7 +15,6 @@ import requests
 from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
-from HADiscovery import augment_device_features
 from HCxml2json import xml2json
 
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
