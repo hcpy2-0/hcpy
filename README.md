@@ -474,6 +474,8 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
+- `ERROR [ip] [Errno 113] No route to host` could also happen if you connect the device to an ssid which is isolated from the internal network.
+   Make sure you connect devices to the "same" network.
 - There is a lot more information available, like the status of a program that is currently active. This needs to be integrated if possible. For now only the values that relate to the `config.json` are published
 
 ## Home Assistant autodiscovery
