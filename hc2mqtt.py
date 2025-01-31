@@ -189,10 +189,10 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
                 events = []
                 for key in msg.keys():
                     val = msg.get(key, None)
-                    
+
                     # Dont persist event to the device state
                     if ".Event." in key:
-                        events.append({key:val})
+                        events.append({key: val})
                     else:
                         if key in state:
                             # Override existing values with None if they have changed
