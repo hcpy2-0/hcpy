@@ -13,7 +13,9 @@ MAGIC_OVERRIDES = {
     "BSH.Common.Option.StartInRelative": {
         "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
-    "BSH.Common.Status.DoorState": {"icon": "mdi:door"},
+    "BSH.Common.Status.DoorState": {"payload_values": {"icon": "mdi:door"}},
+    "Refrigeration.Common.Status.Door.Freezer": {"payload_values": {"icon": "mdi:door"}},
+    "Refrigeration.Common.Status.Door.Refrigerator": {"payload_values": {"icon": "mdi:door"}},
 }
 
 USE_FQDN = [
@@ -26,7 +28,7 @@ USE_FQDN = [
 SKIP_ENTITIES = ["Dishcase.Dishwasher.Program.", "BSH.Common.Root."]
 
 # We haven't seen these display any values
-DISABLED_ENTITIES = ["Refrigeration.Common.Status."]
+DISABLED_ENTITIES = ["Refrigeration.Common.Status.", "Dishcare.Dishwasher.Command.LearningDishwasher.Proposal."]
 
 # Exceptions to the above
 DISABLED_EXCEPTIONS = ["Refrigeration.Common.Status.Door."]
