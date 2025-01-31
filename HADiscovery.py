@@ -1,8 +1,6 @@
 import json
-import re
 
 from HCSocket import now
-
 
 HA_DISCOVERY_PREFIX = "homeassistant"
 
@@ -15,30 +13,23 @@ MAGIC_OVERRIDES = {
     "BSH.Common.Option.StartInRelative": {
         "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
-    "BSH.Common.Status.DoorState": {"icon":"mdi:door"}
+    "BSH.Common.Status.DoorState": {"icon": "mdi:door"},
 }
 
 USE_FQDN = [
-        "Cooking.Hob.Status.Zone.",
-        "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.",
-        "BSH.Common.Setting.Favorite."
-        ]
+    "Cooking.Hob.Status.Zone.",
+    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.",
+    "BSH.Common.Setting.Favorite.",
+]
 
 # We don't believe these ever have state to display
-SKIP_ENTITIES = [
-        "Dishcase.Dishwasher.Program.",
-        "BSH.Common.Root."
-        ]
+SKIP_ENTITIES = ["Dishcase.Dishwasher.Program.", "BSH.Common.Root."]
 
 # We haven't seen these display any values
-DISABLED_ENTITIES = [
-        "Refrigeration.Common.Status."
-        ]
+DISABLED_ENTITIES = ["Refrigeration.Common.Status."]
 
 # Exceptions to the above
-DISABLED_EXCEPTIONS = [
-        "Refrigeration.Common.Status.Door."
-        ]
+DISABLED_EXCEPTIONS = ["Refrigeration.Common.Status.Door."]
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
@@ -90,7 +81,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         if disabled:
             extra_payload_values["enabled_by_default"] = False
 
-        friendly_name = name.split('.')[-1]
+        friendly_name = name.split(".")[-1]
 
         # Use fully qualified name if partial name is a known duplicate
         for fqdn in USE_FQDN:
@@ -107,8 +98,12 @@ def publish_ha_discovery(device, client, mqtt_topic):
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
         value_template = (
-            "{% if '" + name + "' in value_json %}\n"
-            + "{{ value_json['" + name + "']|default }}\n"
+            "{% if '"
+            + name
+            + "' in value_json %}\n"
+            + "{{ value_json['"
+            + name
+            + "']|default }}\n"
             + "{% endif %}"
         )
         state_topic = f"{mqtt_topic}/state"
@@ -127,15 +122,22 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 extra_payload_values["event_types"] = list(values.values())
                 extra_payload_values["platform"] = "event"
                 value_template = (
-                    "{ {% if '" + name + "' in value_json %}\n"
-                    + "\"event_type\":\"{{ value_json['" + name + "'] }}\"\n"
+                    "{ {% if '"
+                    + name
+                    + "' in value_json %}\n"
+                    + '"event_type":"{{ value_json[\''
+                    + name
+                    + "'] }}\"\n"
                     + "{% endif %} }"
                 )
                 state_topic = f"{mqtt_topic}/event"
             else:
                 component_type = "sensor"
                 if refCID == "03" and refDID == "80":
-                    extra_payload_values = extra_payload_values | { "device_class":"enum", "options":list(values.values())} 
+                    extra_payload_values = extra_payload_values | {
+                        "device_class": "enum",
+                        "options": list(values.values()),
+                    }
 
             defaultValue = None
             if initValue is not None:
@@ -146,8 +148,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
             if component_type != "event" and defaultValue is not None:
                 value_template = (
-                    "{% if '" + name + "' in value_json %}\n"
-                    + "{{ value_json['" + name + "']|default('"+ str(defaultValue)+ "') }}\n"
+                    "{% if '"
+                    + name
+                    + "' in value_json %}\n"
+                    + "{{ value_json['"
+                    + name
+                    + "']|default('"
+                    + str(defaultValue)
+                    + "') }}\n"
                     + "{% endif %}"
                 )
 
