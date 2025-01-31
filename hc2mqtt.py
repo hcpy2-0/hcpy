@@ -125,7 +125,7 @@ def hc2mqtt(
             else:
                 hcprint(device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
-            hcprint(device_name, "ERROR", e, file=sys.stderr)
+            print(now(), device_name, "ERROR", e, file=sys.stderr, flush=True)
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
