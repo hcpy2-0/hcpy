@@ -4,11 +4,6 @@ import re
 from HCSocket import now
 
 
-def decamelcase(str):
-    split = re.findall(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))", str)
-    return f"{split[0]} {' '.join(split[1:]).lower()}".strip()
-
-
 HA_DISCOVERY_PREFIX = "homeassistant"
 
 # These "magic overrides" provide HA MQTT autodiscovery data.
@@ -20,16 +15,30 @@ MAGIC_OVERRIDES = {
     "BSH.Common.Option.StartInRelative": {
         "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
     },
+    "BSH.Common.Status.DoorState": {"icon":"mdi:door"}
 }
 
+USE_FQDN = [
+        "Cooking.Hob.Status.Zone.",
+        "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.",
+        "BSH.Common.Setting.Favorite."
+        ]
 
-def augment_device_features(features):
-    for id, feature in features.items():
-        if id in MAGIC_OVERRIDES:
-            feature["discovery"] = MAGIC_OVERRIDES[id]
-        # else:
-        #     print(f"No discovery information for: {id} => {feature['name']}", file=sys.stderr)
-    return features
+# We don't believe these ever have state to display
+SKIP_ENTITIES = [
+        "Dishcase.Dishwasher.Program.",
+        "BSH.Common.Root."
+        ]
+
+# We haven't seen these display any values
+DISABLED_ENTITIES = [
+        "Refrigeration.Common.Status."
+        ]
+
+# Exceptions to the above
+DISABLED_EXCEPTIONS = [
+        "Refrigeration.Common.Status.Door."
+        ]
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
@@ -55,21 +64,39 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     for feature in device["features"].values():
         if "name" not in feature:
-            continue  # TODO we could display things based on UID
+            continue  # TODO we could display things based on UID?
 
-        name_parts = feature["name"].split(".")
         name = feature["name"]
         extra_payload_values = {}
 
-        # Skip Dishwasher Programs
-        if ("Dishcare.Dishwasher.Program." in name or
-            "BSH.Common.Root." in name):
+        skip = False
+        # Skip Programs without state
+        for skip_entity in SKIP_ENTITIES:
+            if skip_entity in name:
+                skip = True
+
+        if skip:
             continue
 
+        disabled = False
         # Disable Refrigeration Status that isn't populated
-        if ("Refrigeration.Common.Status." in name and
-                "Refrigeration.Common.Status.Door." not in name):
+        for disabled_entity in DISABLED_ENTITIES:
+            if disabled_entity in name:
+                disabled = True
+                for disabled_exception in DISABLED_EXCEPTIONS:
+                    if disabled_exception in name:
+                        disabled = False
+
+        if disabled:
             extra_payload_values["enabled_by_default"] = False
+
+        friendly_name = name.split('.')[-1]
+
+        # Use fully qualified name if partial name is a known duplicate
+        for fqdn in USE_FQDN:
+            if fqdn in name:
+                friendly_name = name
+                break
 
         feature_id = name.lower().replace(".", "_")
         refCID = feature.get("refCID", None)
@@ -80,11 +107,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
         value_template = (
-            "{% if '"
-            + name
-            + "' in value_json %}\n{{ value_json['"
-            + name
-            + "']|default }}\n{% endif %}"
+            "{% if '" + name + "' in value_json %}\n"
+            + "{{ value_json['" + name + "']|default }}\n"
+            + "{% endif %}"
         )
         state_topic = f"{mqtt_topic}/state"
 
@@ -102,15 +127,15 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 extra_payload_values["event_types"] = list(values.values())
                 extra_payload_values["platform"] = "event"
                 value_template = (
-                    "{ {% if '"
-                    + name
-                    + '\' in value_json %}\n"event_type":"{{ value_json[\''
-                    + name
-                    + "'] }}\"\n{% endif %} }"
+                    "{ {% if '" + name + "' in value_json %}\n"
+                    + "\"event_type\":\"{{ value_json['" + name + "'] }}\"\n"
+                    + "{% endif %} }"
                 )
                 state_topic = f"{mqtt_topic}/event"
             else:
                 component_type = "sensor"
+                if refCID == "03" and refDID == "80":
+                    extra_payload_values = extra_payload_values | { "device_class":"enum", "options":list(values.values())} 
 
             defaultValue = None
             if initValue is not None:
@@ -121,13 +146,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
             if component_type != "event" and defaultValue is not None:
                 value_template = (
-                    "{% if '"
-                    + name
-                    + "' in value_json %}\n{{ value_json['"
-                    + name
-                    + "']|default('"
-                    + str(defaultValue)
-                    + "') }}\n{% endif %}"
+                    "{% if '" + name + "' in value_json %}\n"
+                    + "{{ value_json['" + name + "']|default('"+ str(defaultValue)+ "') }}\n"
+                    + "{% endif %}"
                 )
 
             # Temperature Sensor (assuming C?)
@@ -136,20 +157,19 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     "unit_of_measurement": "°C",
                     "device_class": "temperature",
                 }
+            # Duration sensor e.g. Time Remaining
             elif refCID == "10" and refDID == "82":
                 extra_payload_values = extra_payload_values | {
                     "unit_of_measurement": "s",
                     "device_class": "duration",
                 }
 
-            #            component_type = overrides.get("component_type", default_component_type)
-
             discovery_topic = (
                 f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
             )
 
             discovery_payload = {
-                "name": name,
+                "name": friendly_name,
                 "device": device_info,
                 "state_topic": state_topic,
                 "availability_mode": "all",
