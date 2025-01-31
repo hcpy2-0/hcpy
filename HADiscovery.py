@@ -57,7 +57,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
     for feature in device["features"].values():
         if "name" not in feature:
-            continue # TODO we could display things based on UID
         
         name_parts = feature["name"].split(".")
         name = feature["name"]
@@ -69,9 +68,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
             continue
 
         # Disable Refrigeration Status that isn't populated
-        if "Refrigeration.Common.Status." in name:
-            if not "Refrigeration.Common.Status.Door." in name:
-                extra_payload_values["enabled_by_default"] = False
+        if ("Refrigeration.Common.Status." in name and
+                "Refrigeration.Common.Status.Door." not in name):
+            extra_payload_values["enabled_by_default"] = False
 
         feature_id = name.lower().replace(".", "_")
         refCID = feature.get("refCID", None)
@@ -81,7 +80,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
         available = feature.get("available", False)
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
-        event_types = None
         value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default }}\n{% endif %}"
         state_topic = f"{mqtt_topic}/state"
 
@@ -108,7 +106,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 elif component_type == "binary_sensor":
                     defaultValue = initValue == "1"
 
-            if component_type is not "event" and defaultValue is not None:
+            if component_type != "event" and defaultValue is not None:
                 value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n{% endif %}"
 
             # Temperature Sensor (assuming C?)
