@@ -58,9 +58,20 @@ def publish_ha_discovery(device, client, mqtt_topic):
     for feature in device["features"].values():
         if "name" not in feature:
             continue # TODO we could display things based on UID
-
+        
         name_parts = feature["name"].split(".")
         name = feature["name"]
+
+        # Skip Dishwasher Programs
+        if ("Dishcare.Dishwasher.Program." in name or
+            "BSH.Common.Root." in name):
+            continue
+
+        # Disable Refrigeration Status that isn't populated
+        if "Refrigeration.Common.Status." in name:
+            if not "Refrigeration.Common.Status.Door." in name:
+                extra_payload_values["enabled_by_default"] = False
+
         feature_id = name.lower().replace(".", "_")
         refCID = feature.get("refCID", None)
         refDID = feature.get("refDID", None)
@@ -72,6 +83,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
         event_types = None
         extra_payload_values = {}
         value_template = "{% if '" + name + "' in value_json %}\n{{ value_json['" + name + "']|default }}\n{% endif %}"
+        state_topic = f"{mqtt_topic}/state"
+
 
         if handling or refCID is None or (available and (access == "read" or access == "readwrite")): 
             if refCID == "01" and refDID == "00":
@@ -83,6 +96,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 extra_payload_values["event_types"] = list(values.values())
                 extra_payload_values["platform"] = "event"
                 value_template = "{ {% if '" + name + "' in value_json %}\n\"event_type\":\"{{ value_json['" + name + "'] }}\"\n{% endif %} }"
+                state_topic = f"{mqtt_topic}/event"
             else:
                 component_type = "sensor"
 
@@ -112,7 +126,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             discovery_payload = {
                 "name": name,
                 "device": device_info,
-                "state_topic": f"{mqtt_topic}/state",
+                "state_topic": state_topic,
                 "availability_mode": "all",
                 "availability": [{"topic":f"{base_topic}/LWT"}, {"topic":f"{mqtt_topic}/LWT"}],
                 "value_template": value_template,
