@@ -28,7 +28,10 @@ USE_FQDN = [
 SKIP_ENTITIES = ["Dishcase.Dishwasher.Program.", "BSH.Common.Root."]
 
 # We haven't seen these display any values
-DISABLED_ENTITIES = ["Refrigeration.Common.Status.", "Dishcare.Dishwasher.Command.LearningDishwasher.Proposal."]
+DISABLED_ENTITIES = [
+    "Refrigeration.Common.Status.",
+    "Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.",
+]
 
 # Exceptions to the above
 DISABLED_EXCEPTIONS = ["Refrigeration.Common.Status.Door."]
