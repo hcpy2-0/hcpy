@@ -20,6 +20,8 @@ and should prevent most any random attacker on your network from being able to
 
 Follow the instructions in the [wiki](https://github.com/hcpy2-0/hcpy/wiki/HomeAssistant-Addon)
 
+[![Add this add-on repository to your Home Assistant instance.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub%2Ecom%2Fhcpy2%2D0%2Fhcpy%2F)
+
 ### Locally
 
 To avoid running into issues later with your default python installs, it's recommended to use a py virtual env for doing this. Go to your desired test directory, and:
