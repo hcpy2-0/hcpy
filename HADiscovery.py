@@ -102,15 +102,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
         available = feature.get("available", False)
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
+        # fmt: off
         value_template = (
-            "{% if '"
-            + name
-            + "' in value_json %}\n"
-            + "{{ value_json['"
-            + name
-            + "']|default }}\n"
+            "{% if '" + name + "' in value_json %}\n"
+            + "{{ value_json['" + name + "']|default }}\n"
             + "{% endif %}"
         )
+        # fmt: off
         state_topic = f"{mqtt_topic}/state"
 
         if (
@@ -126,15 +124,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 component_type = "event"
                 extra_payload_values["event_types"] = list(values.values())
                 extra_payload_values["platform"] = "event"
+                # fmt: off
                 value_template = (
-                    "{ {% if '"
-                    + name
-                    + "' in value_json %}\n"
-                    + '"event_type":"{{ value_json[\''
-                    + name
-                    + "'] }}\"\n"
+                    "{ {% if '" + name + "' in value_json %}\n"
+                    + '"event_type":"{{ value_json[\'' + name + "'] }}\"\n"
                     + "{% endif %} }"
                 )
+                # fmt: on
                 state_topic = f"{mqtt_topic}/event"
             else:
                 component_type = "sensor"
@@ -152,17 +148,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     defaultValue = initValue == "1"
 
             if component_type != "event" and defaultValue is not None:
+                # fmt: off
                 value_template = (
-                    "{% if '"
-                    + name
-                    + "' in value_json %}\n"
-                    + "{{ value_json['"
-                    + name
-                    + "']|default('"
-                    + str(defaultValue)
-                    + "') }}\n"
+                    "{% if '" + name + "' in value_json %}\n"
+                    + "{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n"
                     + "{% endif %}"
                 )
+                # fmt: on
 
             # Temperature Sensor (assuming C?)
             if refCID == "07" and refDID == "A4":
