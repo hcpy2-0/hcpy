@@ -197,6 +197,7 @@ for app in account["data"]["homeAppliances"]:
 
     machine = xml2json(features, description)
     config["description"] = machine["description"]
+    config["features"] = machine["features"]
     print("Discovered device: " + config["name"] + " - Device hostname: " + config["host"])
 
 with open(devicefile, "w") as f:
