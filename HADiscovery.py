@@ -98,7 +98,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 try:
                     parts = name.split(".")
                     friendly_name = ".".join(parts[value:])
-                except:
+                except Exception:
                     friendly_name = name
                 break
 
