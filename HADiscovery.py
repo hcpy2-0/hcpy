@@ -19,13 +19,13 @@ MAGIC_OVERRIDES = {
 }
 
 EXPAND_NAME = {
-    "Cooking.Hob.Status.Zone.":3,
-    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.":3,
-    "BSH.Common.Setting.Favorite.":3,
-    "Refrigeration.Common.Status.":3,
-    "LaundryCare.Dryer.OptionList.":2,
-    "LaundryCare.Dryer.Program.":2,
-    "BSH.Common.Status.Program.":4
+    "Cooking.Hob.Status.Zone.": 3,
+    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.": 3,
+    "BSH.Common.Setting.Favorite.": 3,
+    "Refrigeration.Common.Status.": 3,
+    "LaundryCare.Dryer.OptionList.": 2,
+    "LaundryCare.Dryer.Program.": 2,
+    "BSH.Common.Status.Program.": 4,
 }
 
 # We don't believe these ever have state to display
@@ -93,7 +93,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         friendly_name = name.split(".")[-1]
 
         # Use expand name if partial name is a known duplicate
-        for key,value in EXPAND_NAME.items():
+        for key, value in EXPAND_NAME.items():
             if name.startswith(key):
                 try:
                     parts = name.split(".")
