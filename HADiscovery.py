@@ -18,11 +18,15 @@ MAGIC_OVERRIDES = {
     "Refrigeration.Common.Status.Door.Refrigerator": {"payload_values": {"icon": "mdi:door"}},
 }
 
-USE_FQDN = [
-    "Cooking.Hob.Status.Zone.",
-    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.",
-    "BSH.Common.Setting.Favorite.",
-]
+EXPAND_NAME = {
+    "Cooking.Hob.Status.Zone.":3,
+    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.":3,
+    "BSH.Common.Setting.Favorite.":3,
+    "Refrigeration.Common.Status.":3,
+    "LaundryCare.Dryer.OptionList.":2,
+    "LaundryCare.Dryer.Program.":2,
+    "BSH.Common.Status.Program.":4
+}
 
 # We don't believe these ever have state to display
 SKIP_ENTITIES = ["Dishcase.Dishwasher.Program.", "BSH.Common.Root."]
@@ -68,7 +72,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         skip = False
         # Skip Programs without state
         for skip_entity in SKIP_ENTITIES:
-            if skip_entity in name:
+            if name.startswith(skip_entity):
                 skip = True
 
         if skip:
@@ -77,7 +81,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         disabled = False
         # Disable Refrigeration Status that isn't populated
         for disabled_entity in DISABLED_ENTITIES:
-            if disabled_entity in name:
+            if name.startswith(disabled_entity):
                 disabled = True
                 for disabled_exception in DISABLED_EXCEPTIONS:
                     if disabled_exception in name:
@@ -88,10 +92,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
         friendly_name = name.split(".")[-1]
 
-        # Use fully qualified name if partial name is a known duplicate
-        for fqdn in USE_FQDN:
-            if fqdn in name:
-                friendly_name = name
+        # Use expand name if partial name is a known duplicate
+        for key,value in EXPAND_NAME.items():
+            if name.startswith(key):
+                try:
+                    parts = name.split(".")
+                    friendly_name = ".".join(parts[value:])
+                except:
+                    friendly_name = name
                 break
 
         feature_id = name.lower().replace(".", "_")
