@@ -145,13 +145,20 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 if values is not None and initValue in values:
                     defaultValue = values[initValue]
                 elif component_type == "binary_sensor":
-                    defaultValue = initValue == "1"
+                    if initValue.lower() == "true" or initValue.lower() == "false":
+                        defaultValue = bool(initValue)
+                    else:
+                        defaultValue = initValue == "1"
+                else:
+                    defaultValue = initValue
 
             if component_type != "event" and defaultValue is not None:
                 # fmt: off
                 value_template = (
                     "{% if '" + name + "' in value_json %}\n"
                     + "{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n"
+                    + "{% else %}\n"
+                    + str(defaultValue) + "\n"
                     + "{% endif %}"
                 )
                 # fmt: on
