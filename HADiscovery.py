@@ -2,6 +2,7 @@ import json
 
 from HCSocket import now
 
+config = {}
 try:
     with open("config/discovery.yaml", "r") as yaml_config:
         config = yaml.safe_load(yaml_config)
