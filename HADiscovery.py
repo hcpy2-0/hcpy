@@ -17,7 +17,7 @@ EXPAND_NAME = config.get("EXPAND_NAME", {})
 SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
 DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
 DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
-
+ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
 
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device['name']}")
@@ -40,7 +40,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "sw_version": ".".join(version_parts),
     }
 
-    for feature in device["features"].values():
+    for feature in ADDITIONAL_FEATURES + list(device["features"].values()):
         if "name" not in feature:
             continue  # TODO we could display things based on UID?
 
@@ -89,11 +89,11 @@ def publish_ha_discovery(device, client, mqtt_topic):
         initValue = feature.get("initValue", None)
         values = feature.get("values", None)
         # fmt: off
-        value_template = (
+        value_template = feature.get("template", (
             "{% if '" + name + "' in value_json %}\n"
             + "{{ value_json['" + name + "']|default }}\n"
             + "{% endif %}"
-        )
+        ))
         # fmt: off
         state_topic = f"{mqtt_topic}/state"
 

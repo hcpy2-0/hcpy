@@ -36,3 +36,11 @@ DISABLED_ENTITIES:
 - Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
 DISABLED_EXCEPTIONS:
 - Refrigeration.Common.Status.Door.
+ADDITIONAL_FEATURES:
+  - name: ipV4
+    template: |-
+  {% if 'ipV4' in value_json %}
+  {{ value_json['ipV4'].ipAddress }}
+  {% endif %}
+  - name: rssi
+  - name: euiAddress
