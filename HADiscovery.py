@@ -3,17 +3,18 @@ import json
 from HCSocket import now
 
 try:
-    with open('config/discovery.yaml', 'r') as yaml_config:
+    with open("config/discovery.yaml", "r") as yaml_config:
         config = yaml.safe_load(yaml_config)
 except Exception:
     print(now(), "HADiscovery - No discovery configuration file found.")
 
-HA_DISCOVERY_PREFIX = config.get('HA_DISCOVERY_PREFIX',"homeassistant")
-MAGIC_OVERRIDES = config.get('MAGIC_OVERRIDES', {})
-EXPAND_NAME = config.get('EXPAND_NAME', {})
-SKIP_ENTITIES = config.get('SKIP_ENTITIES', [])
-DISABLED_ENTITIES = config.get('DISABLED_ENTITIES',[])
-DISABLED_EXCEPTIONS = config.get('DISABLED_EXCEPTIONS',[])
+HA_DISCOVERY_PREFIX = config.get("HA_DISCOVERY_PREFIX", "homeassistant")
+MAGIC_OVERRIDES = config.get("MAGIC_OVERRIDES", {})
+EXPAND_NAME = config.get("EXPAND_NAME", {})
+SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
+DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
+DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
+
 
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device['name']}")
