@@ -1,0 +1,38 @@
+HA_DISCOVERY_PREFIX: homeassistant
+MAGIC_OVERRIDES:
+  BSH.Common.Option.ProgramProgress:
+    payload_values:
+      unit_of_measurement: '%'
+  BSH.Common.Option.RemainingProgramTime:
+    payload_values:
+      device_class: duration
+      unit_of_measurement: s
+  BSH.Common.Option.StartInRelative:
+    payload_values:
+      device_class: duration
+      unit_of_measurement: s
+  BSH.Common.Status.DoorState:
+    payload_values:
+      icon: mdi:door
+  Refrigeration.Common.Status.Door.Freezer:
+    payload_values:
+      icon: mdi:door
+  Refrigeration.Common.Status.Door.Refrigerator:
+    payload_values:
+      icon: mdi:door
+EXPAND_NAME:
+  BSH.Common.Setting.Favorite.: 3
+  BSH.Common.Status.Program.: 4
+  Cooking.Hob.Status.Zone.: 3
+  Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.: 3
+  LaundryCare.Dryer.OptionList.: 2
+  LaundryCare.Dryer.Program.: 2
+  Refrigeration.Common.Status.: 3
+SKIP_ENTITIES:
+- Dishcase.Dishwasher.Program.
+- BSH.Common.Root.
+DISABLED_ENTITIES:
+- Refrigeration.Common.Status.
+- Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
+DISABLED_EXCEPTIONS:
+- Refrigeration.Common.Status.Door.

@@ -2,44 +2,18 @@ import json
 
 from HCSocket import now
 
-HA_DISCOVERY_PREFIX = "homeassistant"
+try:
+    with open('config/discovery.yaml', 'r') as yaml_config:
+        config = yaml.safe_load(yaml_config)
+except Exception:
+    print(now(), "HADiscovery - No discovery configuration file found.")
 
-# These "magic overrides" provide HA MQTT autodiscovery data.
-MAGIC_OVERRIDES = {
-    "BSH.Common.Option.ProgramProgress": {"payload_values": {"unit_of_measurement": "%"}},
-    "BSH.Common.Option.RemainingProgramTime": {
-        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
-    },
-    "BSH.Common.Option.StartInRelative": {
-        "payload_values": {"unit_of_measurement": "s", "device_class": "duration"}
-    },
-    "BSH.Common.Status.DoorState": {"payload_values": {"icon": "mdi:door"}},
-    "Refrigeration.Common.Status.Door.Freezer": {"payload_values": {"icon": "mdi:door"}},
-    "Refrigeration.Common.Status.Door.Refrigerator": {"payload_values": {"icon": "mdi:door"}},
-}
-
-EXPAND_NAME = {
-    "Cooking.Hob.Status.Zone.": 3,
-    "Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.": 3,
-    "BSH.Common.Setting.Favorite.": 3,
-    "Refrigeration.Common.Status.": 3,
-    "LaundryCare.Dryer.OptionList.": 2,
-    "LaundryCare.Dryer.Program.": 2,
-    "BSH.Common.Status.Program.": 4,
-}
-
-# We don't believe these ever have state to display
-SKIP_ENTITIES = ["Dishcase.Dishwasher.Program.", "BSH.Common.Root."]
-
-# We haven't seen these display any values
-DISABLED_ENTITIES = [
-    "Refrigeration.Common.Status.",
-    "Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.",
-]
-
-# Exceptions to the above
-DISABLED_EXCEPTIONS = ["Refrigeration.Common.Status.Door."]
-
+HA_DISCOVERY_PREFIX = config.get('HA_DISCOVERY_PREFIX',"homeassistant")
+MAGIC_OVERRIDES = config.get('MAGIC_OVERRIDES', {})
+EXPAND_NAME = config.get('EXPAND_NAME', {})
+SKIP_ENTITIES = config.get('SKIP_ENTITIES', [])
+DISABLED_ENTITIES = config.get('DISABLED_ENTITIES',[])
+DISABLED_EXCEPTIONS = config.get('DISABLED_EXCEPTIONS',[])
 
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device['name']}")
