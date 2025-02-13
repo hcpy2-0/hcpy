@@ -106,7 +106,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             if refCID == "01" and refDID == "00":
                 component_type = "binary_sensor"
                 extra_payload_values["payload_on"] = True
-                extra_payload_values["payload_on"] = False
+                extra_payload_values["payload_off"] = False
             elif handling is not None:
                 component_type = "event"
                 extra_payload_values["event_types"] = list(values.values())
