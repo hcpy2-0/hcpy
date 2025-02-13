@@ -39,8 +39,8 @@ DISABLED_EXCEPTIONS:
 ADDITIONAL_FEATURES:
   - name: ipV4
     template: |-
-  {% if 'ipV4' in value_json %}
-  {{ value_json['ipV4'].ipAddress }}
-  {% endif %}
+      {% if 'ipV4' in value_json %}
+      {{ value_json['ipV4'].ipAddress }}
+      {% endif %}
   - name: rssi
   - name: euiAddress
