@@ -29,7 +29,7 @@ EXPAND_NAME:
   LaundryCare.Dryer.Program.: 2
   Refrigeration.Common.Status.: 3
 SKIP_ENTITIES:
-- Dishcase.Dishwasher.Program.
+- Dishcare.Dishwasher.Program.
 - BSH.Common.Root.
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
