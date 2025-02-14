@@ -154,20 +154,39 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 )
                 # fmt: on
 
-            # Temperature Sensor (assuming C?)
+
+            # Temperature
             if refCID == "07" and refDID == "A4":
                 extra_payload_values = extra_payload_values | {
                     "unit_of_measurement": "°C",
                     "device_class": "temperature",
+                    "icon": "mdi:thermometer"
                 }
+
+                if access == "readwrite":
+                    component_type = "number"
+                    extra_payload_values = extra_payload_values | {
+                        "command_topic": f"{mqtt_topic}/set",
+                        "command_template": f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]",
+                    }
+                    minimum = feature.get("min", None)
+                    maximum = feature.get("max", None)
+                    if minimum is not None:
+                        extra_payload_values["min"] = minimum
+                    if maximum is not None:
+                        extra_payload_values["max"] = maximum
             # Duration sensor e.g. Time Remaining
             elif refCID == "10" and refDID == "82":
                 extra_payload_values = extra_payload_values | {
                     "unit_of_measurement": "s",
                     "device_class": "duration",
                 }
+            elif name == 'rssi':
+                extra_payload_values = extra_payload_values | {
+                    "unit_of_measurement": "dBm",
+                    "icon": "mdi:wifi"
+                }
 
-            
             if access == "readwrite" and refCID == "01" and refDID == "00" and uid is not None:
                 component_type = "switch"
                 extra_payload_values = extra_payload_values | {
