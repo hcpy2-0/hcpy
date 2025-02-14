@@ -8,7 +8,6 @@ import sys
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
-import sslpsk
 import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
@@ -23,17 +22,6 @@ def hmac(key, msg):
 
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-
-
-# Monkey patch for sslpsk in pip using the old _sslobj
-def _sslobj(sock):
-    if (3, 5) <= sys.version_info <= (3, 7):
-        return sock._sslobj._sslobj
-    else:
-        return sock._sslobj
-
-
-sslpsk.sslpsk._sslobj = _sslobj
 
 
 class HCSocket:
@@ -76,6 +64,15 @@ class HCSocket:
     def hmac_msg(self, direction, enc_msg):
         hmac_msg = self.iv + direction + enc_msg
         return hmac(self.mackey, hmac_msg)[0:16]
+
+    def wrap_socket_psk(self, tcp_socket):
+        if not ssl.HAS_PSK:
+            raise NotImplementedError("OpenSSL library does not have support for TLS-PSK")
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
+        context.set_psk_client_callback(lambda hint: (None, self.psk))
+        return context.wrap_socket(tcp_socket, server_hostname=self.host)
 
     def decrypt(self, buf):
         if len(buf) < 32:
@@ -137,12 +134,7 @@ class HCSocket:
         sock.connect((self.host, self.port))
 
         if not self.http:
-            sock = sslpsk.wrap_socket(
-                sock,
-                ssl_version=ssl.PROTOCOL_TLSv1_2,
-                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
-                psk=self.psk,
-            )
+            sock = self.wrap_socket_psk(sock)
 
         print(now(), "CON:", self.uri)
         self.ws = websocket.WebSocket()
@@ -177,12 +169,7 @@ class HCSocket:
         sock.connect((self.host, self.port))
 
         if not self.http:
-            sock = sslpsk.wrap_socket(
-                sock,
-                ssl_version=ssl.PROTOCOL_TLSv1_2,
-                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
-                psk=self.psk,
-            )
+            sock = self.wrap_socket_psk(sock)
 
         def _on_open(ws):
             self.dprint("on connect")
