@@ -154,7 +154,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 )
                 # fmt: on
 
-
             # Temperature
             if refCID == "07" and refDID == "A4":
                 extra_payload_values = extra_payload_values | {
