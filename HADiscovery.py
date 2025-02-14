@@ -185,15 +185,22 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     "icon": "mdi:wifi"
                 }
 
-            if access == "readwrite" and refCID == "01" and refDID == "00" and uid is not None:
-                component_type = "switch"
-                extra_payload_values = extra_payload_values | {
-                    "command_topic": f"{mqtt_topic}/set",
-                    "state_on": True,
-                    "state_off": False,
-                    "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
-                    "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
-                }
+            if access == "readwrite" and uid is not None:
+                if refCID == "01" and refDID == "00":
+                    component_type = "switch"
+                    extra_payload_values = extra_payload_values | {
+                        "command_topic": f"{mqtt_topic}/set",
+                        "state_on": True,
+                        "state_off": False,
+                        "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
+                        "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
+                    }
+                elif refCID == "03" and refDID == "80":
+                    component_type = "select"
+                    extra_payload_values = extra_payload_values | {
+                        "command_topic": f"{mqtt_topic}/set",
+                        "command_template": f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
+                    }
 
             discovery_topic = (
                 f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"

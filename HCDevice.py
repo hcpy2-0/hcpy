@@ -177,16 +177,21 @@ class HCDevice:
 
                 # check if selected list with values is allowed
                 if "values" in feature:
-                    if isinstance(data["value"], int) is False:
-                        raise Exception(
-                            f"Unable to configure appliance. The value {data['value']} must "
-                            f"be an integer. Allowed values are {feature['values']}."
-                        )
+                    if isinstance(data["value"], int) is False and data["value"].isdigit() is False:
+                        try:
+                            key = next(key for key, value in feature['values'].items() if value == data["value"])
+                            data["value"] = int(key)
+                        except StopIteration:
+                            raise Exception(
+                                f"Unable to configure appliance. The value {data['value']} must "
+                                f"be in the allowed values {feature['values']}."
+                            )
+                    elif isinstance(data["value"], int) is False and data["value"].isdigit():
+                        data["value"] = int(data["value"])
 
-                    value = str(data["value"])
                     # values are strings in the feature list,
                     # but always seem to be an integer. An integer must be provided
-                    if value not in feature["values"]:
+                    if str(data["values"]) not in feature["values"]:
                         raise Exception(
                             "Unable to configure appliance. "
                             f"Value {data['value']} is not a valid value. "
@@ -206,6 +211,8 @@ class HCDevice:
                             f"Value {data['value']} is not a valid value. "
                             f"The value must be an integer in the range {min} and {max}."
                         )
+
+        return data_array
 
     def recv(self):
         try:
@@ -257,10 +264,11 @@ class HCDevice:
             if isinstance(data, list) is False:
                 data = [data]
 
-            if action == "POST" and self.debug is False:
+            if action == "POST":
                 if resource == "/ro/values":
                     # Raises exceptions on failure
-                    self.test_feature(data)
+                    # Replace named values with integers if possible
+                    data = self.test_feature(data)
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
                     self.test_program_data(data)
