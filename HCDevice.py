@@ -198,7 +198,7 @@ class HCDevice:
 
                     # values are strings in the feature list,
                     # but always seem to be an integer. An integer must be provided
-                    if str(data["values"]) not in feature["values"]:
+                    if str(data["value"]) not in feature["values"]:
                         raise Exception(
                             "Unable to configure appliance. "
                             f"Value {data['value']} is not a valid value. "
