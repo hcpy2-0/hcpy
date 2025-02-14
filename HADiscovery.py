@@ -161,18 +161,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     "device_class": "temperature",
                     "icon": "mdi:thermometer"
                 }
-                if access == "readwrite":
-                    component_type = "number"
-                    extra_payload_values = extra_payload_values | {
-                        "command_topic": f"{mqtt_topic}/set",
-                        "command_template": f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]",
-                    }
-                    minimum = feature.get("min", None)
-                    maximum = feature.get("max", None)
-                    if minimum is not None:
-                        extra_payload_values["min"] = minimum
-                    if maximum is not None:
-                        extra_payload_values["max"] = maximum
             # Duration sensor e.g. Time Remaining
             elif refCID == "10" and refDID == "82":
                 extra_payload_values = extra_payload_values | {
@@ -195,12 +183,35 @@ def publish_ha_discovery(device, client, mqtt_topic):
                         "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
                         "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
                     }
+                elif refCID == "03" and refDID == "80" and len(values.values())==2 and "On" in values.values() and "Off" in values.values():
+                    print("\n\nHOOD BINARY\n\n")
+                    component_type = "switch"
+                    extra_payload_values = extra_payload_values | {
+                        "command_topic": f"{mqtt_topic}/set",
+                        "state_on": "On",
+                        "state_off": "Off",
+                        "payload_on": f"[{{\"uid\":{uid},\"value\":\"On\"}}]",
+                        "payload_off": f"[{{\"uid\":{uid},\"value\":\"Off\"}}]",
+                        "device_class": "switch"
+                    }
                 elif refCID == "03" and refDID == "80":
                     component_type = "select"
                     extra_payload_values = extra_payload_values | {
                         "command_topic": f"{mqtt_topic}/set",
                         "command_template": f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
                     }
+                elif refCID == "07" and refDID == "A4":
+                    component_type = "number"
+                    extra_payload_values = extra_payload_values | {
+                        "command_topic": f"{mqtt_topic}/set",
+                        "command_template": f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]",
+                    }
+                    minimum = feature.get("min", None)
+                    maximum = feature.get("max", None)
+                    if minimum is not None:
+                        extra_payload_values["min"] = minimum
+                    if maximum is not None:
+                        extra_payload_values["max"] = maximum
 
             discovery_topic = (
                 f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
