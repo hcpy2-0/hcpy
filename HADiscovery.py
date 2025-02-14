@@ -41,8 +41,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "sw_version": ".".join(version_parts),
     }
 
-    for key,value in device['features'].items():
-        value['uid'] = key
+    for key, value in device["features"].items():
+        value["uid"] = key
 
     for feature in ADDITIONAL_FEATURES + list(device["features"].values()):
         if "name" not in feature:
