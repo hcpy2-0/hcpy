@@ -177,9 +177,16 @@ class HCDevice:
 
                 # check if selected list with values is allowed
                 if "values" in feature:
-                    if isinstance(data["value"], int) is False and data["value"].isdigit() is False:
+                    if (
+                        isinstance(data["value"], int) is False
+                        and data["value"].isdigit() is False
+                    ):
                         try:
-                            key = next(key for key, value in feature['values'].items() if value == data["value"])
+                            key = next(
+                                key
+                                for key, value in feature["values"].items()
+                                if value == data["value"]
+                            )
                             data["value"] = int(key)
                         except StopIteration:
                             raise Exception(
