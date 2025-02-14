@@ -41,6 +41,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "sw_version": ".".join(version_parts),
     }
 
+    for key,value in device['features'].items():
+        value['uid'] = key
+
     for feature in ADDITIONAL_FEATURES + list(device["features"].values()):
         if "name" not in feature:
             continue  # TODO we could display things based on UID?
@@ -81,6 +84,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     friendly_name = name
                 break
 
+        uid = feature.get("uid", None)
         feature_id = name.lower().replace(".", "_")
         refCID = feature.get("refCID", None)
         refDID = feature.get("refDID", None)
@@ -161,6 +165,17 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 extra_payload_values = extra_payload_values | {
                     "unit_of_measurement": "s",
                     "device_class": "duration",
+                }
+
+            
+            if access == "readwrite" and refCID == "01" and refDID == "00" and uid is not None:
+                component_type = "switch"
+                extra_payload_values = extra_payload_values | {
+                    "command_topic": f"{mqtt_topic}/set",
+                    "state_on": True,
+                    "state_off": False,
+                    "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
+                    "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
                 }
 
             discovery_topic = (
