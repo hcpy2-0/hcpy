@@ -183,7 +183,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
                         "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
                         "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
                     }
-                elif refCID == "03" and refDID == "80" and len(values.values())==2 and "On" in values.values() and "Off" in values.values():
+                elif (
+                    refCID == "03"
+                    and refDID == "80"
+                    and len(values.values()) == 2
+                    and "On" in values.values()
+                    and "Off" in values.values()
+                ):
                     component_type = "switch"
                     extra_payload_values = extra_payload_values | {
                         "command_topic": f"{mqtt_topic}/set",
