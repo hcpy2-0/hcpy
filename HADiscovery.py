@@ -49,7 +49,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
             continue  # TODO we could display things based on UID?
 
         name = feature["name"]
-        extra_payload_values = {}
 
         skip = False
         # Skip Programs without state
@@ -68,9 +67,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 for disabled_exception in DISABLED_EXCEPTIONS:
                     if disabled_exception in name:
                         disabled = False
-
-        if disabled:
-            extra_payload_values["enabled_by_default"] = False
 
         friendly_name = name.split(".")[-1]
 
@@ -101,138 +97,146 @@ def publish_ha_discovery(device, client, mqtt_topic):
         ))
         # fmt: off
         state_topic = f"{mqtt_topic}/state"
+        discovery_payload = {
+            "name": friendly_name,
+            "device": device_info,
+            "state_topic": state_topic,
+            "availability_mode": "all",
+            "availability": [{"topic": f"{base_topic}/LWT"}, {"topic": f"{mqtt_topic}/LWT"}],
+            "object_id": f"{device_ident}_{feature_id}",
+            "unique_id": f"{device_ident}_{feature_id}",
+            "value_template": value_template,
+            "enabled_by_default": not disabled
+        }
 
-        if (
-            handling
-            or refCID is None
-            or (available and (access == "read" or access == "readwrite"))
-        ):
-            if refCID == "01" and refDID == "00":
-                component_type = "binary_sensor"
-                extra_payload_values["payload_on"] = True
-                extra_payload_values["payload_off"] = False
-            elif handling is not None:
-                component_type = "event"
-                extra_payload_values["event_types"] = list(values.values())
-                extra_payload_values["platform"] = "event"
-                # fmt: off
-                value_template = (
-                    "{ {% if '" + name + "' in value_json %}\n"
-                    + '"event_type":"{{ value_json[\'' + name + "'] }}\"\n"
-                    + "{% endif %} }"
-                )
-                # fmt: on
-                state_topic = f"{mqtt_topic}/event"
-            else:
-                component_type = "sensor"
-                if refCID == "03" and refDID == "80":
-                    extra_payload_values = extra_payload_values | {
-                        "device_class": "enum",
-                        "options": list(values.values()),
-                    }
+        if refCID == "01" and refDID == "00":
+            component_type = "binary_sensor"
+            discovery_payload["payload_on"] = True
+            discovery_payload["payload_off"] = False
+        elif handling is not None:
+            component_type = "event"
+            discovery_payload["event_types"] = list(values.values())
+            discovery_payload["platform"] = "event"
+            # fmt: off
+            discovery_payload["value_template"] = (
+                "{ {% if '" + name + "' in value_json %}\n"
+                + '"event_type":"{{ value_json[\'' + name + "'] }}\"\n"
+                + "{% endif %} }"
+            )
+            # fmt: on
+            state_topic = f"{mqtt_topic}/event"
+        else:
+            component_type = "sensor"
 
-            defaultValue = None
-            if initValue is not None:
-                if values is not None and initValue in values:
-                    defaultValue = values[initValue]
-                elif component_type == "binary_sensor":
-                    if initValue.lower() == "true" or initValue.lower() == "false":
-                        defaultValue = bool(initValue)
-                    else:
-                        defaultValue = initValue == "1"
+        defaultValue = None
+        if initValue is not None:
+            if values is not None and initValue in values:
+                defaultValue = values[initValue]
+            elif component_type == "binary_sensor":
+                if initValue.lower() == "true" or initValue.lower() == "false":
+                    defaultValue = bool(initValue)
                 else:
-                    defaultValue = initValue
+                    defaultValue = initValue == "1"
+            else:
+                defaultValue = initValue
 
-            if component_type != "event" and defaultValue is not None:
-                # fmt: off
-                value_template = (
-                    "{% if '" + name + "' in value_json %}\n"
-                    + "{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n"
-                    + "{% else %}\n"
-                    + str(defaultValue) + "\n"
-                    + "{% endif %}"
-                )
-                # fmt: on
+        if component_type != "event" and defaultValue is not None:
+            # fmt: off
+            discovery_payload["value_template"] = (
+                "{% if '" + name + "' in value_json %}\n"
+                + "{{ value_json['" + name + "']|default('" + str(defaultValue) + "') }}\n"
+                + "{% else %}\n"
+                + str(defaultValue) + "\n"
+                + "{% endif %}"
+            )
+            # fmt: on
 
-            # Temperature
-            if refCID == "07" and refDID == "A4":
-                extra_payload_values = extra_payload_values | {
-                    "unit_of_measurement": "°C",
-                    "device_class": "temperature",
-                    "icon": "mdi:thermometer"
-                }
-            # Duration sensor e.g. Time Remaining
-            elif refCID == "10" and refDID == "82":
-                extra_payload_values = extra_payload_values | {
-                    "unit_of_measurement": "s",
-                    "device_class": "duration",
-                }
-            elif name == 'rssi':
-                extra_payload_values = extra_payload_values | {
-                    "unit_of_measurement": "dBm",
-                    "icon": "mdi:wifi"
-                }
+        # Temperature
+        if refCID == "07" and refDID == "A4":
+            discovery_payload["unit_of_measurement"] = "°C"
+            discovery_payload["device_class"] = "temperature"
+            discovery_payload["icon"] = "mdi:thermometer"
+        elif refCID == "03" and refDID == "80":
+            discovery_payload["device_class"] = "enum"
+            discovery_payload["options"] = list(values.values())
+        # Duration sensor e.g. Time Remaining
+        elif (
+                (refCID == "10" and refDID == "82")
+                or name == 'BSH.Common.Option.ElapsedProgramTime'
+                or name == 'BSH.Common.Option.Duration'
+            ):
+            discovery_payload["unit_of_measurement"] = "s"
+            discovery_payload["device_class"] = "duration"
+        elif name == 'rssi': # or name == 'BSH.Common.Status.WiFiSignalStrength': Wifi signal strength isn't in dBm? e.g. 198
+            discovery_payload["unit_of_measurement"] = "dBm"
+            discovery_payload["icon"] = "mdi:wifi"
 
-            if access == "readwrite" and uid is not None:
-                if refCID == "01" and refDID == "00":
+        # Setup Controllable options
+        # Access can be read, readwrite, writeonly, none
+        if (
+                (uid is not None)
+                and (access == "writeonly" or access == "readwrite")
+            ):
+            # 01/00 is binary true/false
+            # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
+            if (refCID == "01" and refDID == "00") or (refCID == "15" and refDID == "81"):
+                if access == "writeonly":
+                    component_type = "button"
+                    discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+                    discovery_payload["payload_press"] = f"[{{\"uid\":{uid},\"value\":true}}]"
+                    discovery_payload.pop('value_template', None)
+                else:
                     component_type = "switch"
-                    extra_payload_values = extra_payload_values | {
-                        "command_topic": f"{mqtt_topic}/set",
-                        "state_on": True,
-                        "state_off": False,
-                        "payload_on": f"[{{\"uid\":{uid},\"value\":true}}]",
-                        "payload_off": f"[{{\"uid\":{uid},\"value\":false}}]",
-                    }
-                elif (
-                    refCID == "03"
-                    and refDID == "80"
-                    and len(values.values()) == 2
-                    and "On" in values.values()
-                    and "Off" in values.values()
+                    discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+                    discovery_payload["state_on"] = True
+                    discovery_payload["state_off"] = False
+                    discovery_payload["payload_on"] = f"[{{\"uid\":{uid},\"value\":true}}]"
+                    discovery_payload["payload_off"] = f"[{{\"uid\":{uid},\"value\":false}}]"
+            # 03/80 are enums
+            elif (
+                refCID == "03"
+                and refDID == "80"
+                and len(values.values()) == 2
+                and "On" in values.values()
+                and "Off" in values.values()
+            ):
+                component_type = "switch"
+                discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+                discovery_payload["state_on"] = "On"
+                discovery_payload["state_off"] = "Off"
+                discovery_payload["payload_on"] = f"[{{\"uid\":{uid},\"value\":\"On\"}}]"
+                discovery_payload["payload_off"] = f"[{{\"uid\":{uid},\"value\":\"Off\"}}]"
+                discovery_payload["device_class"] = "switch"
+            elif refCID == "03" and refDID == "80":
+                component_type = "select"
+                discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+                discovery_payload["command_template"] = f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
+            # numbers
+            elif (
+                    (refCID == "07" and refDID == "A4")
+                    or (refCID == "11" and refDID == "A0")
+                    or (refCID == "02" and refDID == "80")
+                    or (refCID == "81" and refDID == "60") #Time
+                    or (refCID == "10" and refDID == "81") #Time
                 ):
-                    component_type = "switch"
-                    extra_payload_values = extra_payload_values | {
-                        "command_topic": f"{mqtt_topic}/set",
-                        "state_on": "On",
-                        "state_off": "Off",
-                        "payload_on": f"[{{\"uid\":{uid},\"value\":\"On\"}}]",
-                        "payload_off": f"[{{\"uid\":{uid},\"value\":\"Off\"}}]",
-                        "device_class": "switch"
-                    }
-                elif refCID == "03" and refDID == "80":
-                    component_type = "select"
-                    extra_payload_values = extra_payload_values | {
-                        "command_topic": f"{mqtt_topic}/set",
-                        "command_template": f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
-                    }
-                elif refCID == "07" and refDID == "A4":
-                    component_type = "number"
-                    extra_payload_values = extra_payload_values | {
-                        "command_topic": f"{mqtt_topic}/set",
-                        "command_template": f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]",
-                    }
-                    minimum = feature.get("min", None)
-                    maximum = feature.get("max", None)
-                    if minimum is not None:
-                        extra_payload_values["min"] = minimum
-                    if maximum is not None:
-                        extra_payload_values["max"] = maximum
+                component_type = "number"
+                discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+                discovery_payload["command_template"] = f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]"
+
+                minimum = feature.get("min", None)
+                maximum = feature.get("max", None)
+                step = feature.get("stepSize", None)
+                if minimum is not None:
+                    discovery_payload["min"] = minimum
+                if maximum is not None:
+                    discovery_payload["max"] = maximum
+                if step is not None:
+                    discovery_payload["step"] = step
+                    
 
             discovery_topic = (
                 f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
             )
-
-            discovery_payload = {
-                "name": friendly_name,
-                "device": device_info,
-                "state_topic": state_topic,
-                "availability_mode": "all",
-                "availability": [{"topic": f"{base_topic}/LWT"}, {"topic": f"{mqtt_topic}/LWT"}],
-                "value_template": value_template,
-                "object_id": f"{device_ident}_{feature_id}",
-                "unique_id": f"{device_ident}_{feature_id}",
-                **extra_payload_values,
-            }
 
             overrides = MAGIC_OVERRIDES.get(name)
             if overrides:
