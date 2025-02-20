@@ -168,10 +168,10 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 (refCID == "10" and refDID == "82")
                 or name == 'BSH.Common.Option.ElapsedProgramTime'
                 or name == 'BSH.Common.Option.Duration'
-            ):
+        ):
             discovery_payload["unit_of_measurement"] = "s"
             discovery_payload["device_class"] = "duration"
-        elif name == 'rssi': # or name == 'BSH.Common.Status.WiFiSignalStrength': Wifi signal strength isn't in dBm? e.g. 198
+        elif name == 'rssi':
             discovery_payload["unit_of_measurement"] = "dBm"
             discovery_payload["icon"] = "mdi:wifi"
 
@@ -180,11 +180,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
         if (
                 ((uid is not None) and (access == "writeonly" or access == "readwrite"))
                 or name in WRITEABLE_ENTITIES
-            ):
+        ):
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
-            if (refCID == "01" and (refDID == "00" or refDID == "01")) or (refCID == "15" and refDID == "81"):
+            if (
+                    refCID == "01" and (refDID == "00" or refDID == "01"))
+                    or (refCID == "15" and refDID == "81")
+            ):
                 if access == "writeonly":
                     component_type = "button"
                     discovery_payload["command_topic"] = f"{mqtt_topic}/set"
@@ -215,18 +218,21 @@ def publish_ha_discovery(device, client, mqtt_topic):
             elif refCID == "03" and refDID == "80":
                 component_type = "select"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
-                discovery_payload["command_template"] = f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
+                template = f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
+                discovery_payload["command_template"] = template
+    
             # numbers
             elif (
                     (refCID == "07" and refDID == "A4")
                     or (refCID == "11" and refDID == "A0")
                     or (refCID == "02" and refDID == "80")
-                    or (refCID == "81" and refDID == "60") #Time
-                    or (refCID == "10" and refDID == "81") #Time
-                ):
+                    or (refCID == "81" and refDID == "60")
+                    or (refCID == "10" and refDID == "81")
+            ):
                 component_type = "number"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
-                discovery_payload["command_template"] = f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]"
+                template = f"[{{\"uid\":{uid},\"value\":{{{{value}}}}}}]"
+                discovery_payload["command_template"] = template
 
                 minimum = feature.get("min", None)
                 maximum = feature.get("max", None)
@@ -237,7 +243,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     discovery_payload["max"] = maximum
                 if step is not None:
                     discovery_payload["step"] = step
-                    
+                   
 
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
