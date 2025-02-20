@@ -18,6 +18,7 @@ SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
 DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
 DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
 ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
+WRITEABLE_ENTITIES = [] #config.get("WRITEABLE_ENTITIES", [])
 
 
 def publish_ha_discovery(device, client, mqtt_topic):
@@ -88,6 +89,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         access = feature.get("access", "").lower()
         available = feature.get("available", False)
         initValue = feature.get("initValue", None)
+        value = feature.get("value", None)
         values = feature.get("values", None)
         # fmt: off
         value_template = feature.get("template", (
@@ -97,6 +99,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         ))
         # fmt: off
         state_topic = f"{mqtt_topic}/state"
+
         discovery_payload = {
             "name": friendly_name,
             "device": device_info,
@@ -109,7 +112,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             "enabled_by_default": not disabled
         }
 
-        if refCID == "01" and refDID == "00":
+        if refCID == "01" and (refDID == "00" or refDID == "01"):
             component_type = "binary_sensor"
             discovery_payload["payload_on"] = True
             discovery_payload["payload_off"] = False
@@ -157,7 +160,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
         elif refCID == "03" and refDID == "80":
-            discovery_payload["device_class"] = "enum"
+            if component_type != "event":
+                discovery_payload["device_class"] = "enum"
             discovery_payload["options"] = list(values.values())
         # Duration sensor e.g. Time Remaining
         elif (
@@ -174,12 +178,13 @@ def publish_ha_discovery(device, client, mqtt_topic):
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
         if (
-                (uid is not None)
-                and (access == "writeonly" or access == "readwrite")
+                ((uid is not None) and (access == "writeonly" or access == "readwrite"))
+                or name in WRITEABLE_ENTITIES
             ):
             # 01/00 is binary true/false
+            # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
-            if (refCID == "01" and refDID == "00") or (refCID == "15" and refDID == "81"):
+            if (refCID == "01" and (refDID == "00" or refDID == "01")) or (refCID == "15" and refDID == "81"):
                 if access == "writeonly":
                     component_type = "button"
                     discovery_payload["command_topic"] = f"{mqtt_topic}/set"
@@ -234,14 +239,14 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     discovery_payload["step"] = step
                     
 
-            discovery_topic = (
-                f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
-            )
+        discovery_topic = (
+            f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
+        )
 
-            overrides = MAGIC_OVERRIDES.get(name)
-            if overrides:
-                payload_values = overrides.get("payload_values", {})
-                # Overwrite keys with override values
-                discovery_payload = discovery_payload | payload_values
+        overrides = MAGIC_OVERRIDES.get(name)
+        if overrides:
+            payload_values = overrides.get("payload_values", {})
+            # Overwrite keys with override values
+            discovery_payload = discovery_payload | payload_values
 
-            client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
+        client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)

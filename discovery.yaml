@@ -20,6 +20,21 @@ MAGIC_OVERRIDES:
   Refrigeration.Common.Status.Door.Refrigerator:
     payload_values:
       icon: mdi:door
+  Cooking.Common.Setting.LightingBrightness:
+    payload_values:
+      unit_of_measurement: '%'
+  Cooking.Hood.Setting.IntervalTimeOff:
+    payload_values:
+      device_class: duration
+      unit_of_measurement: s
+  Cooking.Hood.Setting.IntervalTimeOn:
+    payload_values:
+      device_class: duration
+      unit_of_measurement: s
+  Cooking.Hood.Setting.DelayedShutOffTime:
+    payload_values:
+      device_class: duration
+      unit_of_measurement: s
 EXPAND_NAME:
   BSH.Common.Setting.Favorite.: 3
   BSH.Common.Status.Program.: 4
@@ -44,3 +59,4 @@ ADDITIONAL_FEATURES:
       {% endif %}
   - name: rssi
   - name: euiAddress
+WRITEABLE_ENTITIES:
