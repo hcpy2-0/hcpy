@@ -87,7 +87,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         refDID = feature.get("refDID", None)
         handling = feature.get("handling", None)
         access = feature.get("access", "").lower()
-        available = feature.get("available", False)
+        #available = feature.get("available", False)
         initValue = feature.get("initValue", None)
         value = feature.get("value", None)
         values = feature.get("values", None)
@@ -220,7 +220,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                 template = f"[{{\"uid\":{uid},\"value\":\"{{{{value}}}}\"}}]"
                 discovery_payload["command_template"] = template
-    
             # numbers
             elif (
                     (refCID == "07" and refDID == "A4")
@@ -244,7 +243,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 if step is not None:
                     discovery_payload["step"] = step
                    
-
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
