@@ -185,7 +185,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
             if (
-                    refCID == "01" and (refDID == "00" or refDID == "01"))
+                    (refCID == "01" and (refDID == "00" or refDID == "01"))
                     or (refCID == "15" and refDID == "81")
             ):
                 if access == "writeonly":
