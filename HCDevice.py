@@ -206,18 +206,18 @@ class HCDevice:
                 # check the access level of the feature
                 self.print(f"Processing feature {feature['name']} with uid {uid}")
                 if "access" not in feature:
-                    raise Exception(
-                        "Unable to configure appliance. "
+                    self.print(
                         f"Feature {feature['name']} with uid {uid} does not have access."
+                        "Attempting to send instruction anyway."
                     )
-
-                access = feature["access"].lower()
-                if access != "readwrite" and access != "writeonly":
-                    raise Exception(
-                        "Unable to configure appliance. "
-                        f"Feature {feature['name']} with uid {uid} "
-                        f"has got access {feature['access']}."
-                    )
+                else:
+                    access = feature["access"].lower()
+                    if access != "readwrite" and access != "writeonly":
+                        self.print(
+                            f"Feature {feature['name']} with uid {uid} "
+                            f"has got access {feature['access']}."
+                            "Attempting to send instruction anyway."
+                        )
 
                 # check if selected list with values is allowed
                 if "values" in feature:

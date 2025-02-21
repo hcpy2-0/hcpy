@@ -18,16 +18,16 @@ MAGIC_OVERRIDES:
     component_type: "button"
     icon: mdi:cancel
   Dishcare.Dishwasher.Option.SilenceOnDemand:
-    component_type: "button"
+    component_type: "switch"
     icon: mdi:pause
   Dishcare.Dishwasher.Option.BrillianceDry:
-    component_type: "button"
+    component_type: "switch"
   Dishcare.Dishwasher.Option.HygienePlus:
-    component_type: "button"
+    component_type: "switch"
   Dishcare.Dishwasher.Option.IntensivZone:
-    component_type: "button"
+    component_type: "switch"
   Dishcare.Dishwasher.Option.VarioSpeedPlus:
-    component_type: "button"
+    component_type: "switch"
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:
