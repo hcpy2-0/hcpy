@@ -247,10 +247,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
 
-        overrides = MAGIC_OVERRIDES.get(name)
+        overrides = MAGIC_OVERRIDES.get(name, None)
         if overrides:
-            payload_values = overrides.get("payload_values", {})
             # Overwrite keys with override values
-            discovery_payload = discovery_payload | payload_values
+            discovery_payload = discovery_payload | overrides
 
         client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)

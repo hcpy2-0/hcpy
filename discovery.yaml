@@ -1,40 +1,34 @@
 HA_DISCOVERY_PREFIX: homeassistant
 MAGIC_OVERRIDES:
   BSH.Common.Option.ProgramProgress:
-    payload_values:
-      unit_of_measurement: '%'
+    unit_of_measurement: '%'
   BSH.Common.Option.RemainingProgramTime:
-    payload_values:
-      device_class: duration
-      unit_of_measurement: s
+    device_class: duration
+    unit_of_measurement: s
   BSH.Common.Option.StartInRelative:
-    payload_values:
-      device_class: duration
-      unit_of_measurement: s
+    device_class: duration
+    unit_of_measurement: s
   BSH.Common.Status.DoorState:
-    payload_values:
-      icon: mdi:door
+    icon: mdi:door
+  BSH.Common.Status.Program.All.Count.Started:
+    state_class: total_increasing
+  BSH.Common.Setting.PowerState:
+    icon: mdi:power
   Refrigeration.Common.Status.Door.Freezer:
-    payload_values:
-      icon: mdi:door
+    icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:
-    payload_values:
-      icon: mdi:door
+    icon: mdi:door
   Cooking.Common.Setting.LightingBrightness:
-    payload_values:
-      unit_of_measurement: '%'
+    unit_of_measurement: '%'
   Cooking.Hood.Setting.IntervalTimeOff:
-    payload_values:
-      device_class: duration
-      unit_of_measurement: s
+    device_class: duration
+    unit_of_measurement: s
   Cooking.Hood.Setting.IntervalTimeOn:
-    payload_values:
-      device_class: duration
-      unit_of_measurement: s
+    device_class: duration
+    unit_of_measurement: s
   Cooking.Hood.Setting.DelayedShutOffTime:
-    payload_values:
-      device_class: duration
-      unit_of_measurement: s
+    device_class: duration
+    unit_of_measurement: s
 EXPAND_NAME:
   BSH.Common.Setting.Favorite.: 3
   BSH.Common.Status.Program.: 4
