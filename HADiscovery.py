@@ -56,6 +56,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
         for skip_entity in SKIP_ENTITIES:
             if name.startswith(skip_entity):
                 skip = True
+            if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
+                skip = False
 
         if skip:
             continue
@@ -243,6 +245,31 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 if step is not None:
                     discovery_payload["step"] = step
 
+        if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
+            component_type = "select"
+            options = []
+            for k,v in device['features'].items():
+                if (
+                        "name" in v
+                        and (
+                            "Dishcare.Dishwasher.Program." in v["name"]
+                            or "Cooking.Common.Program.Hood." in v["name"]
+                            or "ConsumerProducts.CoffeeMaker.Program." in v["name"]
+                            or "ConsumerProducts.CleaningRobot.Program." in v["name"]
+                            or "LaundryCare.Dryer.Program." in v["name"]
+                            or "LaundryCare.Washer.Program." in v["name"]
+                            or "LaundryCare.WasherDryer.Program." in v["name"]
+                            or "Cooking.Oven.Program." in v["name"]
+                        )
+                ):
+                    options.append(v["name"])
+            discovery_payload["options"] = options
+            discovery_payload["command_template"] = '[{"program":"{{value}}","options":[]}]'
+            if  name == "BSH.Common.Root.ActiveProgram":
+                discovery_payload["command_topic"] = f"{mqtt_topic}/activeProgram"
+            elif name ==  "BSH.Common.Root.SelectedProgram":
+                discovery_payload["command_topic"] = f"{mqtt_topic}/selectedProgram"
+            
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )

@@ -72,6 +72,27 @@ class HCDevice:
         self.token = None
         self.connected = False
 
+    def get_feature_uid(self, name):
+        uid = None
+        with self.features_lock:
+            for k, v in self.features.items():
+                if "name" in v and name in v["name"]:
+                    uid = k
+                    break
+
+        return uid
+
+    def get_feature_name(self, uid):
+        name = None
+        uid = str(uid)
+        with self.features_lock:
+            if uid in self.features:
+                feature = self.features.get(uid, None)
+                if feature is not None:
+                    name = feature.get("name", None)
+
+        return name
+
     def parse_values(self, values):
         if not self.features:
             return values
@@ -88,21 +109,26 @@ class HCDevice:
             value_str = str(value)
 
             name = uid
-            status = None
+            feature = None
             with self.features_lock:
                 if uid in self.features:
-                    status = self.features[uid]
+                    feature = self.features[uid]
 
-            if status:
-                if "name" in status:
-                    name = status["name"]
-                if "values" in status and value_str in status["values"]:
-                    value = status["values"][value_str]
-                refCID = status.get("refCID", None)
-                refDID = status.get("refDID", None)
+            if feature:
+                if "name" in feature:
+                    name = feature["name"]
+                if "values" in feature and value_str in feature["values"]:
+                    value = feature["values"][value_str]
+                refCID = feature.get("refCID", None)
+                refDID = feature.get("refDID", None)
 
                 if refCID == "01" and refDID == "00":
                     value = value_str.lower() in ("1", "true", "on")
+                
+                if name == "BSH.Common.Root.SelectedProgram" or name == "BSH.Common.Root.ActiveProgram":
+                    program_name = self.get_feature_name(value_str)
+                    if program_name is not None:
+                        value = program_name
 
             result[name] = value
 
@@ -113,40 +139,46 @@ class HCDevice:
         for data in data_array:
             if "program" not in data:
                 raise TypeError("Message data invalid, no program specified.")
+            else:
+                program = data["program"]
 
-            if isinstance(data["program"], int) is False:
-                raise TypeError("Message data invalid, UID in 'program' must be an integer.")
-
-            # devices.json stores UID as string
-            uid = str(data["program"])
-            with self.features_lock:
-                if uid not in self.features:
+            if isinstance(program, int) or program.isdigit():
+                # devices.json stores UID as string
+                name = self.get_feature_name(program)
+                if name is None:
                     raise ValueError(
                         f"Unable to configure appliance. Program UID {uid} is not valid"
                         " for this device."
                     )
-
-                feature = self.features[uid]
-                # Diswasher is Dishcare.Dishwasher.Program.{name}
-                # Hood is Cooking.Common.Program.{name}
-                # May also be in the format BSH.Common.Program.Favorite.001
-                if "name" in feature:
-                    if ".Program." not in feature["name"]:
+                else:
+                    if ".Program." not in name:
                         raise ValueError(
                             f"Unable to configure appliance. Program UID {uid} is not a valid"
                             f" program - {feature['name']}."
                         )
-                else:
-                    self.print(f"Unknown Program UID {uid}")
+            else:
+                if ".Program." not in program:
+                    raise ValueError(
+                        f"Unable to configure appliance. Program {program} is not a valid program."
+                    )
 
-                if "options" in data:
-                    for option in data["options"]:
-                        option_uid = option["uid"]
-                        if str(option_uid) not in self.features:
-                            raise ValueError(
-                                f"Unable to configure appliance. Option UID {option_uid} is not"
-                                " valid for this device."
-                            )
+                uid = self.get_feature_uid(program)
+                if uid is not None:
+                    data["program"] = int(uid)
+                else:
+                    raise ValueError(
+                        f"Unable to configure appliance. Program {program} is an unknown program."
+                    )
+
+            if "options" in data:
+                for option in data["options"]:
+                    option_uid = option["uid"]
+                    if str(option_uid) not in self.features:
+                        raise ValueError(
+                            f"Unable to configure appliance. Option UID {option_uid} is not"
+                            " valid for this device."
+                        )
+        return data_array
 
     # Test the feature of an appliance agains a data object
     def test_feature(self, data_array):
@@ -287,10 +319,10 @@ class HCDevice:
                     data = self.test_feature(data)
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
-                    self.test_program_data(data)
+                    data = self.test_program_data(data)
                 elif resource == "/ro/selectedProgram":
                     # Raises exception on failure
-                    self.test_program_data(data)
+                    data = self.test_program_data(data)
 
             msg["data"] = data
 
