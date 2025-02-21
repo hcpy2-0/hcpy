@@ -102,7 +102,7 @@ class HCDevice:
                 refDID = status.get("refDID", None)
 
                 if refCID == "01" and refDID == "00":
-                    value = value_str.lower() in ("1","true","on")
+                    value = value_str.lower() in ("1", "true", "on")
 
             result[name] = value
 
@@ -386,36 +386,37 @@ class HCDevice:
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
                 if "data" in msg and len(msg["data"]) > 0:
-                        # Retrieve any value changes
-                        values = self.parse_values(msg["data"])
+                    # Retrieve any value changes
+                    values = self.parse_values(msg["data"])
 
-                        for change in msg["data"]:
-                            uid = str(change["uid"])
-                            with self.features_lock:
-                                if uid in self.features:
-                                    if "access" in change:
-                                        access = change["access"]
-                                        self.features[uid]["access"] = access
-                                    if "available" in change:
-                                        self.features[uid]["available"] = change["available"]
-                                    if "min" in change:
-                                        self.features[uid]["min"] = change["min"]
-                                    if "max" in change:
-                                        self.features[uid]["max"] = change["max"]
-                                    #if "value" in change:
-                                    #    name = self.features[str(uid)]["name"]
-                                    #    values | self.parse_values(change)
-                                    if "default" in change:
-                                        self.features[str(uid)]["default"] = change["default"]
+                    for change in msg["data"]:
+                        uid = str(change["uid"])
+                        with self.features_lock:
+                            if uid in self.features:
+                                if "access" in change:
+                                    access = change["access"]
+                                    self.features[uid]["access"] = access
+                                if "available" in change:
+                                    self.features[uid]["available"] = change["available"]
+                                if "min" in change:
+                                    self.features[uid]["min"] = change["min"]
+                                if "max" in change:
+                                    self.features[uid]["max"] = change["max"]
+                                # if "value" in change:
+                                #    name = self.features[str(uid)]["name"]
+                                #    values | self.parse_values(change)
+                                if "default" in change:
+                                    self.features[str(uid)]["default"] = change["default"]
 
-                                    if self.debug:
-                                        self.print(f"Access change {self.features[uid]['name']} - {change}")
+                                if self.debug:
+                                    self.print(
+                                        f"Access change {self.features[uid]['name']} - {change}"
+                                    )
 
-                                else:
-                                    # We wont have name for this item, so have to be careful
-                                    # when resolving elsewhere
-                                    self.features[uid] = change
-
+                            else:
+                                # We wont have name for this item, so have to be careful
+                                # when resolving elsewhere
+                                self.features[uid] = change
 
             elif resource == "/ni/info":
                 if "data" in msg and len(msg["data"]) > 0:
@@ -427,7 +428,6 @@ class HCDevice:
                 # [{'interfaceID': 0, 'automaticIPv4': True, 'automaticIPv6': True}]
                 if self.debug:
                     self.print(f"/ni/config {msg}")
-                pass
 
             elif resource == "/ro/allMandatoryValues" or resource == "/ro/values":
                 if "data" in msg:
