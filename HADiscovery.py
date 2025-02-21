@@ -242,7 +242,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     discovery_payload["max"] = maximum
                 if step is not None:
                     discovery_payload["step"] = step
-                   
+
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
