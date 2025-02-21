@@ -55,7 +55,10 @@ def publish_ha_discovery(device, client, mqtt_topic):
         for skip_entity in SKIP_ENTITIES:
             if name.startswith(skip_entity):
                 skip = True
-            if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
+            if (
+                name == "BSH.Common.Root.ActiveProgram"
+                or name == "BSH.Common.Root.SelectedProgram"
+            ):
                 skip = False
 
         if skip:
