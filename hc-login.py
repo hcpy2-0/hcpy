@@ -33,6 +33,7 @@ from HCxml2json import xml2json
 def debug(*args):
     print(*args, file=sys.stderr)
 
+
 devicefile = sys.argv[1]
 
 session = requests.Session()
