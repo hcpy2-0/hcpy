@@ -260,7 +260,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
             component_type = "select"
             options = []
-            for k,v in device['features'].items():
+            for k, v in device['features'].items():
                 if (
                         "name" in v
                         and (
@@ -281,7 +281,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
             discovery_payload["options"] = options
             discovery_payload["command_template"] = '[{"program":"{{value}}","options":[]}]'
-            if  name == "BSH.Common.Root.ActiveProgram":
+            if name == "BSH.Common.Root.ActiveProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/activeProgram"
             elif name == "BSH.Common.Root.SelectedProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/selectedProgram"
