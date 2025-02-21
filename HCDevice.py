@@ -124,8 +124,11 @@ class HCDevice:
 
                 if refCID == "01" and refDID == "00":
                     value = value_str.lower() in ("1", "true", "on")
-                
-                if name == "BSH.Common.Root.SelectedProgram" or name == "BSH.Common.Root.ActiveProgram":
+
+                if (
+                    name == "BSH.Common.Root.SelectedProgram"
+                    or name == "BSH.Common.Root.ActiveProgram"
+                ):
                     program_name = self.get_feature_name(value_str)
                     if program_name is not None:
                         value = program_name
