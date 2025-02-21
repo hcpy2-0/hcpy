@@ -87,7 +87,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         refDID = feature.get("refDID", None)
         handling = feature.get("handling", None)
         access = feature.get("access", "").lower()
-        #available = feature.get("available", False)
+        # available = feature.get("available", False)
         initValue = feature.get("initValue", None)
         value = feature.get("value", None)
         values = feature.get("values", None)
