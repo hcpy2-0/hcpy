@@ -127,7 +127,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 + "{% endif %} }"
             )
             # fmt: on
-            state_topic = f"{mqtt_topic}/event"
+            discovery_payload["state_topic"] = f"{mqtt_topic}/event"
         else:
             component_type = "sensor"
 
