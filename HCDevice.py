@@ -150,14 +150,14 @@ class HCDevice:
                 name = self.get_feature_name(program)
                 if name is None:
                     raise ValueError(
-                        f"Unable to configure appliance. Program UID {uid} is not valid"
+                        f"Unable to configure appliance. Program UID {program} is not valid"
                         " for this device."
                     )
                 else:
                     if ".Program." not in name:
                         raise ValueError(
-                            f"Unable to configure appliance. Program UID {uid} is not a valid"
-                            f" program - {feature['name']}."
+                            f"Unable to configure appliance. Program UID {program} is not a valid"
+                            f" program - {name}."
                         )
             else:
                 if ".Program." not in program:

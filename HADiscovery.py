@@ -116,7 +116,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             "enabled_by_default": not disabled
         }
 
-        entity_category = feature.get("entity_category", None) # Only on additional features
+        entity_category = feature.get("entity_category", None)
         if entity_category is not None:
             discovery_payload["entity_category"] = entity_category
 
@@ -282,9 +282,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
             discovery_payload["command_template"] = '[{"program":"{{value}}","options":[]}]'
             if  name == "BSH.Common.Root.ActiveProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/activeProgram"
-            elif name ==  "BSH.Common.Root.SelectedProgram":
+            elif name == "BSH.Common.Root.SelectedProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/selectedProgram"
-            
+
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
