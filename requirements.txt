@@ -8,3 +8,4 @@ lxml
 click
 click-config-file
 requests
+pyyaml
