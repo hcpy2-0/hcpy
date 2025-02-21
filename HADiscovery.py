@@ -19,6 +19,7 @@ DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
 DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
 ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
 
+
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device['name']}")
 
