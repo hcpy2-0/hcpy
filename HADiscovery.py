@@ -201,6 +201,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
             if (
                     (refCID == "01" and (refDID == "00" or refDID == "01"))
                     or (refCID == "15" and refDID == "81")
+                    or override_component_type in ["button", "switch"]
             ):
                 if access == "writeonly" or override_component_type == "button":
                     component_type = "button"

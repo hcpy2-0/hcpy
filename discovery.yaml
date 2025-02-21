@@ -17,6 +17,17 @@ MAGIC_OVERRIDES:
   BSH.Common.Command.AbortProgram:
     component_type: "button"
     icon: mdi:cancel
+  Dishcare.Dishwasher.Option.SilenceOnDemand:
+    component_type: "button"
+    icon: mdi:pause
+  Dishcare.Dishwasher.Option.BrillianceDry:
+    component_type: "button"
+  Dishcare.Dishwasher.Option.HygienePlus:
+    component_type: "button"
+  Dishcare.Dishwasher.Option.IntensivZone:
+    component_type: "button"
+  Dishcare.Dishwasher.Option.VarioSpeedPlus:
+    component_type: "button"
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:
