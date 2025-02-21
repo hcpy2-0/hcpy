@@ -54,7 +54,7 @@ a normal browser window (Chromium), and use Development tools (F12) to monitor t
 ![hc-login developer example](images/hclogin_dev_tools.png)
 
 ```bash
-hc-login.py $USERNAME $PASSWORD config/devices.json
+hc-login.py config/devices.json
 
 Visit the following URL in the browser, use the F12 developer tools to monitor the network responses, and look for the request starting hcauth://auth for the relevant authentication tokens:
 https://api.home-connect.com/security/oauth/authorize?response_type=code&prompt=login&code_challenge=blah&code_challenge_method=S256&client_id=blah&scope=ReadOrigApi&nonce=blah&state=blah&redirect_uri=hcauth%3A%2F%2Fauth%2Fprod&redirect_target=icore
@@ -66,7 +66,7 @@ or
 
 ```bash
 docker-compose -f compose.yaml build
-docker-compose -f compose.yaml run -Ti app /app/hc-login.py $USERNAME $PASSWORD config/devices.json
+docker-compose -f compose.yaml run app /app/hc-login.py config/devices.json
 ```
 
 The `hc-login.py` script perfoms the OAuth process to login to your
