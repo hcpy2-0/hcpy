@@ -18,8 +18,6 @@ SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
 DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
 DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
 ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
-WRITEABLE_ENTITIES = []  # config.get("WRITEABLE_ENTITIES", [])
-
 
 def publish_ha_discovery(device, client, mqtt_topic):
     print(f"{now()} Publishing HA discovery for {device['name']}")
@@ -40,6 +38,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         "manufacturer": device_description.get("brand"),
         "model": device_description.get("model"),
         "sw_version": ".".join(version_parts),
+        "suggested_area": "Kitchen",
     }
 
     for key, value in device["features"].items():
@@ -114,11 +113,23 @@ def publish_ha_discovery(device, client, mqtt_topic):
             "enabled_by_default": not disabled
         }
 
-        if refCID == "01" and (refDID == "00" or refDID == "01"):
+        entity_category = feature.get("entity_category", None) # Only on additional features
+        if entity_category is not None:
+            discovery_payload["entity_category"] = entity_category
+
+        overrides = MAGIC_OVERRIDES.get(name, None)
+        override_component_type = None
+        if overrides:
+            override_component_type = overrides.get("component_type", None)
+
+        if (
+                (refCID == "01" and (refDID == "00" or refDID == "01"))
+                or override_component_type == "binary_sensor"
+        ):
             component_type = "binary_sensor"
             discovery_payload["payload_on"] = True
             discovery_payload["payload_off"] = False
-        elif handling is not None:
+        elif handling is not None or override_component_type == "event":
             component_type = "event"
             discovery_payload["event_types"] = list(values.values())
             discovery_payload["platform"] = "event"
@@ -173,15 +184,12 @@ def publish_ha_discovery(device, client, mqtt_topic):
         ):
             discovery_payload["unit_of_measurement"] = "s"
             discovery_payload["device_class"] = "duration"
-        elif name == 'rssi':
-            discovery_payload["unit_of_measurement"] = "dBm"
-            discovery_payload["icon"] = "mdi:wifi"
 
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
         if (
                 ((uid is not None) and (access == "writeonly" or access == "readwrite"))
-                or name in WRITEABLE_ENTITIES
+                or override_component_type in ["button", "switch", "select", "number"]
         ):
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
@@ -190,7 +198,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                     (refCID == "01" and (refDID == "00" or refDID == "01"))
                     or (refCID == "15" and refDID == "81")
             ):
-                if access == "writeonly":
+                if access == "writeonly" or override_component_type == "button":
                     component_type = "button"
                     discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                     discovery_payload["payload_press"] = f"[{{\"uid\":{uid},\"value\":true}}]"
@@ -243,7 +251,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 if maximum is not None:
                     discovery_payload["max"] = maximum
                 if step is not None:
-                    discovery_payload["step"] = step
+                    discovery_payload["step"] = int(step)
 
         if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
             component_type = "select"
@@ -263,6 +271,10 @@ def publish_ha_discovery(device, client, mqtt_topic):
                         )
                 ):
                     options.append(v["name"])
+
+            if len(options) < 1:
+                continue
+
             discovery_payload["options"] = options
             discovery_payload["command_template"] = '[{"program":"{{value}}","options":[]}]'
             if  name == "BSH.Common.Root.ActiveProgram":
@@ -274,7 +286,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
 
-        overrides = MAGIC_OVERRIDES.get(name, None)
         if overrides:
             # Overwrite keys with override values
             discovery_payload = discovery_payload | overrides
