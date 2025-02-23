@@ -117,8 +117,9 @@ class HCDevice:
             if feature:
                 if "name" in feature:
                     name = feature["name"]
-                if "values" in feature and value_str in feature["values"]:
-                    value = feature["values"][value_str]
+                if "values" in feature:
+                    value = feature["values"].get(value_str, None)
+
                 refCID = feature.get("refCID", None)
                 refDID = feature.get("refDID", None)
 
@@ -129,9 +130,7 @@ class HCDevice:
                     name == "BSH.Common.Root.SelectedProgram"
                     or name == "BSH.Common.Root.ActiveProgram"
                 ):
-                    program_name = self.get_feature_name(value_str)
-                    if program_name is not None:
-                        value = program_name
+                    value = self.get_feature_name(value_str)
 
             result[name] = value
 
