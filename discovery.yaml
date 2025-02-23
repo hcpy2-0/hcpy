@@ -54,8 +54,16 @@ EXPAND_NAME:
   Refrigeration.Common.Status.: 3
   Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.: 5
 SKIP_ENTITIES:
-- Dishcare.Dishwasher.Program.
 - BSH.Common.Root.
+- Dishcare.Dishwasher.Program.
+- Cooking.Common.Program.Hood.
+- ConsumerProducts.CoffeeMaker.Program.
+- ConsumerProducts.CleaningRobot.Program.
+- LaundryCare.Dryer.Program.
+- LaundryCare.Washer.Program.
+- LaundryCare.WasherDryer.Program.
+- Cooking.Oven.Program.
+
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
 - Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
