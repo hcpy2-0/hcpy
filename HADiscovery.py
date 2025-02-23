@@ -137,14 +137,9 @@ def publish_ha_discovery(device, client, mqtt_topic):
             component_type = "event"
             discovery_payload["event_types"] = list(values.values())
             discovery_payload["platform"] = "event"
-            # fmt: off
-            discovery_payload["value_template"] = (
-                "{ {% if '" + name + "' in value_json %}\n"
-                + '"event_type":"{{ value_json[\'' + name + "'] }}\"\n"
-                + "{% endif %} }"
-            )
-            # fmt: on
-            discovery_payload["state_topic"] = f"{mqtt_topic}/event"
+            discovery_payload["state_topic"] = f"{mqtt_topic}/event/{feature_id}"
+            discovery_payload.pop("value_template")
+            discovery_payload.pop("options")
         else:
             component_type = "sensor"
 
@@ -188,6 +183,21 @@ def publish_ha_discovery(device, client, mqtt_topic):
         ):
             discovery_payload["unit_of_measurement"] = "s"
             discovery_payload["device_class"] = "duration"
+
+        if name == "BSH.Common.Status.ProgramSessionSummary.Latest":
+            # fmt: off
+            value_template = ("{% if '" + name + "' in value_json %}\n"
+                + "{{ value_json['" + name + "']['counter'] }}\n"
+                + "{% endif %}")
+            json_attributes_template = ("{% if '" + name + "' in value_json %}\n"
+                + "{{ value_json['" + name + "']|to_json }}\n"
+                + "{% endif %}")
+            # fmt: on
+            discovery_payload["force_update"] = True
+            discovery_payload["value_template"] = value_template
+            discovery_payload["json_attributes_topic"] = state_topic
+            discovery_payload["json_attributes_template"] = json_attributes_template
+
 
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
