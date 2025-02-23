@@ -56,6 +56,7 @@ EXPAND_NAME:
 SKIP_ENTITIES:
 - Dishcare.Dishwasher.Program.
 - BSH.Common.Root.
+- Cooking.Common.Program.Hood.
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
 - Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
