@@ -192,7 +192,7 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
 
                     # Dont persist event to the device state
                     if ".Event." in key:
-                        event_type = {"event_type":val}
+                        event_type = {"event_type": val}
                         events.update({key: event_type})
                     else:
                         if key in state:
@@ -212,9 +212,13 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
 
                 if client.is_connected():
                     for key, value in events.items():
-                        event_topic_name = key.lower().replace(".","_")
-                        hcprint(name, f"publish to {mqtt_topic}/event/{event_topic_name} with {json.dumps(value)}")
-                        client.publish(f"{mqtt_topic}/event/{event_topic_name}", json.dumps(value), retain=False)
+                        event_topic_name = key.lower().replace(".", "_")
+                        hcprint(name, f"publish to {mqtt_topic}/event/{event_topic_name}")
+                        client.publish(
+                            f"{mqtt_topic}/event/{event_topic_name}",
+                            json.dumps(value),
+                            retain=False,
+                        )
                     if update:
                         hcprint(name, f"publish to {mqtt_topic}/state with {json.dumps(state)}")
                         client.publish(f"{mqtt_topic}/state", json.dumps(state), retain=True)

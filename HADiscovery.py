@@ -186,18 +186,21 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
         if name == "BSH.Common.Status.ProgramSessionSummary.Latest":
             # fmt: off
-            value_template = ("{% if '" + name + "' in value_json %}\n"
+            value_template = (
+                "{% if '" + name + "' in value_json %}\n"
                 + "{{ value_json['" + name + "']['counter'] }}\n"
-                + "{% endif %}")
-            json_attributes_template = ("{% if '" + name + "' in value_json %}\n"
+                + "{% endif %}"
+            )
+            json_attributes_template = (
+                "{% if '" + name + "' in value_json %}\n"
                 + "{{ value_json['" + name + "']|to_json }}\n"
-                + "{% endif %}")
+                + "{% endif %}"
+            )
             # fmt: on
             discovery_payload["force_update"] = True
             discovery_payload["value_template"] = value_template
             discovery_payload["json_attributes_topic"] = state_topic
             discovery_payload["json_attributes_template"] = json_attributes_template
-
 
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
