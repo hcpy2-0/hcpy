@@ -213,7 +213,10 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
                 if client.is_connected():
                     for key, value in events.items():
                         event_topic_name = key.lower().replace(".", "_")
-                        hcprint(name, f"publish to {mqtt_topic}/event/{event_topic_name}")
+                        hcprint(
+                            name,
+                            f"publish to {mqtt_topic}/event/{event_topic_name}",
+                        )
                         client.publish(
                             f"{mqtt_topic}/event/{event_topic_name}",
                             json.dumps(value),
