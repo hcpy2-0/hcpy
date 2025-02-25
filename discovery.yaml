@@ -1,0 +1,84 @@
+HA_DISCOVERY_PREFIX: homeassistant
+MAGIC_OVERRIDES:
+  BSH.Common.Option.ProgramProgress:
+    unit_of_measurement: '%'
+  BSH.Common.Option.RemainingProgramTime:
+    device_class: duration
+    unit_of_measurement: s
+  BSH.Common.Option.StartInRelative:
+    device_class: duration
+    unit_of_measurement: s
+  BSH.Common.Status.DoorState:
+    icon: mdi:door
+  BSH.Common.Status.Program.All.Count.Started:
+    state_class: total_increasing
+  BSH.Common.Setting.PowerState:
+    icon: mdi:power
+  BSH.Common.Command.AbortProgram:
+    component_type: "button"
+    icon: mdi:cancel
+  Dishcare.Dishwasher.Option.SilenceOnDemand:
+    component_type: "switch"
+    icon: mdi:pause
+  Dishcare.Dishwasher.Option.BrillianceDry:
+    component_type: "switch"
+  Dishcare.Dishwasher.Option.HygienePlus:
+    component_type: "switch"
+  Dishcare.Dishwasher.Option.IntensivZone:
+    component_type: "switch"
+  Dishcare.Dishwasher.Option.VarioSpeedPlus:
+    component_type: "switch"
+  Refrigeration.Common.Status.Door.Freezer:
+    icon: mdi:door
+  Refrigeration.Common.Status.Door.Refrigerator:
+    icon: mdi:door
+  Cooking.Common.Setting.LightingBrightness:
+    unit_of_measurement: '%'
+  Cooking.Hood.Setting.IntervalTimeOff:
+    device_class: duration
+    unit_of_measurement: s
+  Cooking.Hood.Setting.IntervalTimeOn:
+    device_class: duration
+    unit_of_measurement: s
+  Cooking.Hood.Setting.DelayedShutOffTime:
+    device_class: duration
+    unit_of_measurement: s
+
+EXPAND_NAME:
+  BSH.Common.Setting.Favorite.: 3
+  BSH.Common.Status.Program.: 4
+  Cooking.Hob.Status.Zone.: 3
+  Dishcare.Dishwasher.Status.LearningDishwasher.Proposal.: 3
+  LaundryCare.Dryer.OptionList.: 2
+  LaundryCare.Dryer.Program.: 2
+  Refrigeration.Common.Status.: 3
+  Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.: 5
+SKIP_ENTITIES:
+- BSH.Common.Root.
+- Dishcare.Dishwasher.Program.
+- Cooking.Common.Program.Hood.
+- ConsumerProducts.CoffeeMaker.Program.
+- ConsumerProducts.CleaningRobot.Program.
+- LaundryCare.Dryer.Program.
+- LaundryCare.Washer.Program.
+- LaundryCare.WasherDryer.Program.
+- Cooking.Oven.Program.
+
+DISABLED_ENTITIES:
+- Refrigeration.Common.Status.
+- Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
+DISABLED_EXCEPTIONS:
+- Refrigeration.Common.Status.Door.
+ADDITIONAL_FEATURES:
+  - name: ipV4
+    template: |-
+      {% if 'ipV4' in value_json %}
+      {{ value_json['ipV4'].ipAddress }}
+      {% endif %}
+    entity_category: diagnostic
+  - name: rssi
+    entity_category: diagnostic
+    unit_of_measurement: dBm
+    icon: mdi:wifi
+  - name: euiAddress
+    entity_category: diagnostic

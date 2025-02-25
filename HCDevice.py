@@ -72,6 +72,27 @@ class HCDevice:
         self.token = None
         self.connected = False
 
+    def get_feature_uid(self, name):
+        uid = None
+        with self.features_lock:
+            for k, v in self.features.items():
+                if "name" in v and name in v["name"]:
+                    uid = k
+                    break
+
+        return uid
+
+    def get_feature_name(self, uid):
+        name = None
+        uid = str(uid)
+        with self.features_lock:
+            if uid in self.features:
+                feature = self.features.get(uid, None)
+                if feature is not None:
+                    name = feature.get("name", None)
+
+        return name
+
     def parse_values(self, values):
         if not self.features:
             return values
@@ -80,23 +101,38 @@ class HCDevice:
 
         for msg in values:
             uid = str(msg["uid"])
-            value = msg["value"]
+            value = msg.get("value", None)
+
+            if value is None:
+                continue
+
             value_str = str(value)
 
             name = uid
-            status = None
+            feature = None
             with self.features_lock:
                 if uid in self.features:
-                    status = self.features[uid]
+                    feature = self.features[uid]
 
-            if status:
-                if "name" in status:
-                    name = status["name"]
-                if "values" in status and value_str in status["values"]:
-                    value = status["values"][value_str]
+            if feature:
+                if "name" in feature:
+                    name = feature["name"]
+                if "values" in feature and value_str in feature["values"]:
+                    value = feature["values"][value_str]
+                refCID = feature.get("refCID", None)
+                refDID = feature.get("refDID", None)
 
-            # trim everything off the name except the last part
-            name = re.sub(r"^.*\.", "", name)
+                if refCID == "01" and refDID == "00":
+                    value = value_str.lower() in ("1", "true", "on")
+
+                if (
+                    name == "BSH.Common.Root.SelectedProgram"
+                    or name == "BSH.Common.Root.ActiveProgram"
+                ):
+                    program_name = self.get_feature_name(value_str)
+                    if program_name is not None:
+                        value = program_name
+
             result[name] = value
 
         return result
@@ -106,40 +142,46 @@ class HCDevice:
         for data in data_array:
             if "program" not in data:
                 raise TypeError("Message data invalid, no program specified.")
+            else:
+                program = data["program"]
 
-            if isinstance(data["program"], int) is False:
-                raise TypeError("Message data invalid, UID in 'program' must be an integer.")
-
-            # devices.json stores UID as string
-            uid = str(data["program"])
-            with self.features_lock:
-                if uid not in self.features:
+            if isinstance(program, int) or program.isdigit():
+                # devices.json stores UID as string
+                name = self.get_feature_name(program)
+                if name is None:
                     raise ValueError(
-                        f"Unable to configure appliance. Program UID {uid} is not valid"
+                        f"Unable to configure appliance. Program UID {program} is not valid"
                         " for this device."
                     )
-
-                feature = self.features[uid]
-                # Diswasher is Dishcare.Dishwasher.Program.{name}
-                # Hood is Cooking.Common.Program.{name}
-                # May also be in the format BSH.Common.Program.Favorite.001
-                if "name" in feature:
-                    if ".Program." not in feature["name"]:
-                        raise ValueError(
-                            f"Unable to configure appliance. Program UID {uid} is not a valid"
-                            f" program - {feature['name']}."
-                        )
                 else:
-                    self.print(f"Unknown Program UID {uid}")
+                    if ".Program." not in name:
+                        raise ValueError(
+                            f"Unable to configure appliance. Program UID {program} is not a valid"
+                            f" program - {name}."
+                        )
+            else:
+                if ".Program." not in program:
+                    raise ValueError(
+                        f"Unable to configure appliance. Program {program} is not a valid program."
+                    )
 
-                if "options" in data:
-                    for option in data["options"]:
-                        option_uid = option["uid"]
-                        if str(option_uid) not in self.features:
-                            raise ValueError(
-                                f"Unable to configure appliance. Option UID {option_uid} is not"
-                                " valid for this device."
-                            )
+                uid = self.get_feature_uid(program)
+                if uid is not None:
+                    data["program"] = int(uid)
+                else:
+                    raise ValueError(
+                        f"Unable to configure appliance. Program {program} is an unknown program."
+                    )
+
+            if "options" in data:
+                for option in data["options"]:
+                    option_uid = option["uid"]
+                    if str(option_uid) not in self.features:
+                        raise ValueError(
+                            f"Unable to configure appliance. Option UID {option_uid} is not"
+                            " valid for this device."
+                        )
+        return data_array
 
     # Test the feature of an appliance agains a data object
     def test_feature(self, data_array):
@@ -164,31 +206,43 @@ class HCDevice:
                 # check the access level of the feature
                 self.print(f"Processing feature {feature['name']} with uid {uid}")
                 if "access" not in feature:
-                    raise Exception(
-                        "Unable to configure appliance. "
+                    self.print(
                         f"Feature {feature['name']} with uid {uid} does not have access."
+                        "Attempting to send instruction anyway."
                     )
-
-                access = feature["access"].lower()
-                if access != "readwrite" and access != "writeonly":
-                    raise Exception(
-                        "Unable to configure appliance. "
-                        f"Feature {feature['name']} with uid {uid} "
-                        f"has got access {feature['access']}."
-                    )
+                else:
+                    access = feature["access"].lower()
+                    if access != "readwrite" and access != "writeonly":
+                        self.print(
+                            f"Feature {feature['name']} with uid {uid} "
+                            f"has got access {feature['access']}."
+                            "Attempting to send instruction anyway."
+                        )
 
                 # check if selected list with values is allowed
                 if "values" in feature:
-                    if isinstance(data["value"], int) is False:
-                        raise Exception(
-                            f"Unable to configure appliance. The value {data['value']} must "
-                            f"be an integer. Allowed values are {feature['values']}."
-                        )
+                    if (
+                        isinstance(data["value"], int) is False
+                        and data["value"].isdigit() is False
+                    ):
+                        try:
+                            key = next(
+                                key
+                                for key, value in feature["values"].items()
+                                if value == data["value"]
+                            )
+                            data["value"] = int(key)
+                        except StopIteration:
+                            raise Exception(
+                                f"Unable to configure appliance. The value {data['value']} must "
+                                f"be in the allowed values {feature['values']}."
+                            )
+                    elif isinstance(data["value"], int) is False and data["value"].isdigit():
+                        data["value"] = int(data["value"])
 
-                    value = str(data["value"])
                     # values are strings in the feature list,
                     # but always seem to be an integer. An integer must be provided
-                    if value not in feature["values"]:
+                    if str(data["value"]) not in feature["values"]:
                         raise Exception(
                             "Unable to configure appliance. "
                             f"Value {data['value']} is not a valid value. "
@@ -208,6 +262,8 @@ class HCDevice:
                             f"Value {data['value']} is not a valid value. "
                             f"The value must be an integer in the range {min} and {max}."
                         )
+
+        return data_array
 
     def recv(self):
         try:
@@ -259,16 +315,17 @@ class HCDevice:
             if isinstance(data, list) is False:
                 data = [data]
 
-            if action == "POST" and self.debug is False:
+            if action == "POST":
                 if resource == "/ro/values":
                     # Raises exceptions on failure
-                    self.test_feature(data)
+                    # Replace named values with integers if possible
+                    data = self.test_feature(data)
                 elif resource == "/ro/activeProgram":
                     # Raises exception on failure
-                    self.test_program_data(data)
+                    data = self.test_program_data(data)
                 elif resource == "/ro/selectedProgram":
                     # Raises exception on failure
-                    self.test_program_data(data)
+                    data = self.test_program_data(data)
 
             msg["data"] = data
 
@@ -364,20 +421,33 @@ class HCDevice:
 
             elif resource == "/ro/descriptionChange" or resource == "/ro/allDescriptionChanges":
                 if "data" in msg and len(msg["data"]) > 0:
-                    with self.features_lock:
-                        for change in msg["data"]:
-                            uid = str(change["uid"])
+                    # Retrieve any value changes
+                    values = self.parse_values(msg["data"])
+
+                    for change in msg["data"]:
+                        uid = str(change["uid"])
+                        with self.features_lock:
                             if uid in self.features:
                                 if "access" in change:
                                     access = change["access"]
                                     self.features[uid]["access"] = access
-                                    self.print(f"Access change for {uid} to {access}")
                                 if "available" in change:
                                     self.features[uid]["available"] = change["available"]
                                 if "min" in change:
                                     self.features[uid]["min"] = change["min"]
                                 if "max" in change:
                                     self.features[uid]["max"] = change["max"]
+                                # if "value" in change:
+                                #    name = self.features[str(uid)]["name"]
+                                #    values | self.parse_values(change)
+                                if "default" in change:
+                                    self.features[str(uid)]["default"] = change["default"]
+
+                                if self.debug:
+                                    self.print(
+                                        f"Access change {self.features[uid]['name']} - {change}"
+                                    )
+
                             else:
                                 # We wont have name for this item, so have to be careful
                                 # when resolving elsewhere
@@ -391,7 +461,8 @@ class HCDevice:
             elif resource == "/ni/config":
                 # Returns some data about network interfaces e.g.
                 # [{'interfaceID': 0, 'automaticIPv4': True, 'automaticIPv6': True}]
-                pass
+                if self.debug:
+                    self.print(f"/ni/config {msg}")
 
             elif resource == "/ro/allMandatoryValues" or resource == "/ro/values":
                 if "data" in msg:

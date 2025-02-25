@@ -22,7 +22,7 @@ RUN apt-get update && \
     && mv /tmp/bashio/lib /usr/lib/bashio \
     && ln -s /usr/lib/bashio/bashio /usr/bin/bashio
 
-COPY hc2mqtt.py hc-login.py HADiscovery.py HCDevice.py HCSocket.py HCxml2json.py run.sh ./
+COPY hc2mqtt.py hc-login.py HADiscovery.py HCDevice.py HCSocket.py HCxml2json.py run.sh discovery.yaml ./
 
 RUN chmod a+x ./run.sh
 

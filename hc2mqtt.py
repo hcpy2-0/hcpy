@@ -86,6 +86,7 @@ def hc2mqtt(
                             )
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
+                    time.sleep(15)
                     publish_ha_discovery(device, client, mqtt_topic)
         else:
             hcprint(f"ERROR MQTT connection failed: {rc}")
@@ -124,7 +125,7 @@ def hc2mqtt(
             else:
                 hcprint(device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
-            hcprint(device_name, "ERROR", e, file=sys.stderr)
+            print(now(), device_name, "ERROR", e, file=sys.stderr, flush=True)
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
@@ -185,27 +186,36 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
                 hcprint(name, msg)
 
                 update = False
+                events = []
                 for key in msg.keys():
                     val = msg.get(key, None)
-                    if key in state:
-                        # Override existing values with None if they have changed
-                        state[key] = val
-                        update = True
+
+                    # Dont persist event to the device state
+                    if ".Event." in key:
+                        events.append({key: val})
                     else:
-                        # Dont store None values until something useful is populated?
-                        if val is None:
-                            continue
-                        else:
+                        if key in state:
+                            # Override existing values with None if they have changed
                             state[key] = val
                             update = True
+                        else:
+                            # Dont store None values until something useful is populated?
+                            if val is None:
+                                continue
+                            else:
+                                state[key] = val
+                                update = True
 
-                if not update:
+                if not update and not events:
                     return
 
                 if client.is_connected():
-                    msg = json.dumps(state)
-                    hcprint(name, f"publish to {mqtt_topic} with {msg}")
-                    client.publish(f"{mqtt_topic}/state", msg, retain=True)
+                    for event in events:
+                        hcprint(name, f"publish to {mqtt_topic}/event with {json.dumps(event)}")
+                        client.publish(f"{mqtt_topic}/event", json.dumps(event), retain=False)
+                    if update:
+                        hcprint(name, f"publish to {mqtt_topic}/state with {json.dumps(state)}")
+                        client.publish(f"{mqtt_topic}/state", json.dumps(state), retain=True)
                 else:
                     hcprint(
                         name,

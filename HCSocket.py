@@ -18,19 +18,20 @@ def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
-try:
-    import sslpsk
+if sys.version_info[1] < 13:
+    try:
+        import sslpsk
 
-    # Monkey patch for sslpsk in pip using the old _sslobj
-    def _sslobj(sock):
-        if (3, 5) <= sys.version_info <= (3, 7):
-            return sock._sslobj._sslobj
-        else:
-            return sock._sslobj
+        # Monkey patch for sslpsk in pip using the old _sslobj
+        def _sslobj(sock):
+            if (3, 5) <= sys.version_info <= (3, 7):
+                return sock._sslobj._sslobj
+            else:
+                return sock._sslobj
 
-    sslpsk.sslpsk._sslobj = _sslobj
-except ImportError:
-    print("Unable to import sslpsk library, will use OpenSSL if available")
+        sslpsk.sslpsk._sslobj = _sslobj
+    except ImportError:
+        print("Unable to import sslpsk library, will use OpenSSL if available")
 
 
 # Convience to compute an HMAC on a message
@@ -46,7 +47,7 @@ class HCSocket:
             self.host = f"{host}.{domain_suffix}"
 
         self.psk = base64url(psk64 + "===")
-        self.debug = True
+        self.debug = False
 
         if iv64:
             # an HTTP self-encrypted socket
@@ -88,17 +89,19 @@ class HCSocket:
             context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
             context.set_psk_client_callback(lambda hint: (None, self.psk))
             return context.wrap_socket(tcp_socket, server_hostname=self.host)
-        # sslpsk requires wrap_socket which was removed in 3.12
-        elif "sslpsk" in sys.modules and "wrap_socket" in dir(ssl):
+        # sslpsk needs wrap_socket which was removed in 3.12 but may be fixed
+        elif "sslpsk" in sys.modules:
             self.dprint("Using sslpsk")
-            return sslpsk.wrap_socket(
-                tcp_socket,
-                ssl_version=ssl.PROTOCOL_TLSv1_2,
-                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
-                psk=self.psk,
-            )
+            try:
+                return sslpsk.wrap_socket(
+                    tcp_socket,
+                    ssl_version=ssl.PROTOCOL_TLSv1_2,
+                    ciphers="ECDHE-PSK-CHACHA20-POLY1305",
+                    psk=self.psk,
+                )
+            except AttributeError:
+                raise NotImplementedError("sslpsk requires ssl.wrap_socket")
         else:
-            # No TLS-PSK support in 3.12
             raise NotImplementedError("No suitable TLS-PSK mechanism is available.")
 
     def decrypt(self, buf):
