@@ -108,8 +108,8 @@ class HCSocket:
                     ciphers="ECDHE-PSK-CHACHA20-POLY1305",
                     psk=self.psk,
                 )
-            except AttributeError:
-                raise NotImplementedError("sslpsk requires ssl.wrap_socket")
+            except AttributeError as e:
+                raise NotImplementedError("sslpsk requires ssl.wrap_socket") from e
         else:
             raise NotImplementedError("No suitable TLS-PSK mechanism is available.")
 
