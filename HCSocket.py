@@ -84,11 +84,19 @@ class HCSocket:
     def wrap_socket_psk(self, tcp_socket):
         # TLS-PSK implemented in Python3.13
         if sys.version_info[1] >= 13 and ssl.HAS_PSK:
-            self.dprint("Using native TLS-PSK")
-            context = ssl.SSLContext(ssl.PROTOCOL_TLS)  # Originally v1_2
-            context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
-            context.set_psk_client_callback(lambda hint: (None, self.psk))
-            return context.wrap_socket(tcp_socket, server_hostname=self.host)
+            try:
+                self.dprint("Using native TLS-PSK")
+                context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+                # TLSv1.3 doesn't appear to be supported
+                context.maximum_version = ssl.TLSVersion.TLSv1_2
+                context.minimum_version = ssl.TLSVersion.SSLv3
+                context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305a
+                context.set_psk_client_callback(lambda hint: (None, self.psk))
+                return context.wrap_socket(tcp_socket, server_hostname=self.host)
+            except Exception as e:
+                print(e)
         # sslpsk needs wrap_socket which was removed in 3.12 but may be fixed
         elif "sslpsk" in sys.modules:
             self.dprint("Using sslpsk")
