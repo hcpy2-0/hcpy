@@ -8,32 +8,36 @@ import sys
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
-import sslpsk
 import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
 
 
-# Convience to compute an HMAC on a message
-def hmac(key, msg):
-    mac = HMAC.new(key, msg=msg, digestmod=SHA256).digest()
-    return mac
-
-
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
-# Monkey patch for sslpsk in pip using the old _sslobj
-def _sslobj(sock):
-    if (3, 5) <= sys.version_info <= (3, 7):
-        return sock._sslobj._sslobj
-    else:
-        return sock._sslobj
+if sys.version_info[1] < 13:
+    try:
+        import sslpsk
+
+        # Monkey patch for sslpsk in pip using the old _sslobj
+        def _sslobj(sock):
+            if (3, 5) <= sys.version_info <= (3, 7):
+                return sock._sslobj._sslobj
+            else:
+                return sock._sslobj
+
+        sslpsk.sslpsk._sslobj = _sslobj
+    except ImportError:
+        print("Unable to import sslpsk library, will use OpenSSL if available")
 
 
-sslpsk.sslpsk._sslobj = _sslobj
+# Convience to compute an HMAC on a message
+def hmac(key, msg):
+    mac = HMAC.new(key, msg=msg, digestmod=SHA256).digest()
+    return mac
 
 
 class HCSocket:
@@ -76,6 +80,38 @@ class HCSocket:
     def hmac_msg(self, direction, enc_msg):
         hmac_msg = self.iv + direction + enc_msg
         return hmac(self.mackey, hmac_msg)[0:16]
+
+    def wrap_socket_psk(self, tcp_socket):
+        # TLS-PSK implemented in Python3.13
+        if sys.version_info[1] >= 13 and ssl.HAS_PSK:
+            try:
+                self.dprint("Using native TLS-PSK")
+                context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+                # TLSv1.3 doesn't appear to be supported
+                context.maximum_version = ssl.TLSVersion.TLSv1_2
+                context.minimum_version = ssl.TLSVersion.SSLv3
+                context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305a
+                # Identity hint from server is HCCOM_Local_App but can be null
+                context.set_psk_client_callback(lambda hint: ("HCCOM_Local_App", self.psk))
+                return context.wrap_socket(tcp_socket, server_hostname=self.host)
+            except Exception as e:
+                print(e)
+        # sslpsk needs wrap_socket which was removed in 3.12 but may be fixed
+        elif "sslpsk" in sys.modules:
+            self.dprint("Using sslpsk")
+            try:
+                return sslpsk.wrap_socket(
+                    tcp_socket,
+                    ssl_version=ssl.PROTOCOL_TLSv1_2,
+                    ciphers="ECDHE-PSK-CHACHA20-POLY1305",
+                    psk=self.psk,
+                )
+            except AttributeError as e:
+                raise NotImplementedError("sslpsk requires ssl.wrap_socket") from e
+        else:
+            raise NotImplementedError("No suitable TLS-PSK mechanism is available.")
 
     def decrypt(self, buf):
         if len(buf) < 32:
@@ -137,12 +173,7 @@ class HCSocket:
         sock.connect((self.host, self.port))
 
         if not self.http:
-            sock = sslpsk.wrap_socket(
-                sock,
-                ssl_version=ssl.PROTOCOL_TLSv1_2,
-                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
-                psk=self.psk,
-            )
+            sock = self.wrap_socket_psk(sock)
 
         print(now(), "CON:", self.uri)
         self.ws = websocket.WebSocket()
@@ -177,12 +208,7 @@ class HCSocket:
         sock.connect((self.host, self.port))
 
         if not self.http:
-            sock = sslpsk.wrap_socket(
-                sock,
-                ssl_version=ssl.PROTOCOL_TLSv1_2,
-                ciphers="ECDHE-PSK-CHACHA20-POLY1305",
-                psk=self.psk,
-            )
+            sock = self.wrap_socket_psk(sock)
 
         def _on_open(ws):
             self.dprint("on connect")
