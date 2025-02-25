@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 ARG BASHIO_VERSION="v0.16.2"
 ARG BASHIO_SHA256="d0f0c780c4badd103c00c572b1bf9645520d15a8a8070d6e3d64e35cb9f583aa"
@@ -8,9 +8,9 @@ WORKDIR /app
 COPY requirements.txt ./
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends curl tar gcc python3-dev libssl-dev libxml2-dev libxslt-dev python3-dev jq && \
+  apt-get install -y --no-install-recommends curl tar gcc jq python3-dev libxml2-dev libxslt-dev && \
   pip3 install -r requirements.txt && \
-  apt-get remove -y gcc python3-dev libssl-dev && \
+  apt-get remove -y gcc python3-dev && \
   apt-get autoremove -y \
     && curl -J -L -o /tmp/bashio.tar.gz \
         "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" \
