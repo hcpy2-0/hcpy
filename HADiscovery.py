@@ -138,8 +138,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
             discovery_payload["event_types"] = list(values.values())
             discovery_payload["platform"] = "event"
             discovery_payload["state_topic"] = f"{mqtt_topic}/event/{feature_id}"
-            discovery_payload.pop("value_template")
-            discovery_payload.pop("options")
+            discovery_payload.pop("value_template", None)
+            discovery_payload.pop("options", None)
         else:
             component_type = "sensor"
 
