@@ -93,7 +93,8 @@ class HCSocket:
                 context.maximum_version = ssl.TLSVersion.TLSv1_2
                 context.minimum_version = ssl.TLSVersion.SSLv3
                 context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305a
-                context.set_psk_client_callback(lambda hint: (None, self.psk))
+                # Identity hint from server is HCCOM_Local_App but can be null
+                context.set_psk_client_callback(lambda hint: ("HCCOM_Local_App", self.psk))
                 return context.wrap_socket(tcp_socket, server_hostname=self.host)
             except Exception as e:
                 print(e)
