@@ -85,7 +85,7 @@ class HCSocket:
         # TLS-PSK implemented in Python3.13
         if sys.version_info[1] >= 13 and ssl.HAS_PSK:
             self.dprint("Using native TLS-PSK")
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS)  # Originally v1_2
             context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305
             context.set_psk_client_callback(lambda hint: (None, self.psk))
             return context.wrap_socket(tcp_socket, server_hostname=self.host)
