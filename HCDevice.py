@@ -71,6 +71,32 @@ class HCDevice:
         self.services = {}
         self.token = None
         self.connected = False
+        self.state_lock = threading.Lock()
+        self.state = {}
+        self.set_init_feature_values()
+
+    def set_init_feature_values(self):
+        with self.features_lock:
+            for uid, feature in self.features.items():
+                name = feature.get("name")
+                if name is None:
+                    continue
+
+                initValue = feature.get("initValue", None)
+                values = feature.get("values", None)
+                refCID = feature.get("refCID", None)
+                refDID = feature.get("refDID", None)
+
+                with self.state_lock:
+                    if initValue is not None and values is not None:
+                        self.state[name] = values.get(initValue, None)
+                    elif initValue is not None and refCID == "00" and refDID == "01":
+                        if initValue.lower() == "true" or initValue.lower() == "false":
+                            self.state[name] = initValue
+                        elif initValue == "1":
+                            self.state[name] = "True"
+                        elif initValue == "0":
+                            self.state[name] = "False"
 
     def get_feature_uid(self, name):
         uid = None

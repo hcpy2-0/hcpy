@@ -176,60 +176,71 @@ dev = {}
 def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
-
-    # HCDevice should maintain its own state?
-    state = {}
+    mydevice = HCDevice(None, device, debug)
+    dev[name] = mydevice
 
     def on_message(msg):
-        if msg is not None:
-            if len(msg) > 0:
-                hcprint(name, msg)
+        try:
+            if msg is not None:
+                if len(msg) > 0:
+                    hcprint(name, msg)
 
-                update = False
-                events = {}
-                for key in msg.keys():
-                    val = msg.get(key, None)
+                    update = False
+                    events = {}
+                    for key in msg.keys():
+                        val = msg.get(key, None)
 
-                    # Dont persist event to the device state
-                    if ".Event." in key:
-                        event_type = {"event_type": val}
-                        events.update({key: event_type})
-                    else:
-                        if key in state:
-                            # Override existing values with None if they have changed
-                            state[key] = val
-                            update = True
+                        # Dont persist event to the device state
+                        if ".Event." in key:
+                            event_type = {"event_type": val}
+                            events.update({key: event_type})
                         else:
-                            # Dont store None values until something useful is populated?
-                            if val is None:
-                                continue
-                            else:
-                                state[key] = val
+                            if key in mydevice.state:
+                                # Override existing values with None if they have changed
+                                mydevice.state[key] = val
                                 update = True
+                            else:
+                                # Dont store None values until something useful is populated?
+                                if val is None:
+                                    continue
+                                else:
+                                    mydevice.state[key] = val
+                                    update = True
 
-                if not update and not events:
-                    return
+                    if not update and not events:
+                        return
 
-                if client.is_connected():
-                    for key, value in events.items():
-                        event_topic_name = key.lower().replace(".", "_")
+                    if client.is_connected():
+                        for key, value in events.items():
+                            event_topic_name = key.lower().replace(".", "_")
+                            hcprint(
+                                name,
+                                f"publish to {mqtt_topic}/event/{event_topic_name}",
+                            )
+                            client.publish(
+                                f"{mqtt_topic}/event/{event_topic_name}",
+                                json.dumps(value),
+                                retain=True,
+                            )
+                        if update:
+                            hcprint(name, f"updating {json.dumps(mydevice.state)}")
+                            for key, value in mydevice.state.items():
+                                state_topic_name = key.lower().replace(".", "_")
+                                if isinstance(value, dict):
+                                    value = json.dumps(value)
+
+                                client.publish(
+                                    f"{mqtt_topic}/state/{state_topic_name}",
+                                    str(value),
+                                    retain=True,
+                                )
+                    else:
                         hcprint(
                             name,
-                            f"publish to {mqtt_topic}/event/{event_topic_name}",
+                            "ERROR Unable to publish update as mqtt is not connected.",
                         )
-                        client.publish(
-                            f"{mqtt_topic}/event/{event_topic_name}",
-                            json.dumps(value),
-                            retain=False,
-                        )
-                    if update:
-                        hcprint(name, f"publish to {mqtt_topic}/state with {json.dumps(state)}")
-                        client.publish(f"{mqtt_topic}/state", json.dumps(state), retain=True)
-                else:
-                    hcprint(
-                        name,
-                        "ERROR Unable to publish update as mqtt is not connected.",
-                    )
+        except Exception as e:
+            print(repr(e))
 
     def on_open(ws):
         client.publish(f"{mqtt_topic}/LWT", "online", retain=True)
@@ -242,9 +253,8 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
         time.sleep(3)
         try:
             hcprint(name, f"connecting to {host}")
-            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
-            dev[name] = HCDevice(ws, device, debug)
-            dev[name].run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
+            mydevice.ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
