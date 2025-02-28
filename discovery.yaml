@@ -1,4 +1,5 @@
 HA_DISCOVERY_PREFIX: homeassistant
+
 MAGIC_OVERRIDES:
   BSH.Common.Option.ProgramProgress:
     unit_of_measurement: '%'
@@ -53,6 +54,7 @@ EXPAND_NAME:
   LaundryCare.Dryer.Program.: 2
   Refrigeration.Common.Status.: 3
   Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.: 5
+
 SKIP_ENTITIES:
 - BSH.Common.Root.
 - Dishcare.Dishwasher.Program.
@@ -67,14 +69,18 @@ SKIP_ENTITIES:
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
 - Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
+
 DISABLED_EXCEPTIONS:
 - Refrigeration.Common.Status.Door.
+
 ADDITIONAL_FEATURES:
   - name: ipV4
-    template: |-
-      {% if 'ipV4' in value_json %}
-      {{ value_json['ipV4'].ipAddress }}
-      {% endif %}
+    value_template: |- 
+      {{ value_json.ipAddress }}
+    entity_category: diagnostic
+  - name: ipV6
+    value_template: |-
+      {{ value_json.ipAddress }}
     entity_category: diagnostic
   - name: rssi
     entity_category: diagnostic
