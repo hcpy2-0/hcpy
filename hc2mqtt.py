@@ -176,8 +176,7 @@ dev = {}
 def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
-    mydevice = HCDevice(None, device, debug)
-    dev[name] = mydevice
+    mydevice = None
 
     def on_message(msg):
         try:
@@ -253,7 +252,9 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
         time.sleep(3)
         try:
             hcprint(name, f"connecting to {host}")
-            mydevice.ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            mydevice = HCDevice(ws, device, debug)
+            dev[name] = mydevice
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
