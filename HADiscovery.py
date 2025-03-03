@@ -6,13 +6,26 @@ from HCSocket import now
 
 
 def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
-    config = {}
+    config = None
     try:
         with open(discovery_yaml_path, "r") as yaml_config:
             config = yaml.safe_load(yaml_config)
     except Exception as e:
-        print(now(), "HADiscovery - unable to load discovery.yaml file.")
-        print(e)
+        print(now(), f"HADiscovery - unable to load {discovery_yaml_path}")
+        print("\t", e)
+
+    if config is None:
+        print(now(), "HADiscovery - loading fallback discovery.yaml file")
+        try:
+            with open("discovery.yaml", "r") as yaml_config:
+                config = yaml.safe_load(yaml_config)
+        except Exception as e:
+            print(now(), "HADiscovery - unable to load fallback discovery.yaml")
+            print("\t", e)
+
+    if config is None:
+        print(now(), "HADiscovery - unable to load discovery config, aborting...")
+        return
 
     HA_DISCOVERY_PREFIX = config.get("HA_DISCOVERY_PREFIX", "homeassistant")
     MAGIC_OVERRIDES = config.get("MAGIC_OVERRIDES", {})
@@ -22,7 +35,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
     DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
     ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
 
-    print(f"{now()} Publishing HA discovery for {device['name']}")
+    print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
 
     device_ident = device["name"]
     device_description = device.get("description", {})
