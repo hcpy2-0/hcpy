@@ -4,6 +4,7 @@ if [ -f ${CONFIG_PATH} ]; then
 
         set -o allexport
         HCPY_DEVICES_FILE="$(bashio::config 'HCPY_DEVICES_FILE')"
+        HCPY_DISCOVERY_FILE="$(bashio::config 'HCPY_DISCOVERY_FILE')"
         HCPY_MQTT_HOST="$(bashio::config 'HCPY_MQTT_HOST')"
         HCPY_MQTT_PORT="$(bashio::config 'HCPY_MQTT_PORT')"
         HCPY_MQTT_PREFIX="$(bashio::config 'HCPY_MQTT_PREFIX')"
@@ -24,6 +25,11 @@ if [ -f ${CONFIG_PATH} ]; then
                 echo "File not found ${HCPY_DEVICES_FILE}"
                 echo "Please supply a suitable devices file using hc-login.py"
                 exit 1
+        fi
+
+        if [ ! -f "${HCPY_DISCOVERY_FILE}" ]; then
+                echo "File not found ${HCPY_DISCOVERY_FILE} copying default file"
+		cp discovery.yaml "${HCPY_DISCOVERY_FILE}"
         fi
         exec python3 hc2mqtt.py
 fi

@@ -29,8 +29,6 @@ MAGIC_OVERRIDES:
     component_type: "switch"
   Dishcare.Dishwasher.Option.VarioSpeedPlus:
     component_type: "switch"
-  LaundryCare.Washer.Setting.IDos1BaseLevel:
-    component_type: "number"
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:
