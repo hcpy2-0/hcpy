@@ -211,6 +211,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
             elif (
                 (refCID == "07" and refDID == "A4")
                 or (refCID == "11" and refDID == "A0")
+                or (refCID == "11" and refDID == "80")
+                or (refCID == "14" and refDID == "80")
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
