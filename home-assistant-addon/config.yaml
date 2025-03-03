@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
 description: "Run HCPY as addon"
-version: "v0.4.0"
+version: "v0.4.1"
 slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
@@ -18,6 +18,7 @@ url: https://github.com/hcpy2-0/hcpy
 panel_title: HCPY
 options:
   HCPY_DEVICES_FILE: "/config/devices.json"
+  HCPY_DISCOVERY_FILE: "/config/discovery.yaml"
   HCPY_MQTT_HOST: localhost
   HCPY_MQTT_PORT: 1883
   HCPY_MQTT_PREFIX: "homeconnect/"
@@ -33,6 +34,7 @@ options:
   HCPY_DEBUG: false
 schema:
   HCPY_DEVICES_FILE: str
+  HCPY_DISCOVERY_FILE: str
   HCPY_MQTT_HOST: str
   HCPY_MQTT_PORT: int
   HCPY_MQTT_PREFIX: str

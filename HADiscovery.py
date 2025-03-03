@@ -4,26 +4,38 @@ import yaml
 
 from HCSocket import now
 
-config = {}
-try:
-    with open("discovery.yaml", "r") as yaml_config:
-        config = yaml.safe_load(yaml_config)
-except Exception as e:
-    print(now(), "HADiscovery - unable to load discovery.yaml file.")
-    print(e)
 
+def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
+    config = None
+    try:
+        with open(discovery_yaml_path, "r") as yaml_config:
+            config = yaml.safe_load(yaml_config)
+    except Exception as e:
+        print(now(), f"HADiscovery - unable to load {discovery_yaml_path}")
+        print("\t", e)
 
-HA_DISCOVERY_PREFIX = config.get("HA_DISCOVERY_PREFIX", "homeassistant")
-MAGIC_OVERRIDES = config.get("MAGIC_OVERRIDES", {})
-EXPAND_NAME = config.get("EXPAND_NAME", {})
-SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
-DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
-DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
-ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
+    if config is None:
+        print(now(), "HADiscovery - loading fallback discovery.yaml file")
+        try:
+            with open("discovery.yaml", "r") as yaml_config:
+                config = yaml.safe_load(yaml_config)
+        except Exception as e:
+            print(now(), "HADiscovery - unable to load fallback discovery.yaml")
+            print("\t", e)
 
+    if config is None:
+        print(now(), "HADiscovery - unable to load discovery config, aborting...")
+        return
 
-def publish_ha_discovery(device, client, mqtt_topic):
-    print(f"{now()} Publishing HA discovery for {device['name']}")
+    HA_DISCOVERY_PREFIX = config.get("HA_DISCOVERY_PREFIX", "homeassistant")
+    MAGIC_OVERRIDES = config.get("MAGIC_OVERRIDES", {})
+    EXPAND_NAME = config.get("EXPAND_NAME", {})
+    SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
+    DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
+    DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
+    ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
+
+    print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
 
     device_ident = device["name"]
     device_description = device.get("description", {})
@@ -97,6 +109,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
         value = feature.get("value", None)
         values = feature.get("values", None)
         state_topic = f"{mqtt_topic}/state/{feature_id}"
+        step = feature.get("stepSize", None)
 
         discovery_payload = {
             "name": friendly_name,
@@ -165,7 +178,8 @@ def publish_ha_discovery(device, client, mqtt_topic):
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
         if (
-            (uid is not None) and (access == "writeonly" or access == "readwrite")
+            (uid is not None)
+            and (access == "writeonly" or access == "readwrite" or step is not None)
         ) or override_component_type in ["button", "switch", "select", "number"]:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
@@ -195,6 +209,7 @@ def publish_ha_discovery(device, client, mqtt_topic):
                 and "On" in values.values()
                 and "Off" in values.values()
             ):
+                # some enums are just on/off so can be a binary_switch
                 component_type = "switch"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                 discovery_payload["state_on"] = "On"
@@ -211,9 +226,12 @@ def publish_ha_discovery(device, client, mqtt_topic):
             elif (
                 (refCID == "07" and refDID == "A4")
                 or (refCID == "11" and refDID == "A0")
+                or (refCID == "11" and refDID == "80")
+                or (refCID == "14" and refDID == "80")
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
+                or (step is not None)
             ):
                 component_type = "number"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
@@ -222,7 +240,6 @@ def publish_ha_discovery(device, client, mqtt_topic):
 
                 minimum = feature.get("min", None)
                 maximum = feature.get("max", None)
-                step = feature.get("stepSize", None)
                 if minimum is not None:
                     discovery_payload["min"] = minimum
                 if maximum is not None:

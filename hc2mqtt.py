@@ -35,6 +35,7 @@ def hcprint(*args):
 @click.option("--domain_suffix", default="")
 @click.option("--debug/--no-debug", default=False)
 @click.option("--ha-discovery", is_flag=True)
+@click.option("--discovery_file", default="config/discovery.yaml")
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -51,6 +52,7 @@ def hc2mqtt(
     domain_suffix: str,
     debug: bool,
     ha_discovery: bool,
+    discovery_file: str,
 ):
 
     def on_connect(client, userdata, flags, rc):
@@ -87,7 +89,7 @@ def hc2mqtt(
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
                     time.sleep(15)
-                    publish_ha_discovery(device, client, mqtt_topic)
+                    publish_ha_discovery(discovery_file, device, client, mqtt_topic)
         else:
             hcprint(f"ERROR MQTT connection failed: {rc}")
 
