@@ -178,8 +178,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         # Setup Controllable options
         # Access can be read, readwrite, writeonly, none
         if (
-            (uid is not None)
-            and (access == "writeonly" or access == "readwrite" or step is not None)
+            (uid is not None) and (access == "writeonly" or access == "readwrite")
         ) or override_component_type in ["button", "switch", "select", "number"]:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
@@ -231,7 +230,6 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
-                or (step is not None)
             ):
                 component_type = "number"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
@@ -245,7 +243,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                 if maximum is not None:
                     discovery_payload["max"] = maximum
                 if step is not None:
-                    discovery_payload["step"] = int(step)
+                    discovery_payload["step"] = float(step)
 
         if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
             component_type = "select"
