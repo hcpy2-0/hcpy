@@ -5,7 +5,7 @@
 * Add IDos to discovery.yaml as numbers
 
 
-**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.0...v0.4.1b
+**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.0...v0.4.2
 ## [0.4.1] - 2025-03-03
 ## What's Changed
 * Allow discovery.yaml configuration by user by @Meatballs1 in https://github.com/hcpy2-0/hcpy/pull/153
