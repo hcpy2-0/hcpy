@@ -159,7 +159,9 @@ class HCDevice:
                     or name == "BSH.Common.Root.ActiveProgram"
                 ):
                     # Convert the returned value to a program name
-                    value = self.get_feature_name(value_str).split(".")[-1]
+                    value = self.get_feature_name(value_str)
+                    if value is not None:
+                        value = value.split(".")[-1]
 
             result[name] = value
 
