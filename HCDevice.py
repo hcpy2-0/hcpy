@@ -159,7 +159,7 @@ class HCDevice:
                     or name == "BSH.Common.Root.ActiveProgram"
                 ):
                     # Convert the returned value to a program name
-                    value = self.get_feature_name(value_str)
+                    value = self.get_feature_name(value_str).split(".")[-1]
 
             result[name] = value
 
@@ -188,12 +188,8 @@ class HCDevice:
                             f" program - {name}."
                         )
             else:
-                if ".Program." not in program:
-                    raise ValueError(
-                        f"Unable to configure appliance. Program {program} is not a valid program."
-                    )
-
                 uid = self.get_feature_uid(program)
+
                 if uid is not None:
                     data["program"] = int(uid)
                 else:
