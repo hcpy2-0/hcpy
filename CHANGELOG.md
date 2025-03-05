@@ -1,3 +1,11 @@
+## [0.4.3] - 2025-03-05
+## What's Changed
+* ActiveProgram/SelectedProgram will now display the shortened Program Name (e.g. Eco50). They should still accept UID, Short or Fully Qualified Name to control.
+* Added additional Dishcare options as switches to discovery.yaml
+* Instantiate a new device object when we reconnect
+* Uppdates to HA Addon config
+
+**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.2...v0.4.3
 ## [0.4.2] - 2025-03-04
 ## What's Changed
 * Fix parsing step where it is a float instead of an integer
@@ -5,7 +13,7 @@
 * Add IDos to discovery.yaml as numbers
 
 
-**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.0...v0.4.2
+**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.1...v0.4.2
 ## [0.4.1] - 2025-03-03
 ## What's Changed
 * Allow discovery.yaml configuration by user by @Meatballs1 in https://github.com/hcpy2-0/hcpy/pull/153
