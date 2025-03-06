@@ -323,7 +323,7 @@ class HCDevice:
             if len(resource_parts) > 1:
                 service = resource.split("/")[1]
                 if version is None and service in self.services.keys():
-                    version = self.services[service]["version"]
+                    version = self.services[service]
 
         if version is None:
             version = 1
@@ -379,7 +379,7 @@ class HCDevice:
         # the clothes washer wants this, the token doesn't matter,
         # although they do not handle padding characters
         # they send a response, not sure how to interpet it
-        if self.services["ci"]["version"] == 2:
+        if self.services["ci"] <= 2:
             self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
             self.token = re.sub(r"=", "", self.token)
             self.get("/ci/authentication", data={"nonce": self.token})
@@ -523,9 +523,7 @@ class HCDevice:
 
             elif resource == "/ci/services":
                 for service in msg["data"]:
-                    self.services[service["service"]] = {
-                        "version": service["version"],
-                    }
+                    self.services[service["service"]] = service["version"]
                 self.services_initialized = True
 
             else:
