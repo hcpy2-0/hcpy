@@ -73,6 +73,9 @@ SKIP_ENTITIES:
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
 - Dishcare.Dishwasher.Command.LearningDishwasher.Proposal.
+- BSH.Common.Command.ApplyFactoryReset
+- BSH.Common.Command.ApplyNetworkReset
+- BSH.Common.Command.DeactivateWiFi
 
 DISABLED_EXCEPTIONS:
 - Refrigeration.Common.Status.Door.
