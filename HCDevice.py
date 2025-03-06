@@ -160,6 +160,8 @@ class HCDevice:
                 ):
                     # Convert the returned value to a program name
                     value = self.get_feature_name(value_str)
+                    if value is not None:
+                        value = value.split(".")[-1]
 
             result[name] = value
 
@@ -188,12 +190,8 @@ class HCDevice:
                             f" program - {name}."
                         )
             else:
-                if ".Program." not in program:
-                    raise ValueError(
-                        f"Unable to configure appliance. Program {program} is not a valid program."
-                    )
-
                 uid = self.get_feature_uid(program)
+
                 if uid is not None:
                     data["program"] = int(uid)
                 else:
@@ -321,15 +319,16 @@ class HCDevice:
         )
 
     # send a message to the device
-    def get(self, resource, version=1, action="GET", data=None):
+    def get(self, resource, version=None, action="GET", data=None):
         if self.services_initialized:
             resource_parts = resource.split("/")
             if len(resource_parts) > 1:
                 service = resource.split("/")[1]
-                if service in self.services.keys():
+                if version is None and service in self.services.keys():
                     version = self.services[service]["version"]
-                else:
-                    self.print("ERROR service not known")
+
+        if version is None:
+            version = 1
 
         msg = {
             "sID": self.session_id,
@@ -371,7 +370,7 @@ class HCDevice:
 
         # ask the device which services it supports
         # registered devices gets pushed down too hence the loop
-        self.get("/ci/services")
+        self.get("/ci/services", version=1)
         while True:
             time.sleep(1)
             if self.services_initialized:
@@ -382,28 +381,41 @@ class HCDevice:
         # the clothes washer wants this, the token doesn't matter,
         # although they do not handle padding characters
         # they send a response, not sure how to interpet it
-        self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
-        self.token = re.sub(r"=", "", self.token)
-        self.get("/ci/authentication", version=2, data={"nonce": self.token})
+        if self.services["ci"]["version"] == 2:
+            self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
+            self.token = re.sub(r"=", "", self.token)
+            self.get("/ci/authentication", data={"nonce": self.token})
+            # Get device info on older models
+            self.get("/ci/info")
 
-        self.get("/ci/info")  # clothes washer
-        self.get("/iz/info")  # dish washer
+        if self.services.get("iz", None):
+            # Retrieve device info on newer models
+            self.get("/iz/info")
+            # Retrieve detailed service info
+            # self.get("/iz/services")
+            # Retrieve hash - unclear what it is used for
+            # self.get("/iz/hashOfCredential")
 
         # Retrieves registered clients like phone/hcpy itself
         # self.get("/ci/registeredDevices")
 
-        # tzInfo all returns empty?
-        # self.get("/ci/tzInfo")
+        # We need to send deviceReady to establish the connection
+        if self.services.get("ei", None):
+            self.get("/ei/deviceReady", action="NOTIFY")
 
-        # We need to send deviceReady for some devices or /ni/ will come back as 403 unauth
-        self.get("/ei/deviceReady", version=2, action="NOTIFY")
-        self.get("/ni/info")
-        # self.get("/ni/config", data={"interfaceID": 0})
+        if self.services.get("ce", None):
+            self.get("/ce/status")
 
-        # self.get("/ro/allDescriptionChanges")
-        self.get("/ro/allMandatoryValues")
-        self.get("/ro/values")
-        self.get("/ro/allDescriptionChanges")
+        if self.services.get("ni", None):
+            self.get("/ni/info")
+            # Shows if DHCP enabled and SSID name
+            # self.get("/ni/config", data={"interfaceID": 0})
+
+        if self.services.get("ro", None):
+            self.get("/ro/allMandatoryValues")
+            self.get("/ro/allDescriptionChanges")
+            # this gets NOTIFYied by the device
+            # self.get("/ro/values")
 
     def handle_message(self, buf):
         msg = json.loads(buf)
