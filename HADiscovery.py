@@ -259,7 +259,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                     or "LaundryCare.WasherDryer.Program." in v["name"]
                     or "Cooking.Oven.Program." in v["name"]
                 ):
-                    options.append(v["name"])
+                    options.append(v["name"].split(".")[-1])
 
             if len(options) < 1:
                 continue
