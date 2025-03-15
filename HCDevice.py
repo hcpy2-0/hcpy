@@ -271,7 +271,7 @@ class HCDevice:
                             value = int(key)
                         except StopIteration:
                             raise Exception(
-                                f"Unable to configure appliance. The value {data['value']} must "
+                                f"Unable to configure appliance. The value {value} must "
                                 f"be in the allowed values {feature['values']}."
                             )
                     elif isinstance(value, int) is False and value.isdigit():
