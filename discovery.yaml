@@ -53,18 +53,16 @@ MAGIC_OVERRIDES:
     device_class: duration
     unit_of_measurement: s
   Cooking.Common.Setting.Lighting:
-    schema: "template"
     component_type: "light"
-    brightness_topic: "homeconnect/hood/state/cooking_common_setting_lightingbrightness"
-    brightness_template: "{{ value | float | multiply(2.55) | round(0) }}"  
-    command_topic: "homeconnect/hood/set"
-    command_on_template: >
-        {%- if brightness is defined -%}
-          {"name":"Cooking.Common.Setting.LightingBrightness","value":{{ [10,brightness | float | multiply(0.39215686) | round(0)]|max }} }
-        {%- else -%}
-          {"name":"Cooking.Common.Setting.Lighting","value":true}
-        {%- endif -%}
-    command_off_template: '{"name":"Cooking.Common.Setting.Lighting","value":false}'
+    brightness_state_topic: "homeconnect/DEVICE_NAME/state/cooking_common_setting_lightingbrightness"
+    brightness_command_topic: "homeconnect/DEVICE_NAME/set"
+    brightness_command_template: '{"name":"Cooking.Common.Setting.LightingBrightness","value":{{value}}}'
+    brightness_scale: 100
+    on_command_type: "first"
+    payload_on: '{"name":"Cooking.Common.Setting.Lighting","value":true}'
+    payload_off: '{"name":"Cooking.Common.Setting.Lighting","value":false}'
+    state_value_template: '{"name":"Cooking.Common.Setting.Lighting","value":{{value|lower}}}'
+    command_topic: "homeconnect/DEVICE_NAME/set"
 
 EXPAND_NAME:
   BSH.Common.Setting.Favorite.: 3
