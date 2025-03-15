@@ -179,16 +179,18 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         # Access can be read, readwrite, writeonly, none
         if (
             (uid is not None) and (access == "writeonly" or access == "readwrite")
-        ) or override_component_type in ["button", "switch", "select", "number"]:
+        ) or override_component_type in ["button", "switch", "select", "number", "light"]:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
             if (
                 (refCID == "01" and (refDID == "00" or refDID == "01"))
                 or (refCID == "15" and refDID == "81")
-                or override_component_type in ["button", "switch"]
+                or override_component_type in ["button", "switch", "light"]
             ):
-                if access == "writeonly" or override_component_type == "button":
+                if override_component_type == "light":
+                    component_type = "light"
+                elif access == "writeonly" or override_component_type == "button":
                     component_type = "button"
                     discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                     discovery_payload["payload_press"] = f'[{{"uid":{uid},"value":true}}]'
@@ -277,6 +279,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
 
         if overrides:
             # Overwrite keys with override values
+            for k, v in overrides.items():
+                if isinstance(v, str):
+                    overrides[k] = v.replace("DEVICE_NAME", device_ident)
             discovery_payload = discovery_payload | overrides
 
         client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
