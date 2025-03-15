@@ -279,6 +279,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
 
         if overrides:
             # Overwrite keys with override values
+            for k, v in overrides.items():
+                if isinstance(v, str):
+                    overrides[k] = v.replace("DEVICE_NAME", device_ident)
             discovery_payload = discovery_payload | overrides
 
         client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
