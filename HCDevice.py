@@ -212,17 +212,29 @@ class HCDevice:
     # Test the feature of an appliance agains a data object
     def test_feature(self, data_array):
         for data in data_array:
-            if "uid" not in data:
-                raise Exception("Unable to configure appliance. UID is required.")
+            uid = data.get("uid", None)
+            name = data.get("name", None)
 
-            if isinstance(data["uid"], int) is False:
-                raise Exception("Unable to configure appliance. UID must be an integer.")
+            if uid:
+                if isinstance(uid, int) is False:
+                    raise Exception(
+                        f"Unable to configure appliance. UID - {uid} must be an integer."
+                    )
+            elif name:
+                uid = self.get_feature_uid(name)
+                data.pop("name")
+                if uid is None:
+                    raise Exception(f"Unable to configure appliance. {name} was not recognised.")
+            else:
+                raise Exception("Unable to configure appliance. 'uid' or 'name' is required.")
+
+            data["uid"] = int(uid)
 
             if "value" not in data:
                 raise Exception("Unable to configure appliance. Value is required.")
 
             # Check if the uid is present for this appliance
-            uid = str(data["uid"])
+            uid = str(uid)
             with self.features_lock:
                 if uid not in self.features:
                     raise Exception(f"Unable to configure appliance. UID {uid} is not valid.")
