@@ -5,6 +5,7 @@
 * Instantiate a new device object when we reconnect
 * Potentially dangerous entities such as Factory Reset button are disabled by default in latest discovery.yaml
 * Allow named entities in set topic instead of just UID
+* Replace DEVICE_NAME in discovery.yaml to allow dynamic device names
 * Add Cooking Light to discovery.yaml
 
 **Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.2...v0.4.3
