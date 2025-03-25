@@ -102,6 +102,7 @@ class HCDevice:
         uid = None
         with self.features_lock:
             for k, v in self.features.items():
+                # Would EndsWith be better approach?
                 if "name" in v and name in v["name"]:
                     uid = k
                     break
@@ -157,6 +158,7 @@ class HCDevice:
                 if (
                     name == "BSH.Common.Root.SelectedProgram"
                     or name == "BSH.Common.Root.ActiveProgram"
+                    or name == "BSH.Common.Option.BaseProgram"
                 ):
                     # Convert the returned value to a program name
                     value = self.get_feature_name(value_str)
@@ -248,53 +250,58 @@ class HCDevice:
                 feature = self.features[uid]
 
                 # check the access level of the feature
-                self.print(f"Processing feature {feature['name']} with uid {uid}")
-                if "access" not in feature:
+            self.print(f"Processing feature {feature['name']} with uid {uid}")
+            if "access" not in feature:
+                self.print(
+                    f"Feature {feature['name']} with uid {uid} does not have access."
+                    "Attempting to send instruction anyway."
+                )
+            else:
+                access = feature["access"].lower()
+                if access != "readwrite" and access != "writeonly":
                     self.print(
-                        f"Feature {feature['name']} with uid {uid} does not have access."
+                        f"Feature {feature['name']} with uid {uid} "
+                        f"has got access {feature['access']}."
                         "Attempting to send instruction anyway."
                     )
-                else:
-                    access = feature["access"].lower()
-                    if access != "readwrite" and access != "writeonly":
-                        self.print(
-                            f"Feature {feature['name']} with uid {uid} "
-                            f"has got access {feature['access']}."
-                            "Attempting to send instruction anyway."
-                        )
 
-                # check if selected list with values is allowed
-                if "values" in feature:
-                    if isinstance(value, int) is False and value.isdigit() is False:
-                        try:
-                            key = next(k for k, v in feature["values"].items() if v == value)
-                            value = int(key)
-                        except StopIteration:
-                            raise Exception(
-                                f"Unable to configure appliance. The value {value} must "
-                                f"be in the allowed values {feature['values']}."
-                            )
-                    elif isinstance(value, int) is False and value.isdigit():
-                        value = int(value)
-
-                    # values are strings in the feature list,
-                    # but always seem to be an integer. An integer must be provided
-                    if str(value) not in feature["values"]:
+            # check if selected list with values is allowed
+            if "values" in feature:
+                if isinstance(value, int) is False and value.isdigit() is False:
+                    try:
+                        key = next(k for k, v in feature["values"].items() if v == value)
+                        value = int(key)
+                    except StopIteration:
                         raise Exception(
-                            "Unable to configure appliance. "
-                            f"Value {data['value']} is not a valid value. "
-                            f"Allowed values are {feature['values']}. "
+                            f"Unable to configure appliance. The value {value} must "
+                            f"be in the allowed values {feature['values']}."
                         )
+                elif isinstance(value, int) is False and value.isdigit():
+                    value = int(value)
 
-                if "min" in feature:
-                    min = int(feature["min"])
-                    max = int(feature["max"])
-                    if isinstance(value, int) is False or value < min or value > max:
-                        raise Exception(
-                            "Unable to configure appliance. "
-                            f"Value {value} is not a valid value. "
-                            f"The value must be an integer in the range {min} and {max}."
-                        )
+                # values are strings in the feature list,
+                # but always seem to be an integer. An integer must be provided
+                if str(value) not in feature["values"]:
+                    raise Exception(
+                        "Unable to configure appliance. "
+                        f"Value {data['value']} is not a valid value. "
+                        f"Allowed values are {feature['values']}. "
+                    )
+
+            if "min" in feature:
+                min = int(feature["min"])
+                max = int(feature["max"])
+                if isinstance(value, int) is False or value < min or value > max:
+                    raise Exception(
+                        "Unable to configure appliance. "
+                        f"Value {value} is not a valid value. "
+                        f"The value must be an integer in the range {min} and {max}."
+                    )
+            # BSH.Common.Option.BaseProgram - Convert named programs to UIDs
+            if uid == "32773":
+                value = self.get_feature_uid(value)
+                if value is not None:
+                    value = int(value)
 
             # UID has to be the first attribute in the dict because the devices require it that way
             data["uid"] = int(uid)
