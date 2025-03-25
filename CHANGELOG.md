@@ -1,5 +1,6 @@
 ## In Progress
 * Set cooking temps as C
+* Process BaseProgram as a selectable Program
 
 ## [0.4.3] - 2025-03-15
 ## What's Changed
