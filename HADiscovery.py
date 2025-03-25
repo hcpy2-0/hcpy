@@ -152,7 +152,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
             component_type = "sensor"
 
         # Temperature
-        if refCID == "07" and refDID == "A4":
+        if refCID == "07" and (refDID == "A4" or refDID == "A1"):
             discovery_payload["unit_of_measurement"] = "°C"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
