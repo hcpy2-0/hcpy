@@ -177,7 +177,8 @@ class HCDevice:
             else:
                 program = data["program"]
 
-            if isinstance(program, int) or program.isdigit():
+            # Favorite Programs 001 passes the isdigit check so must be excluded
+            if isinstance(program, int) or (program.isdigit() and not program.startswith("00")):
                 # devices.json stores UID as string
                 name = self.get_feature_name(program)
                 if name is None:
