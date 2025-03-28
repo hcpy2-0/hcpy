@@ -156,7 +156,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             component_type = "sensor"
 
         # Temperature
-        if refCID == "07" and refDID == "A4":
+        if refCID == "07" and (refDID == "A4" or refDID == "A1"):
             discovery_payload["unit_of_measurement"] = "°C"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
@@ -251,7 +251,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
-        if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
+        if (
+            name == "BSH.Common.Root.ActiveProgram"
+            or name == "BSH.Common.Root.SelectedProgram"
+            or name == "BSH.Common.Option.BaseProgram"
+        ):
             component_type = "select"
             options = []
             for k, v in device["features"].items():
@@ -264,6 +268,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                     or "LaundryCare.Washer.Program." in v["name"]
                     or "LaundryCare.WasherDryer.Program." in v["name"]
                     or "Cooking.Oven.Program." in v["name"]
+                    or "BSH.Common.Program.Favorite." in v["name"]
                 ):
                     options.append(v["name"].split(".")[-1])
 
@@ -276,6 +281,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["command_topic"] = f"{mqtt_topic}/activeProgram"
             elif name == "BSH.Common.Root.SelectedProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/selectedProgram"
+            elif name == "BSH.Common.Option.BaseProgram":
+                discovery_payload["command_template"] = (
+                    f'[{{"uid":{uid},"value":"{{{{value}}}}"}}]'
+                )
+                discovery_payload["command_topic"] = f"{mqtt_topic}/set"
 
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"

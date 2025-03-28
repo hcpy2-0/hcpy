@@ -1,3 +1,7 @@
+## In Progress
+* Set cooking temps as C
+* Process BaseProgram as a selectable Program
+
 ## [0.4.3] - 2025-03-15
 ## What's Changed
 * ActiveProgram/SelectedProgram will now display the shortened Program Name (e.g. Eco50). They should still accept UID, Short or Fully Qualified Name to control.
