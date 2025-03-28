@@ -535,6 +535,13 @@ class HCDevice:
                     }
                 self.services_initialized = True
 
+            elif resource == "/ro/selectedProgram" or resource == "/ro/activeProgram":
+                code = msg.get("code", None)
+                if code is not None:
+                    self.print(f"Failed to set the program, error code: {code}")
+                else:
+                    pass
+
             else:
                 self.print("Unknown response or notify:", msg)
 
