@@ -138,7 +138,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
         if (
             refCID == "01" and (refDID == "00" or refDID == "01")
         ) or override_component_type == "binary_sensor":
-            component_type = "sensor"
+            component_type = "binary_sensor"
             discovery_payload["payload_on"] = True
             discovery_payload["payload_off"] = False
         elif handling is not None or override_component_type == "event":
