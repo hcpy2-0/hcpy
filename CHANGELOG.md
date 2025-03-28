@@ -1,6 +1,7 @@
 ## In Progress
 * Set cooking temps as C
 * Process BaseProgram as a selectable Program
+* Add an availability topic that disables controls when LocalControlActive is True
 
 ## [0.4.3] - 2025-03-15
 ## What's Changed

@@ -4,6 +4,8 @@ import yaml
 
 from HCSocket import now
 
+CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
+
 
 def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
     config = None
@@ -56,8 +58,13 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         "suggested_area": "Kitchen",
     }
 
+    local_control_lockout = False
     for key, value in device["features"].items():
         value["uid"] = key
+        name = value.get("name", None)
+        if name is not None and name == "BSH.Common.Status.LocalControlActive":
+            print(now(), "HADiscovery - adding LocalControlActive availability topic")
+            local_control_lockout = True
 
     for feature in ADDITIONAL_FEATURES + list(device["features"].values()):
         if "name" not in feature:
@@ -179,7 +186,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         # Access can be read, readwrite, writeonly, none
         if (
             (uid is not None) and (access == "writeonly" or access == "readwrite")
-        ) or override_component_type in ["button", "switch", "select", "number", "light"]:
+        ) or override_component_type in CONTROL_COMPONENT_TYPES:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
@@ -282,6 +289,16 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                     f'[{{"uid":{uid},"value":"{{{{value}}}}"}}]'
                 )
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+
+        if component_type in CONTROL_COMPONENT_TYPES:
+            if local_control_lockout:
+                discovery_payload["availability"] = discovery_payload["availability"] + [
+                    {
+                        "topic": f"{mqtt_topic}/state/bsh_common_status_localcontrolactive",
+                        "payload_available": "False",
+                        "payload_not_available": "True",
+                    }
+                ]
 
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
