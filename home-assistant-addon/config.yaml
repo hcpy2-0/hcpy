@@ -31,6 +31,7 @@ options:
   HCPY_HA_DISCOVERY: true
   HCPY_DOMAIN_SUFFIX: ""
   HCPY_DEBUG: false
+  HCPY_EVENTS_AS_SENSORS: false
 schema:
   HCPY_DEVICES_FILE: str
   HCPY_DISCOVERY_FILE: str
@@ -47,6 +48,7 @@ schema:
   HCPY_DOMAIN_SUFFIX: str
   HCPY_HA_DISCOVERY: bool?
   HCPY_DEBUG: bool?
+  HCPY_EVENTS_AS_SENSORS: bool?
 startup: services
 discovery:
   - hcpy
