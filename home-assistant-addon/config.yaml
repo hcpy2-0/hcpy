@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
 description: "View and control HomeConnect appliances over the local network."
-version: "v0.4.3"
+version: "v0.4.4"
 slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
