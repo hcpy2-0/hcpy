@@ -1,7 +1,10 @@
 ## In Progress
+
+## [0.4.4] - 2025-04-09
 * Set cooking temps as C
 * Process BaseProgram as a selectable Program
 * Add an availability topic that disables controls when LocalControlActive is True
+* Add config option to model events as sensors
 
 ## [0.4.3] - 2025-03-15
 ## What's Changed
