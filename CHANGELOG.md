@@ -1,5 +1,8 @@
 ## In Progress
 
+## [0.4.5]  - 2025-04-09 
+* Small fix for events as sensors
+
 ## [0.4.4] - 2025-04-09
 * Set cooking temps as C
 * Process BaseProgram as a selectable Program
