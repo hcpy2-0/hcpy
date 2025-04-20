@@ -1,4 +1,5 @@
 ## In Progress
+* Add ZeoliteDry to discovery.yaml
 
 ## [0.4.5]  - 2025-04-09 
 * Small fix for events as sensors
