@@ -33,6 +33,8 @@ MAGIC_OVERRIDES:
     component_type: "switch"
   Dishcare.Dishwasher.Option.EcoDry:
     component_type: "switch"
+  Dishcare.Dishwasher.Option.ZeoliteDry:
+    component_type: "switch"
   LaundryCare.Washer.Setting.IDos1BaseLevel:
     component_type: "number"
   LaundryCare.Washer.Setting.IDos2BaseLevel:
