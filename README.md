@@ -51,6 +51,8 @@ Installing `sslpsk` needs some extra steps:
 The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
 a normal browser window (Chromium), and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
 
+**This step is time-sensitive, but we have not identified the expiry time for the challenge. There is time to perform this step without too much haste but consider performing this process within 60s to avoid issues.**
+
 ![hc-login developer example](images/hclogin_dev_tools.png)
 
 ```bash
