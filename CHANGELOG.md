@@ -1,5 +1,7 @@
 ## In Progress
 * Add ZeoliteDry to discovery.yaml
+* Add MIT License
+* Support legacy devices with different message deviceType value
 
 ## [0.4.5]  - 2025-04-09 
 * Small fix for events as sensors
