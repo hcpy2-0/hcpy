@@ -430,6 +430,7 @@ class HCDevice:
 
         resource = msg["resource"]
         action = msg["action"]
+        version = msg["version"]
 
         values = {}
 
@@ -448,7 +449,7 @@ class HCDevice:
                 self.reply(
                     msg,
                     {
-                        "deviceType": "Application",
+                        "deviceType": 2 if version == 1 else "Application",
                         "deviceName": self.device_name,
                         "deviceID": self.device_id,
                     },
