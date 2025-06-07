@@ -1,3 +1,27 @@
+## In Progress
+* Add ZeoliteDry to discovery.yaml
+
+## [0.4.5]  - 2025-04-09 
+* Small fix for events as sensors
+
+## [0.4.4] - 2025-04-09
+* Set cooking temps as C
+* Process BaseProgram as a selectable Program
+* Add an availability topic that disables controls when LocalControlActive is True
+* Add config option to model events as sensors
+
+## [0.4.3] - 2025-03-15
+## What's Changed
+* ActiveProgram/SelectedProgram will now display the shortened Program Name (e.g. Eco50). They should still accept UID, Short or Fully Qualified Name to control.
+* Added additional Dishcare options as switches to discovery.yaml
+* Instantiate a new device object when we reconnect
+* Potentially dangerous entities such as Factory Reset button are disabled by default in latest discovery.yaml
+* Allow named entities in set topic instead of just UID
+* Replace DEVICE_NAME in discovery.yaml to allow dynamic device names
+* Add Cooking Light to discovery.yaml
+* Add Ambient Light to discovery.yaml - color picker will only work if the effect is CustomColor
+
+**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.2...v0.4.3
 ## [0.4.2] - 2025-03-04
 ## What's Changed
 * Fix parsing step where it is a float instead of an integer
@@ -5,7 +29,7 @@
 * Add IDos to discovery.yaml as numbers
 
 
-**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.0...v0.4.2
+**Full Changelog**: https://github.com/hcpy2-0/hcpy/compare/v0.4.1...v0.4.2
 ## [0.4.1] - 2025-03-03
 ## What's Changed
 * Allow discovery.yaml configuration by user by @Meatballs1 in https://github.com/hcpy2-0/hcpy/pull/153

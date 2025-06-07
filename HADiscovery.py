@@ -4,8 +4,10 @@ import yaml
 
 from HCSocket import now
 
+CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
 
-def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
+
+def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events_as_sensors):
     config = None
     try:
         with open(discovery_yaml_path, "r") as yaml_config:
@@ -56,8 +58,13 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         "suggested_area": "Kitchen",
     }
 
+    local_control_lockout = False
     for key, value in device["features"].items():
         value["uid"] = key
+        name = value.get("name", None)
+        if name is not None and name == "BSH.Common.Status.LocalControlActive":
+            print(now(), "HADiscovery - adding LocalControlActive availability topic")
+            local_control_lockout = True
 
     for feature in ADDITIONAL_FEATURES + list(device["features"].values()):
         if "name" not in feature:
@@ -142,17 +149,21 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
             discovery_payload["payload_on"] = True
             discovery_payload["payload_off"] = False
         elif handling is not None or override_component_type == "event":
-            component_type = "event"
-            discovery_payload["event_types"] = list(values.values())
-            discovery_payload["platform"] = "event"
+            if events_as_sensors:
+                component_type = "sensor"
+                discovery_payload["value_template"] = "{{ value_json.event_type }}"
+            else:
+                component_type = "event"
+                discovery_payload["event_types"] = list(values.values())
+                discovery_payload["platform"] = "event"
+                discovery_payload.pop("value_template", None)
+                discovery_payload.pop("options", None)
             discovery_payload["state_topic"] = f"{mqtt_topic}/event/{feature_id}"
-            discovery_payload.pop("value_template", None)
-            discovery_payload.pop("options", None)
         else:
             component_type = "sensor"
 
         # Temperature
-        if refCID == "07" and refDID == "A4":
+        if refCID == "07" and (refDID == "A4" or refDID == "A1"):
             discovery_payload["unit_of_measurement"] = "°C"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
@@ -179,16 +190,18 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
         # Access can be read, readwrite, writeonly, none
         if (
             (uid is not None) and (access == "writeonly" or access == "readwrite")
-        ) or override_component_type in ["button", "switch", "select", "number"]:
+        ) or override_component_type in CONTROL_COMPONENT_TYPES:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
             # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
             if (
                 (refCID == "01" and (refDID == "00" or refDID == "01"))
                 or (refCID == "15" and refDID == "81")
-                or override_component_type in ["button", "switch"]
+                or override_component_type in ["button", "switch", "light"]
             ):
-                if access == "writeonly" or override_component_type == "button":
+                if override_component_type == "light":
+                    component_type = "light"
+                elif access == "writeonly" or override_component_type == "button":
                     component_type = "button"
                     discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                     discovery_payload["payload_press"] = f'[{{"uid":{uid},"value":true}}]'
@@ -245,7 +258,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
-        if name == "BSH.Common.Root.ActiveProgram" or name == "BSH.Common.Root.SelectedProgram":
+        if (
+            name == "BSH.Common.Root.ActiveProgram"
+            or name == "BSH.Common.Root.SelectedProgram"
+            or name == "BSH.Common.Option.BaseProgram"
+        ):
             component_type = "select"
             options = []
             for k, v in device["features"].items():
@@ -258,8 +275,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                     or "LaundryCare.Washer.Program." in v["name"]
                     or "LaundryCare.WasherDryer.Program." in v["name"]
                     or "Cooking.Oven.Program." in v["name"]
+                    or "BSH.Common.Program.Favorite." in v["name"]
                 ):
-                    options.append(v["name"])
+                    options.append(v["name"].split(".")[-1])
 
             if len(options) < 1:
                 continue
@@ -270,6 +288,21 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
                 discovery_payload["command_topic"] = f"{mqtt_topic}/activeProgram"
             elif name == "BSH.Common.Root.SelectedProgram":
                 discovery_payload["command_topic"] = f"{mqtt_topic}/selectedProgram"
+            elif name == "BSH.Common.Option.BaseProgram":
+                discovery_payload["command_template"] = (
+                    f'[{{"uid":{uid},"value":"{{{{value}}}}"}}]'
+                )
+                discovery_payload["command_topic"] = f"{mqtt_topic}/set"
+
+        if component_type in CONTROL_COMPONENT_TYPES:
+            if local_control_lockout:
+                discovery_payload["availability"] = discovery_payload["availability"] + [
+                    {
+                        "topic": f"{mqtt_topic}/state/bsh_common_status_localcontrolactive",
+                        "payload_available": "False",
+                        "payload_not_available": "True",
+                    }
+                ]
 
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
@@ -277,6 +310,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic):
 
         if overrides:
             # Overwrite keys with override values
+            for k, v in overrides.items():
+                if isinstance(v, str):
+                    overrides[k] = v.replace("DEVICE_NAME", device_ident)
             discovery_payload = discovery_payload | overrides
 
         client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
