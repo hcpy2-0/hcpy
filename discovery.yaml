@@ -39,6 +39,8 @@ MAGIC_OVERRIDES:
     component_type: "number"
   LaundryCare.Washer.Setting.IDos2BaseLevel:
     component_type: "number" 
+  Cooking.Oven.Option.SetpointTemperature:
+    component_type: "number"  
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:

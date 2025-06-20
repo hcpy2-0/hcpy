@@ -1,4 +1,7 @@
 ## In Progress
+
+## [0.4.6] - 2025-06-20
+* Add Cooking.Oven.Option.SetpointTemperature as a controllable number in AutoDiscovery
 * Add ZeoliteDry to discovery.yaml
 * Add MIT License
 * Support legacy devices with different message deviceType value
