@@ -236,7 +236,8 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["command_template"] = template
             # numbers
             elif (
-                (refCID == "07" and refDID == "A4")
+                (refCID == "07" and refDID == "A1")
+                or (refCID == "07" and refDID == "A4")
                 or (refCID == "11" and refDID == "A0")
                 or (refCID == "11" and refDID == "80")
                 or (refCID == "14" and refDID == "80")
