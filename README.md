@@ -487,3 +487,4 @@ MQTT auto-discovery messages. With `ha_discovery = True` in `config.ini` or by
 passing `--ha-discovery` on the commandline, `hcpy` will publish
 [HA discovery messages](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery)
 for each recognised property of your devices.
+ 
