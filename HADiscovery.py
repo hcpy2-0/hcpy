@@ -244,7 +244,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
-                or (refCID == "10" and refDID == "82" and access == "readWrite")
+                or (refCID == "10" and refDID == "82" and access == "readwrite")
             ):
                 component_type = "number"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
