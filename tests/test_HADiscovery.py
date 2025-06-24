@@ -6,35 +6,6 @@ from unittest.mock import Mock, patch, mock_open
 from HADiscovery import publish_ha_discovery, CONTROL_COMPONENT_TYPES
 
 
-@pytest.fixture
-def mock_mqtt_client():
-    """Mock MQTT client for testing"""
-    client = Mock()
-    client.publish = Mock()
-    return client
-
-
-@pytest.fixture
-def sample_discovery_config():
-    """Sample discovery configuration"""
-    return {
-        "HA_DISCOVERY_PREFIX": "homeassistant",
-        "MAGIC_OVERRIDES": {
-            "BSH.Common.Setting.PowerState": {
-                "component_type": "switch",
-                "name": "Power State Override"
-            }
-        },
-        "EXPAND_NAME": {
-            "BSH.Common.Setting": 2
-        },
-        "SKIP_ENTITIES": ["BSH.Common.Root.ProgramGroup"],
-        "DISABLED_ENTITIES": ["BSH.Common.Status.WiFiSignalStrength"],
-        "DISABLED_EXCEPTIONS": ["BSH.Common.Status.WiFiSignalStrength.Override"],
-        "ADDITIONAL_FEATURES": []
-    }
-
-
 class TestHADiscovery:
     """Test cases for HADiscovery module"""
 
