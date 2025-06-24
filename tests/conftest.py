@@ -1,7 +1,8 @@
-import pytest
-import tempfile
 import os
+import tempfile
 from unittest.mock import Mock
+
+import pytest
 
 
 @pytest.fixture
@@ -20,22 +21,14 @@ def sample_discovery_config():
         "MAGIC_OVERRIDES": {
             "BSH.Common.Setting.PowerState": {
                 "component_type": "switch",
-                "name": "Power State Override"
+                "name": "Power State Override",
             }
         },
-        "EXPAND_NAME": {
-            "BSH.Common.Setting": 2
-        },
-        "SKIP_ENTITIES": [
-            "BSH.Common.Program.ProgramGroup"
-        ],
-        "DISABLED_ENTITIES": [
-            "BSH.Common.Status.WiFiSignalStrength"
-        ],
-        "DISABLED_EXCEPTIONS": [
-            "BSH.Common.Status.WiFiSignalStrength.Override"
-        ],
-        "ADDITIONAL_FEATURES": []
+        "EXPAND_NAME": {"BSH.Common.Setting": 2},
+        "SKIP_ENTITIES": ["BSH.Common.Program.ProgramGroup"],
+        "DISABLED_ENTITIES": ["BSH.Common.Status.WiFiSignalStrength"],
+        "DISABLED_EXCEPTIONS": ["BSH.Common.Status.WiFiSignalStrength.Override"],
+        "ADDITIONAL_FEATURES": [],
     }
 
 
@@ -50,7 +43,7 @@ def devices():
                 "model": "TEST_MODEL",
                 "revision": "2",
                 "type": "Oven",
-                "version": "4.2"
+                "version": "4.2",
             },
             "features": {
                 "256": {
@@ -59,17 +52,14 @@ def devices():
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "Open",
-                        "1": "Closed"
-                    }
+                    "values": {"0": "Open", "1": "Closed"},
                 },
                 "257": {
                     "name": "BSH.Common.Status.LocalControlActive",
                     "access": "read",
                     "available": "true",
                     "refCID": "01",
-                    "refDID": "00"
+                    "refDID": "00",
                 },
                 "258": {
                     "name": "Cooking.Oven.Option.SetpointTemperature",
@@ -79,7 +69,7 @@ def devices():
                     "refDID": "A1",
                     "min": 30,
                     "max": 250,
-                    "stepSize": 5
+                    "stepSize": 5,
                 },
                 "259": {
                     "name": "BSH.Common.Option.Duration",
@@ -89,14 +79,14 @@ def devices():
                     "refDID": "82",
                     "min": 0,
                     "max": 7200,
-                    "stepSize": 60
+                    "stepSize": 60,
                 },
                 "260": {
                     "name": "BSH.Common.Setting.ChildLock",
                     "access": "readWrite",
                     "available": "true",
                     "refCID": "01",
-                    "refDID": "00"
+                    "refDID": "00",
                 },
                 "261": {
                     "name": "BSH.Common.Status.WiFiSignalStrength",
@@ -109,8 +99,8 @@ def devices():
                         "1": "Poor",
                         "2": "Fair",
                         "3": "Good",
-                        "4": "Excellent"
-                    }
+                        "4": "Excellent",
+                    },
                 },
                 "262": {
                     "name": "BSH.Common.Root.ActiveProgram",
@@ -118,12 +108,7 @@ def devices():
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "None",
-                        "1": "Bake",
-                        "2": "Broil",
-                        "3": "Convection"
-                    }
+                    "values": {"0": "None", "1": "Bake", "2": "Broil", "3": "Convection"},
                 },
                 "263": {
                     "name": "BSH.Common.Event.ProgramFinished",
@@ -135,13 +120,13 @@ def devices():
                     "values": {
                         "0": "Program Started",
                         "1": "Program Finished",
-                        "2": "Program Aborted"
-                    }
-                }
+                        "2": "Program Aborted",
+                    },
+                },
             },
             "host": "192.168.1.101",
             "iv": "OBFUSCATED_IV_1",
-            "key": "OBFUSCATED_KEY_1"
+            "key": "OBFUSCATED_KEY_1",
         },
         {
             "name": "test_washer",
@@ -150,7 +135,7 @@ def devices():
                 "model": "TEST_WASHER_MODEL",
                 "revision": "1",
                 "type": "Washer",
-                "version": "3.1"
+                "version": "3.1",
             },
             "features": {
                 "300": {
@@ -159,10 +144,7 @@ def devices():
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "Open",
-                        "1": "Closed"
-                    }
+                    "values": {"0": "Open", "1": "Closed"},
                 },
                 "301": {
                     "name": "LaundryCare.Washer.Option.Temperature",
@@ -172,7 +154,7 @@ def devices():
                     "refDID": "A4",
                     "min": 20,
                     "max": 90,
-                    "stepSize": 10
+                    "stepSize": 10,
                 },
                 "302": {
                     "name": "LaundryCare.Washer.Option.SpinSpeed",
@@ -182,7 +164,7 @@ def devices():
                     "refDID": "A0",
                     "min": 400,
                     "max": 1600,
-                    "stepSize": 200
+                    "stepSize": 200,
                 },
                 "303": {
                     "name": "LaundryCare.Washer.Program.Cotton",
@@ -190,16 +172,13 @@ def devices():
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "Not Selected",
-                        "1": "Selected"
-                    }
-                }
+                    "values": {"0": "Not Selected", "1": "Selected"},
+                },
             },
             "host": "192.168.1.102",
             "iv": "OBFUSCATED_IV_2",
-            "key": "OBFUSCATED_KEY_2"
-        }
+            "key": "OBFUSCATED_KEY_2",
+        },
     ]
 
 
@@ -213,11 +192,12 @@ def temp_discovery_config():
         "SKIP_ENTITIES": [],
         "DISABLED_ENTITIES": [],
         "DISABLED_EXCEPTIONS": [],
-        "ADDITIONAL_FEATURES": []
+        "ADDITIONAL_FEATURES": [],
     }
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         import yaml
+
         yaml.dump(config, f)
         temp_path = f.name
 

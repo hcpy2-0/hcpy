@@ -1,9 +1,9 @@
 import json
+from unittest.mock import mock_open, patch
+
 import pytest
-import tempfile
-import os
-from unittest.mock import Mock, patch, mock_open
-from HADiscovery import publish_ha_discovery, CONTROL_COMPONENT_TYPES
+
+from HADiscovery import CONTROL_COMPONENT_TYPES, publish_ha_discovery
 
 
 class TestHADiscovery:
@@ -14,7 +14,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         # Verify that publish was called
@@ -29,7 +29,7 @@ class TestHADiscovery:
             # The publish call has: client.publish(topic, payload, retain=True)
             topic = args[0]
             payload = args[1]
-            retain = kwargs.get('retain', False)
+            retain = kwargs.get("retain", False)
 
             payload_data = json.loads(payload)
 
@@ -48,7 +48,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -68,12 +68,14 @@ class TestHADiscovery:
 
         assert binary_sensor_found, "Binary sensor should be detected for refCID=01, refDID=00"
 
-    def test_temperature_sensor_detection(self, mock_mqtt_client, sample_discovery_config, devices):
+    def test_temperature_sensor_detection(
+        self, mock_mqtt_client, sample_discovery_config, devices
+    ):
         """Test temperature sensor detection"""
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -95,7 +97,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -116,7 +118,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -142,7 +144,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -167,7 +169,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -186,14 +188,16 @@ class TestHADiscovery:
 
         # The device data doesn't have the specific program features that trigger select components
         # This is expected behavior - not all devices will have select components
-        assert True, "Select component detection works correctly (no select components in this device data)"
+        assert (
+            True
+        ), "Select component detection works correctly (no select components in this device data)"
 
     def test_event_component_detection(self, mock_mqtt_client, sample_discovery_config, devices):
         """Test event component detection"""
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -217,7 +221,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, True)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -232,14 +236,16 @@ class TestHADiscovery:
                 event_sensor_found = True
                 assert payload_data["value_template"] == "{{ value_json.event_type }}"
 
-        assert event_sensor_found, "Events should be published as sensors when events_as_sensors=True"
+        assert (
+            event_sensor_found
+        ), "Events should be published as sensors when events_as_sensors=True"
 
     def test_skip_entities(self, mock_mqtt_client, sample_discovery_config, devices):
         """Test that entities are skipped based on SKIP_ENTITIES configuration"""
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -249,14 +255,16 @@ class TestHADiscovery:
             args = call[0]
             payload = args[1]
             payload_data = json.loads(payload)
-            assert "ProgramGroup" not in payload_data["name"], "ProgramGroup entities should be skipped"
+            assert (
+                "ProgramGroup" not in payload_data["name"]
+            ), "ProgramGroup entities should be skipped"
 
     def test_disabled_entities(self, mock_mqtt_client, sample_discovery_config, devices):
         """Test that entities are disabled based on DISABLED_ENTITIES configuration"""
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -284,13 +292,10 @@ class TestHADiscovery:
             "available": "true",
             "refCID": "03",
             "refDID": "80",
-            "values": {
-                "2": "On",
-                "3": "Standby"
-            }
+            "values": {"2": "On", "3": "Standby"},
         }
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -318,10 +323,10 @@ class TestHADiscovery:
             "access": "read",
             "available": "true",
             "refCID": "01",
-            "refDID": "00"
+            "refDID": "00",
         }
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -343,7 +348,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -362,15 +367,25 @@ class TestHADiscovery:
                         assert topic_info["payload_available"] == "False"
                         assert topic_info["payload_not_available"] == "True"
 
-        assert lockout_found, "Local control lockout availability should be added for controllable features"
+        assert (
+            lockout_found
+        ), "Local control lockout availability should be added for controllable features"
 
-    def test_config_file_not_found_fallback(self, mock_mqtt_client, sample_discovery_config, devices):
+    def test_config_file_not_found_fallback(
+        self, mock_mqtt_client, sample_discovery_config, devices
+    ):
         """Test fallback to discovery.yaml when config file is not found"""
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
         # Mock first file not found, second file found
-        with patch('builtins.open', side_effect=[FileNotFoundError(), mock_open(read_data=json.dumps(sample_discovery_config))()]):
+        with patch(
+            "builtins.open",
+            side_effect=[
+                FileNotFoundError(),
+                mock_open(read_data=json.dumps(sample_discovery_config))(),
+            ],
+        ):
             publish_ha_discovery("nonexistent.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         # Should still publish discovery
@@ -381,7 +396,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', side_effect=FileNotFoundError()):
+        with patch("builtins.open", side_effect=FileNotFoundError()):
             publish_ha_discovery("nonexistent.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         # Should not publish anything
@@ -398,16 +413,13 @@ class TestHADiscovery:
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "Open",
-                        "1": "Closed"
-                    }
+                    "values": {"0": "Open", "1": "Closed"},
                 }
-            }
+            },
         }
         mqtt_topic = "test/device/test"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -431,11 +443,11 @@ class TestHADiscovery:
             "access": "read",
             "available": "true",
             "refCID": "01",
-            "refDID": "00"
+            "refDID": "00",
         }
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -454,16 +466,13 @@ class TestHADiscovery:
                     "available": "true",
                     "refCID": "03",
                     "refDID": "80",
-                    "values": {
-                        "0": "Off",
-                        "1": "On"
-                    }
+                    "values": {"0": "Off", "1": "On"},
                 }
-            }
+            },
         }
         mqtt_topic = "test/device/test"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -484,7 +493,9 @@ class TestHADiscovery:
 
         assert switch_found, "Enum with On/Off values should become a switch"
 
-    def test_program_session_summary_special_handling(self, mock_mqtt_client, sample_discovery_config):
+    def test_program_session_summary_special_handling(
+        self, mock_mqtt_client, sample_discovery_config
+    ):
         """Test special handling for ProgramSessionSummary.Latest"""
         device = {
             "name": "test_device",
@@ -494,13 +505,13 @@ class TestHADiscovery:
                     "access": "read",
                     "available": "true",
                     "refCID": "11",
-                    "refDID": "A0"
+                    "refDID": "A0",
                 }
-            }
+            },
         }
         mqtt_topic = "test/device/test"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -518,7 +529,7 @@ class TestHADiscovery:
         device = devices[1]  # washer device
         mqtt_topic = "test/device/washer"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -546,13 +557,13 @@ class TestHADiscovery:
                     "access": "writeOnly",
                     "available": "true",
                     "refCID": "01",
-                    "refDID": "00"
+                    "refDID": "00",
                 }
-            }
+            },
         }
         mqtt_topic = "test/device/test"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -574,11 +585,7 @@ class TestHADiscovery:
     def test_light_component_override(self, mock_mqtt_client, sample_discovery_config):
         """Test light component override"""
         config = sample_discovery_config.copy()
-        config["MAGIC_OVERRIDES"] = {
-            "BSH.Common.Setting.Light": {
-                "component_type": "light"
-            }
-        }
+        config["MAGIC_OVERRIDES"] = {"BSH.Common.Setting.Light": {"component_type": "light"}}
 
         device = {
             "name": "test_device",
@@ -588,13 +595,13 @@ class TestHADiscovery:
                     "access": "readWrite",
                     "available": "true",
                     "refCID": "01",
-                    "refDID": "00"
+                    "refDID": "00",
                 }
-            }
+            },
         }
         mqtt_topic = "test/device/test"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -613,7 +620,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -635,7 +642,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -658,7 +665,7 @@ class TestHADiscovery:
         device = devices[0]
         mqtt_topic = "test/device/oven"
 
-        with patch('builtins.open', mock_open(read_data=json.dumps(sample_discovery_config))):
+        with patch("builtins.open", mock_open(read_data=json.dumps(sample_discovery_config))):
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
@@ -672,7 +679,7 @@ class TestHADiscovery:
             assert topic.startswith("homeassistant/")
             assert "/hcpy/" in topic
             assert topic.endswith("/config")
-            assert kwargs.get('retain') is True
+            assert kwargs.get("retain") is True
 
     def test_control_component_types_constant(self):
         """Test CONTROL_COMPONENT_TYPES constant"""
