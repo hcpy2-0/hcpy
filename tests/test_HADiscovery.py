@@ -24,15 +24,9 @@ class TestHADiscovery:
         calls = mock_mqtt_client.publish.call_args_list
         for call in calls:
             args = call[0]  # positional arguments
-            kwargs = call[1]  # keyword arguments
-
-            # The publish call has: client.publish(topic, payload, retain=True)
-            topic = args[0]
             payload = args[1]
-            retain = kwargs.get("retain", False)
-
+            retain = call[1].get("retain", False)
             payload_data = json.loads(payload)
-
             # Check device info
             assert payload_data["device"]["identifiers"] == ["test_oven"]
             assert payload_data["device"]["name"] == "test_oven"
@@ -56,7 +50,6 @@ class TestHADiscovery:
 
         for call in calls:
             args = call[0]
-            kwargs = call[1]
             topic = args[0]
             payload = args[1]
 
@@ -173,24 +166,20 @@ class TestHADiscovery:
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
-        select_found = False
-
         for call in calls:
             args = call[0]
-            topic = args[0]
-            if "select" in topic:
-                select_found = True
+            if "select" in args[0]:
                 payload = args[1]
                 payload_data = json.loads(payload)
                 assert "options" in payload_data
                 assert "command_topic" in payload_data
                 assert "command_template" in payload_data
-
         # The device data doesn't have the specific program features that trigger select components
         # This is expected behavior - not all devices will have select components
-        assert (
-            True
-        ), "Select component detection works correctly (no select components in this device data)"
+        assert True, (
+            "Select component detection works correctly "
+            "(no select components in this device data)"
+        )
 
     def test_event_component_detection(self, mock_mqtt_client, sample_discovery_config, devices):
         """Test event component detection"""
@@ -330,18 +319,15 @@ class TestHADiscovery:
             publish_ha_discovery("test_config.yaml", device, mock_mqtt_client, mqtt_topic, False)
 
         calls = mock_mqtt_client.publish.call_args_list
-        expanded_name_found = False
-
         for call in calls:
             args = call[0]
             payload = args[1]
             payload_data = json.loads(payload)
             if payload_data.get("name") == "TestFeature":
-                expanded_name_found = True
-
-        # The expand name functionality may not be working as expected in the current implementation
-        # This test documents the expected behavior
-        assert True, "Expand name functionality test (may need implementation review)"
+                break
+        else:
+            msg = "Expand name functionality test (may need implementation review)"
+            assert True, msg
 
     def test_local_control_lockout(self, mock_mqtt_client, sample_discovery_config, devices):
         """Test local control lockout availability topic"""
