@@ -1,6 +1,6 @@
 ## In Progress
 * Added Unit Tests (@cibernox)
-* Added BSH.Common.Option.Duration as a number
+* Added BSH.Common.Option.Duration as a number (@cibernox)
 * Allow generic number overrides
 * Add socket timeout and reconnect
 
