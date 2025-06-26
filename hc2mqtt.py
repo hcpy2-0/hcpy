@@ -257,11 +257,12 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     while True:
         time.sleep(3)
         try:
-            hcprint(name, f"connecting to {host}")
             ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice = HCDevice(ws, device, debug)
             dev[name] = mydevice
+            hcprint(name, f"connecting to {host}")
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
+            hcprint(name, f"not connected {host}")
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
