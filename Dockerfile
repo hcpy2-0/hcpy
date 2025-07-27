@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt ./
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends curl tar gcc jq python3-dev libxml2-dev libxslt-dev && \
+  apt-get install -y --no-install-recommends curl && \
   pip3 install -r requirements.txt && \
   apt-get remove -y gcc python3-dev && \
   apt-get autoremove -y \

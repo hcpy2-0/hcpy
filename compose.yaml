@@ -1,6 +1,7 @@
 ---
 services:
   app:
+    name: hcpy:latest
     build: .
     restart: on-failure
     volumes:
