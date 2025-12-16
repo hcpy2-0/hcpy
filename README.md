@@ -458,7 +458,7 @@ Synchronize with time server, `false` is disabled
 
 ### Starting a Program
 
-The MQTT client listens on /{prefix}/{devicename}/activeProgram for a JSON message to start a program. The JSON should be in the following format:
+The MQTT client listens on `{prefix}/{devicename}/activeProgram` for a JSON message to start a program. The JSON should be in the following format:
 
 ```json
 {"program":{uid},"options":[{"uid":{uid},"value":{value}}]}
@@ -473,6 +473,17 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 ```json
 {"program":8196,"options":[{"uid":558,"value":600}]}
 ```
+
+An example test from HomeAssistant Developer Tools -> Actions would be:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: "homeconnect/hood/activeProgram"
+  payload: '{"program":55307,"options":[{"uid":55308,"value":1}]}'
+```
+
+The `program` value can also take the display name of the program (e.g. `"Dishcare.Dishwasher.Program.Eco50"`) instead of a numeric UID, but this processing is not currently on the options.
 
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
