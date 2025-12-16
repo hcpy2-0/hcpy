@@ -476,7 +476,7 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 
 An example test from HomeAssistant Developer Tools -> Actions would be:
 
-```
+```yaml
 action: mqtt.publish
 data:
   topic: "homeconnect/hood/activeProgram"
