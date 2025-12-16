@@ -640,7 +640,7 @@ class TestHADiscovery:
             payload = args[1]
             payload_data = json.loads(payload)
             unique_id = payload_data["unique_id"]
-            object_id = payload_data["object_id"]
+            object_id = payload_data["default_entity_id"]  # option_id deprecated in HA 2025.10.1
 
             assert unique_id.startswith("test_oven_")
             assert object_id.startswith("test_oven_")

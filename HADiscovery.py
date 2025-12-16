@@ -124,7 +124,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             "state_topic": state_topic,
             "availability_mode": "all",
             "availability": [{"topic": f"{base_topic}/LWT"}, {"topic": f"{mqtt_topic}/LWT"}],
-            "object_id": f"{device_ident}_{feature_id}",
+            "default_entity_id": f"{device_ident}_{feature_id}",
             "unique_id": f"{device_ident}_{feature_id}",
             "enabled_by_default": not disabled,
         }
