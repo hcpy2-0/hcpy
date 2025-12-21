@@ -306,7 +306,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                     }
                 ]
 
-        discovery_payload["default_entity_id"] = f"{component_type}.{discovery_payload['unique_id']}"
+        discovery_payload["default_entity_id"] = (
+            f"{component_type}.{discovery_payload['unique_id']}"
+        )
 
         discovery_topic = (
             f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
