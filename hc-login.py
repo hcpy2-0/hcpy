@@ -51,18 +51,10 @@ asset_urls = [
 #
 # The app_id and scope are hardcoded in the application
 app_id = "9B75AC9EC512F36C84256AC47D813E2C1DD0D6520DF774B020E1E6E2EB29B1F3"
-scope = [
-    "ReadAccount",
-    "Settings",
-    "IdentifyAppliance",
-    "Control",
-    "DeleteAppliance",
-    "WriteAppliance",
-    "ReadOrigApi",
-    "Monitor",
-    "WriteOrigApi",
-    "Images",
-]
+# scopes used by the Home Connect app: Control
+# DeleteAppliance IdentifyAppliance Images
+# Monitor ReadAccount ReadOrigApi Settings
+# WriteAppliance WriteOrigApi
 scope = [
     "ReadOrigApi",
 ]
@@ -88,7 +80,6 @@ login_query = {
     "nonce": b64random(16),
     "state": b64random(16),
     "redirect_uri": "hcauth://auth/prod",
-    "redirect_target": "icore",
 }
 
 loginpage_url = base_url + "authorize?" + urlencode(login_query)
