@@ -51,9 +51,9 @@ asset_urls = [
 #
 # The app_id and scope are hardcoded in the application
 app_id = "9B75AC9EC512F36C84256AC47D813E2C1DD0D6520DF774B020E1E6E2EB29B1F3"
-# scopes used by the Home Connect app: Control 
-# DeleteAppliance IdentifyAppliance Images 
-# Monitor ReadAccount ReadOrigApi Settings 
+# scopes used by the Home Connect app: Control
+# DeleteAppliance IdentifyAppliance Images
+# Monitor ReadAccount ReadOrigApi Settings
 # WriteAppliance WriteOrigApi
 scope = [
     "ReadOrigApi",
