@@ -260,9 +260,9 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["command_template"] = template
 
                 # Min/Max may be already set for durations above
-                if discovery_payload["min"] is None:
+                if discovery_payload.get("min") is None:
                     discovery_payload["min"] = feature.get("min", None)
-                if discovery_payload["max"] is None:
+                if discovery_payload.get("max") is None:
                     discovery_payload["max"] = feature.get("max", None)
                 if step is not None:
                     discovery_payload["step"] = float(step)
