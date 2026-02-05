@@ -51,6 +51,8 @@ Installing `sslpsk` needs some extra steps:
 The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
 a normal browser window (Chromium), and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
 
+**This step is time-sensitive, but we have not identified the expiry time for the challenge. There is time to perform this step without too much haste but consider performing this process within 60s to avoid issues.**
+
 ![hc-login developer example](images/hclogin_dev_tools.png)
 
 ```bash
@@ -456,7 +458,7 @@ Synchronize with time server, `false` is disabled
 
 ### Starting a Program
 
-The MQTT client listens on /{prefix}/{devicename}/activeProgram for a JSON message to start a program. The JSON should be in the following format:
+The MQTT client listens on `{prefix}/{devicename}/activeProgram` for a JSON message to start a program. The JSON should be in the following format:
 
 ```json
 {"program":{uid},"options":[{"uid":{uid},"value":{value}}]}
@@ -471,6 +473,17 @@ To start a dishwasher on eco mode in 10 miuntes (`BSH.Common.Option.StartInRelat
 ```json
 {"program":8196,"options":[{"uid":558,"value":600}]}
 ```
+
+An example test from HomeAssistant Developer Tools -> Actions would be:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: "homeconnect/hood/activeProgram"
+  payload: '{"program":55307,"options":[{"uid":55308,"value":1}]}'
+```
+
+The `program` value can also take the display name of the program (e.g. `"Dishcare.Dishwasher.Program.Eco50"`) instead of a numeric UID, but this processing is not currently on the options.
 
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`

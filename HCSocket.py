@@ -95,6 +95,7 @@ class HCSocket:
                 context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305a
                 # Identity hint from server is HCCOM_Local_App but can be null
                 context.set_psk_client_callback(lambda hint: ("HCCOM_Local_App", self.psk))
+                self.dprint("Wrapping socket...")
                 return context.wrap_socket(tcp_socket, server_hostname=self.host)
             except Exception as e:
                 print(e)
@@ -205,10 +206,21 @@ class HCSocket:
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
+        sock.settimeout(10)
         sock.connect((self.host, self.port))
+        self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
         if not self.http:
+            self.dprint("wrapping socket: " + self.host + ":" + str(self.port))
             sock = self.wrap_socket_psk(sock)
+            if sock is not None:
+                self.dprint("wrapping complete: " + self.host + ":" + str(self.port))
+            else:
+                self.dprint("wrapping failed")
+
+        if sock is None:
+            return
 
         def _on_open(ws):
             self.dprint("on connect")
@@ -245,4 +257,4 @@ class HCSocket:
     # Debug print
     def dprint(self, *args):
         if self.debug:
-            print(now(), *args)
+            print(now(), *args, flush=True)

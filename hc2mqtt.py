@@ -36,6 +36,7 @@ def hcprint(*args):
 @click.option("--debug/--no-debug", default=False)
 @click.option("--ha-discovery", is_flag=True)
 @click.option("--discovery_file", default="config/discovery.yaml")
+@click.option("--events_as_sensors", is_flag=True)
 @click_config_file.configuration_option()
 def hc2mqtt(
     devices_file: str,
@@ -53,6 +54,7 @@ def hc2mqtt(
     debug: bool,
     ha_discovery: bool,
     discovery_file: str,
+    events_as_sensors: bool,
 ):
 
     def on_connect(client, userdata, flags, rc):
@@ -89,7 +91,9 @@ def hc2mqtt(
                             client.subscribe(mqtt_selected_program_topic)
                 if ha_discovery:
                     time.sleep(15)
-                    publish_ha_discovery(discovery_file, device, client, mqtt_topic)
+                    publish_ha_discovery(
+                        discovery_file, device, client, mqtt_topic, events_as_sensors
+                    )
         else:
             hcprint(f"ERROR MQTT connection failed: {rc}")
 
@@ -178,8 +182,7 @@ dev = {}
 def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
-    mydevice = HCDevice(None, device, debug)
-    dev[name] = mydevice
+    mydevice = None
 
     def on_message(msg):
         try:
@@ -254,9 +257,12 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     while True:
         time.sleep(3)
         try:
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            mydevice = HCDevice(ws, device, debug)
+            dev[name] = mydevice
             hcprint(name, f"connecting to {host}")
-            mydevice.ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
+            hcprint(name, f"not connected {host}")
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)

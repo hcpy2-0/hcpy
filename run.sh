@@ -18,6 +18,7 @@ if [ -f ${CONFIG_PATH} ]; then
         HCPY_HA_DISCOVERY="$(bashio::config 'HCPY_HA_DISCOVERY')"
         HCPY_DOMAIN_SUFFIX="$(bashio::config 'HCPY_DOMAIN_SUFFIX')"
         HCPY_DEBUG="$(bashio::config 'HCPY_DEBUG')"
+	HCPY_EVENTS_AS_SENSORS="$(bashio::config 'HCPY_EVENTS_AS_SENSORS')"
 
         set +o allexport
         
