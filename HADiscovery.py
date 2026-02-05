@@ -166,7 +166,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             discovery_payload["unit_of_measurement"] = "°C"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
-        elif refCID == "03" and refDID == "80":
+        elif refDID == "80" and (refCID in ("02", "03")) and values is not None:
             if component_type != "event":
                 discovery_payload["device_class"] = "enum"
             discovery_payload["options"] = list(values.values())
@@ -216,6 +216,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             elif (
                 refCID == "03"
                 and refDID == "80"
+                and values is not None
                 and len(values.values()) == 2
                 and "On" in values.values()
                 and "Off" in values.values()
@@ -228,7 +229,8 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["payload_on"] = f'[{{"uid":{uid},"value":"On"}}]'
                 discovery_payload["payload_off"] = f'[{{"uid":{uid},"value":"Off"}}]'
                 discovery_payload["device_class"] = "switch"
-            elif refCID == "03" and refDID == "80":
+            # 02/80 can be an enum e.g. Cooking.Oven.Option.Doneness
+            elif refDID == "80" and (refCID in ("02", "03")) and values is not None:
                 component_type = "select"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                 template = f'[{{"uid":{uid},"value":"{{{{value}}}}"}}]'
@@ -240,6 +242,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 or (refCID == "11" and refDID == "A0")
                 or (refCID == "11" and refDID == "80")
                 or (refCID == "14" and refDID == "80")
+                # 02/80 can be a number e.g. Cooking.Oven.Setting.DisplayBrightness
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
