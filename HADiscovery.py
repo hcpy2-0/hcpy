@@ -116,7 +116,6 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
         value = feature.get("value", None)
         values = feature.get("values", None)
         state_topic = f"{mqtt_topic}/state/{feature_id}"
-        step = feature.get("stepSize", None)
 
         discovery_payload = {
             "name": friendly_name,
@@ -181,8 +180,8 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             # Cooking.Oven.Setting.Cavity.001.AlarmClock doesnt set min/max
             # HA default of 1,100 is too small so warnings raised.
             # Duration often has a min value of 1 but will be set to 0 by device
-            discovery_payload["min"] = 0
-            discovery_payload["max"] = feature.get("max", 86400)
+            discovery_payload["min"] = float(0)
+            discovery_payload["max"] = float(feature.get("max", 86400))
 
         if name == "BSH.Common.Status.ProgramSessionSummary.Latest":
             value_template = "{{ value_json.counter }}"
@@ -260,10 +259,15 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["command_template"] = template
 
                 # Min/Max may be already set for durations above
-                if discovery_payload.get("min") is None:
-                    discovery_payload["min"] = feature.get("min", None)
-                if discovery_payload.get("max") is None:
-                    discovery_payload["max"] = feature.get("max", None)
+                minimum = feature.get("min", None)
+                if discovery_payload.get("min") is None and minimum is not None:
+                    discovery_payload["min"] = float(minimum)
+
+                maximum = feature.get("max", None)
+                if discovery_payload.get("max") is None and maximum is not None:
+                    discovery_payload["max"] = float(maximum)
+
+                step = feature.get("stepSize", None)
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
