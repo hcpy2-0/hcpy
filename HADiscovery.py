@@ -178,6 +178,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
         ):
             discovery_payload["unit_of_measurement"] = "s"
             discovery_payload["device_class"] = "duration"
+            # Cooking.Oven.Setting.Cavity.001.AlarmClock doesnt set min/max
+            # HA default of 1,100 is too small so warnings raised.
+            # Duration often has a min value of 1 but will be set to 0 by device
+            discovery_payload["min"] = 0
+            discovery_payload["max"] = feature.get("max", 86400)
 
         if name == "BSH.Common.Status.ProgramSessionSummary.Latest":
             value_template = "{{ value_json.counter }}"
@@ -254,12 +259,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 template = f'[{{"uid":{uid},"value":{{{{value}}}}}}]'
                 discovery_payload["command_template"] = template
 
-                # HA defaults of 1, 100 generally causes warnings for many sensors
-                # Some HC numbers dont supply min/max values
-                # We could go for 2147483647 max int, but the highest seen is
-                # 864000 which is 240 hours.
-                discovery_payload["min"] = feature.get("min", 0)
-                discovery_payload["max"] = feature.get("max", 86400)
+                # Min/Max may be already set for durations above
+                if discovery_payload["min"] is None:
+                    discovery_payload["min"] = feature.get("min", None)
+                if discovery_payload["max"] is None:
+                    discovery_payload["max"] = feature.get("max", None)
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
