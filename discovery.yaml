@@ -41,6 +41,7 @@ MAGIC_OVERRIDES:
     component_type: "number" 
   Cooking.Oven.Option.SetpointTemperature:
     component_type: "number"  
+    min: 0
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
   Refrigeration.Common.Status.Door.Refrigerator:
