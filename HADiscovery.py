@@ -254,12 +254,12 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 template = f'[{{"uid":{uid},"value":{{{{value}}}}}}]'
                 discovery_payload["command_template"] = template
 
-                minimum = feature.get("min", None)
-                maximum = feature.get("max", None)
-                if minimum is not None:
-                    discovery_payload["min"] = minimum
-                if maximum is not None:
-                    discovery_payload["max"] = maximum
+                # HA defaults of 1, 100 generally causes warnings for many sensors
+                # Some HC numbers dont supply min/max values
+                # We could go for 2147483647 max int, but the highest seen is
+                # 864000 which is 240 hours.
+                discovery_payload["min"] = feature.get("min", 0)
+                discovery_payload["max"] = feature.get("max", 86400)
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
