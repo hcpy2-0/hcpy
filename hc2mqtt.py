@@ -16,9 +16,74 @@ from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
 
+SENTINEL = object()
+
 
 def hcprint(*args):
     print(now(), *args, flush=True)
+
+
+def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name):
+    """Process a device message: update state, publish only changed keys to MQTT."""
+    if msg is None or len(msg) == 0:
+        return
+
+    hcprint(name, msg)
+
+    changed = {}
+    events = {}
+
+    for key in msg.keys():
+        val = msg.get(key, None)
+
+        # Dont persist event to the device state
+        if ".Event." in key:
+            event_type = {"event_type": val}
+            events[key] = event_type
+            continue
+
+        # Don't store None for keys we haven't seen yet.
+        if key not in mydevice.state and val is None:
+            continue
+        mydevice.state[key] = val
+
+        # Diff against what was last published, not what's in state.
+        old_published = published_state.get(key, SENTINEL)
+        if val != old_published:
+            changed[key] = val
+
+    if not changed and not events:
+        return
+
+    if client.is_connected():
+        for key, value in events.items():
+            event_topic_name = key.lower().replace(".", "_")
+            hcprint(
+                name,
+                f"publish to {mqtt_topic}/event/{event_topic_name}",
+            )
+            client.publish(
+                f"{mqtt_topic}/event/{event_topic_name}",
+                json.dumps(value),
+                retain=True,
+            )
+        if changed:
+            hcprint(name, f"publishing {len(changed)} changed keys: {json.dumps(changed)}")
+            for key, value in changed.items():
+                state_topic_name = key.lower().replace(".", "_")
+                if isinstance(value, dict):
+                    value = json.dumps(value)
+                client.publish(
+                    f"{mqtt_topic}/state/{state_topic_name}",
+                    str(value),
+                    retain=True,
+                )
+                published_state[key] = changed[key]
+    else:
+        hcprint(
+            name,
+            "ERROR Unable to publish update as mqtt is not connected.",
+        )
 
 
 @click.command()
@@ -194,67 +259,11 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug, shutdown=No
     host = device["host"]
     name = device["name"]
     mydevice = None
+    published_state = {}
 
     def on_message(msg):
         try:
-            if msg is not None:
-                if len(msg) > 0:
-                    hcprint(name, msg)
-
-                    update = False
-                    events = {}
-                    for key in msg.keys():
-                        val = msg.get(key, None)
-
-                        # Dont persist event to the device state
-                        if ".Event." in key:
-                            event_type = {"event_type": val}
-                            events.update({key: event_type})
-                        else:
-                            if key in mydevice.state:
-                                # Override existing values with None if they have changed
-                                mydevice.state[key] = val
-                                update = True
-                            else:
-                                # Dont store None values until something useful is populated?
-                                if val is None:
-                                    continue
-                                else:
-                                    mydevice.state[key] = val
-                                    update = True
-
-                    if not update and not events:
-                        return
-
-                    if client.is_connected():
-                        for key, value in events.items():
-                            event_topic_name = key.lower().replace(".", "_")
-                            hcprint(
-                                name,
-                                f"publish to {mqtt_topic}/event/{event_topic_name}",
-                            )
-                            client.publish(
-                                f"{mqtt_topic}/event/{event_topic_name}",
-                                json.dumps(value),
-                                retain=True,
-                            )
-                        if update:
-                            hcprint(name, f"updating {json.dumps(mydevice.state)}")
-                            for key, value in mydevice.state.items():
-                                state_topic_name = key.lower().replace(".", "_")
-                                if isinstance(value, dict):
-                                    value = json.dumps(value)
-
-                                client.publish(
-                                    f"{mqtt_topic}/state/{state_topic_name}",
-                                    str(value),
-                                    retain=True,
-                                )
-                    else:
-                        hcprint(
-                            name,
-                            "ERROR Unable to publish update as mqtt is not connected.",
-                        )
+            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name)
         except Exception as e:
             print(repr(e))
 
@@ -270,6 +279,7 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug, shutdown=No
         try:
             ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice = HCDevice(ws, device, debug)
+            published_state.clear()
             dev[name] = mydevice
             hcprint(name, f"connecting to {host}")
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
