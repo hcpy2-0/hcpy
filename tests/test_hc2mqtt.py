@@ -1,7 +1,9 @@
 import json
 from unittest.mock import Mock, patch
 
-from hc2mqtt import handle_device_message
+import pytest
+
+from hc2mqtt import client_connect, handle_device_message
 
 
 def make_device(state=None):
@@ -195,6 +197,123 @@ class TestEvents:
         assert f"{TOPIC}/state/bsh_common_status_doorstate" in payloads
         assert f"{TOPIC}/event/bsh_common_event_programfinished" in payloads
         assert client.publish.call_count == 2
+
+
+@patch("hc2mqtt.time")
+@patch("hc2mqtt.HCSocket")
+@patch("hc2mqtt.HCDevice")
+@patch("hc2mqtt.publish_ha_discovery")
+@patch("hc2mqtt.hcprint")
+class TestClientConnectDiscovery:
+    """Integration tests for discovery in client_connect."""
+
+    DEVICE = {"host": "h", "name": "test", "key": "k", "features": {}}
+
+    def _make_device(self, messages):
+        """Create an HCDevice mock that delivers messages via run_forever."""
+        dev = Mock()
+        dev.state = {}
+
+        def run_forever(on_message, on_open, on_close):
+            for msg in messages:
+                on_message(msg)
+
+        dev.run_forever = run_forever
+        return dev
+
+    def test_fires_after_state(self, _print, mock_discovery, MockDevice, MockSocket, _time):
+        MockDevice.return_value = self._make_device(
+            [
+                {"BSH.Common.Status.DoorState": "Closed"},
+            ]
+        )
+        MockSocket.side_effect = [Mock(), SystemExit]
+
+        with pytest.raises(SystemExit):
+            client_connect(
+                make_client(),
+                self.DEVICE,
+                TOPIC,
+                "",
+                False,
+                ha_discovery=True,
+                discovery_file="d",
+                events_as_sensors=False,
+            )
+
+        assert mock_discovery.call_count == 1
+
+    def test_not_fired_when_disabled(self, _print, mock_discovery, MockDevice, MockSocket, _time):
+        client = make_client()
+        MockDevice.return_value = self._make_device(
+            [
+                {"BSH.Common.Status.DoorState": "Closed"},
+            ]
+        )
+        MockSocket.side_effect = [Mock(), SystemExit]
+
+        with pytest.raises(SystemExit):
+            client_connect(
+                client,
+                self.DEVICE,
+                TOPIC,
+                "",
+                False,
+                ha_discovery=False,
+                discovery_file="d",
+                events_as_sensors=False,
+            )
+
+        assert client.publish.call_count >= 1  # State was published.
+        mock_discovery.assert_not_called()
+
+    def test_fires_once_per_connection(
+        self, _print, mock_discovery, MockDevice, MockSocket, _time
+    ):
+        client = make_client()
+        MockDevice.return_value = self._make_device(
+            [
+                {"BSH.Common.Status.DoorState": "Closed"},
+                {"BSH.Common.Setting.PowerState": "On"},
+            ]
+        )
+        MockSocket.side_effect = [Mock(), SystemExit]
+
+        with pytest.raises(SystemExit):
+            client_connect(
+                client,
+                self.DEVICE,
+                TOPIC,
+                "",
+                False,
+                ha_discovery=True,
+                discovery_file="d",
+                events_as_sensors=False,
+            )
+
+        assert client.publish.call_count >= 2  # Both messages were processed.
+        assert mock_discovery.call_count == 1
+
+    def test_refires_after_reconnect(self, _print, mock_discovery, MockDevice, MockSocket, _time):
+        MockDevice.side_effect = [
+            self._make_device([{"BSH.Common.Status.DoorState": "Closed"}]),
+            self._make_device([{"BSH.Common.Status.DoorState": "Closed"}]),
+        ]
+        MockSocket.side_effect = [Mock(), Mock(), SystemExit]
+
+        with pytest.raises(SystemExit):
+            client_connect(
+                make_client(),
+                self.DEVICE,
+                TOPIC,
+                "",
+                False,
+                ha_discovery=True,
+                discovery_file="d",
+                events_as_sensors=False,
+            )
+
+        assert mock_discovery.call_count == 2
 
 
 @patch("hc2mqtt.hcprint")
