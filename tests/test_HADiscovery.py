@@ -35,9 +35,11 @@ class TestHADiscovery:
             assert payload_data["device"]["identifiers"] == ["test_oven"]
             assert payload_data["device"]["name"] == "test_oven"
             assert payload_data["device"]["manufacturer"] == "Bosch"
-            assert payload_data["device"]["model"] == "Oven (TESTOVEN01)"
+            assert payload_data["device"]["model"] == "Oven"
+            assert payload_data["device"]["model_id"] == "TESTOVEN01"
             assert payload_data["device"]["sw_version"] == "1.0-1.0.0 (4.2.2)"
             assert payload_data["device"]["hw_version"] == "1.0.0.1"
+            assert payload_data["device"]["serial_number"] == "000000000000000001"
             assert payload_data["device"]["connections"] == [["mac", "02:00:00:00:00:01"]]
             assert payload_data["device"]["suggested_area"] == "Kitchen"
             assert retain is True

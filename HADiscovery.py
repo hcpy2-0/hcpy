@@ -49,12 +49,8 @@ def publish_ha_discovery(
     vib = device_state.get("vib")
     brand = device_state.get("brand")
 
-    if device_type and vib:
-        model = f"{device_type} ({vib})"
-    elif vib:
-        model = vib
-    else:
-        model = None
+    model = device_type
+    model_id = vib or device_description.get("model")
 
     manufacturer = brand.title() if brand else None
     ha_ver = str(device_state["haVersion"]) if device_state.get("haVersion") else None
@@ -73,6 +69,7 @@ def publish_ha_discovery(
     if sw_version and desc_ver:
         sw_version = f"{sw_version} ({desc_ver})"
     hw_version = str(device_state["hwVersion"]) if device_state.get("hwVersion") else None
+    serial_number = str(device_state["serialNumber"]) if device_state.get("serialNumber") else None
 
     # Extract MAC from runtime state for HA device registry connections.
     connections = []
@@ -92,10 +89,14 @@ def publish_ha_discovery(
         device_info["manufacturer"] = manufacturer
     if model:
         device_info["model"] = model
+    if model_id:
+        device_info["model_id"] = model_id
     if sw_version:
         device_info["sw_version"] = sw_version
     if hw_version:
         device_info["hw_version"] = hw_version
+    if serial_number:
+        device_info["serial_number"] = serial_number
 
     if connections:
         device_info["connections"] = connections
