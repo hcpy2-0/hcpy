@@ -280,8 +280,18 @@ def client_connect(
         nonlocal discovery_published
         try:
             handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name)
-            if ha_discovery and not discovery_published and published_state:
-                publish_ha_discovery(discovery_file, device, client, mqtt_topic, events_as_sensors)
+            # Wait until /ci/info or /iz/info has been processed so discovery
+            # has access to MAC, firmware, etc.
+            device_info_ready = "mac" in mydevice.state or "swVersion" in mydevice.state
+            if ha_discovery and not discovery_published and device_info_ready:
+                publish_ha_discovery(
+                    discovery_file,
+                    device,
+                    mydevice.state,
+                    client,
+                    mqtt_topic,
+                    events_as_sensors,
+                )
                 discovery_published = True
         except Exception as e:
             print(repr(e))

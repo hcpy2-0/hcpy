@@ -7,7 +7,9 @@ from HCSocket import now
 CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
 
 
-def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events_as_sensors):
+def publish_ha_discovery(
+    discovery_yaml_path, device, device_state, client, mqtt_topic, events_as_sensors
+):
     config = None
     try:
         with open(discovery_yaml_path, "r") as yaml_config:
@@ -40,23 +42,48 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
     print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
 
     device_ident = device["name"]
-    device_description = device.get("description", {})
-
     base_topic = mqtt_topic.split("/")[0]
 
-    version_parts = filter(
-        lambda d: d is not None,
-        [device_description.get("version"), device_description.get("revision")],
-    )
+    device_type = device_state.get("deviceType")
+    vib = device_state.get("vib")
+    brand = device_state.get("brand")
+
+    if device_type and vib:
+        model = f"{device_type} ({vib})"
+    elif vib:
+        model = vib
+    else:
+        model = None
+
+    manufacturer = brand.title() if brand else None
+    sw_version = str(device_state["swVersion"]) if device_state.get("swVersion") else None
+    hw_version = str(device_state["hwVersion"]) if device_state.get("hwVersion") else None
+
+    # Extract MAC from runtime state for HA device registry connections.
+    connections = []
+    if "mac" in device_state:
+        mac = device_state["mac"]
+        if mac:
+            mac_normalized = mac.replace("-", ":").lower()
+            connections.append(["mac", mac_normalized])
 
     device_info = {
         "identifiers": [device_ident],
         "name": device_ident,
-        "manufacturer": device_description.get("brand"),
-        "model": device_description.get("model"),
-        "sw_version": ".".join(version_parts),
         "suggested_area": "Kitchen",
     }
+
+    if manufacturer:
+        device_info["manufacturer"] = manufacturer
+    if model:
+        device_info["model"] = model
+    if sw_version:
+        device_info["sw_version"] = sw_version
+    if hw_version:
+        device_info["hw_version"] = hw_version
+
+    if connections:
+        device_info["connections"] = connections
 
     local_control_lockout = False
     for key, value in device["features"].items():
