@@ -2,10 +2,11 @@
 # Contact Bosh-Siemens Home Connect devices
 # and connect their messages to the mqtt server
 import json
+import signal
 import ssl
 import sys
 import time
-from threading import Thread
+from threading import Event, Thread
 
 import click
 import click_config_file
@@ -165,13 +166,23 @@ def hc2mqtt(
     client.on_message = on_message
     client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
 
+    shutdown = Event()
+
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
         thread = Thread(
-            target=client_connect, args=(client, device, mqtt_topic, domain_suffix, debug)
+            target=client_connect,
+            args=(client, device, mqtt_topic, domain_suffix, debug, shutdown),
+            daemon=True,
         )
         thread.start()
 
+    def handle_exit(signum, frame):
+        shutdown.set()
+        sys.exit(128 + signum)
+
+    signal.signal(signal.SIGTERM, handle_exit)
+    signal.signal(signal.SIGINT, handle_exit)
     client.loop_forever()
 
 
@@ -179,7 +190,7 @@ global dev
 dev = {}
 
 
-def client_connect(client, device, mqtt_topic, domain_suffix, debug):
+def client_connect(client, device, mqtt_topic, domain_suffix, debug, shutdown=None):
     host = device["host"]
     name = device["name"]
     mydevice = None
@@ -254,8 +265,8 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
         client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
         hcprint(device["name"], "websocket closed, reconnecting...")
 
-    while True:
-        time.sleep(3)
+    retry_delay = 5
+    while not (shutdown and shutdown.is_set()):
         try:
             ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice = HCDevice(ws, device, debug)
@@ -263,11 +274,17 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
             hcprint(name, f"connecting to {host}")
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
             hcprint(name, f"not connected {host}")
+            retry_delay = 5
         except Exception as e:
             print(now(), device["name"], "ERROR", e, file=sys.stderr, flush=True)
             client.publish(f"{mqtt_topic}/LWT", "offline", retain=True)
 
-        time.sleep(57)
+        hcprint(name, f"reconnecting in {retry_delay}s")
+        if shutdown:
+            shutdown.wait(retry_delay)
+        else:
+            time.sleep(retry_delay)
+        retry_delay = min(retry_delay * 2, 60)
 
 
 if __name__ == "__main__":
