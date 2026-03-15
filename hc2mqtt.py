@@ -285,12 +285,7 @@ def client_connect(
             device_info_ready = "mac" in mydevice.state or "swVersion" in mydevice.state
             if ha_discovery and not discovery_published and device_info_ready:
                 publish_ha_discovery(
-                    discovery_file,
-                    device,
-                    mydevice.state,
-                    client,
-                    mqtt_topic,
-                    events_as_sensors,
+                    discovery_file, device, mydevice.state, client, mqtt_topic, events_as_sensors
                 )
                 discovery_published = True
         except Exception as e:

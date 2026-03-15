@@ -42,6 +42,7 @@ def publish_ha_discovery(
     print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
 
     device_ident = device["name"]
+    device_description = device.get("description", {})
     base_topic = mqtt_topic.split("/")[0]
 
     device_type = device_state.get("deviceType")
@@ -56,7 +57,21 @@ def publish_ha_discovery(
         model = None
 
     manufacturer = brand.title() if brand else None
-    sw_version = str(device_state["swVersion"]) if device_state.get("swVersion") else None
+    ha_ver = str(device_state["haVersion"]) if device_state.get("haVersion") else None
+    sw_ver = str(device_state["swVersion"]) if device_state.get("swVersion") else None
+    desc_parts = filter(
+        lambda d: d is not None,
+        [device_description.get("version"), device_description.get("revision")],
+    )
+    desc_ver = ".".join(desc_parts) or None
+    if ha_ver and sw_ver:
+        sw_version = f"{ha_ver}-{sw_ver}"
+    elif sw_ver:
+        sw_version = sw_ver
+    else:
+        sw_version = None
+    if sw_version and desc_ver:
+        sw_version = f"{sw_version} ({desc_ver})"
     hw_version = str(device_state["hwVersion"]) if device_state.get("hwVersion") else None
 
     # Extract MAC from runtime state for HA device registry connections.
