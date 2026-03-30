@@ -1,35 +1,27 @@
 #!/bin/bash
-# shellcheck source=/dev/null
-source /usr/lib/bashio/bashio.sh 2>/dev/null || true
 # HomeConnect2MQTT run script
 # Supports both HA Addon mode and standalone mode
 
 CONFIG_PATH=/data/options.json
 
-# --- Helper functions ---
-log_info() {
-    if command -v bashio::log.info &>/dev/null; then
-        bashio::log.info "$1"
-    else
-        echo "[INFO] $1"
+# --- Helper: read config value from options.json ---
+cfg() {
+    local key="$1"
+    local default="$2"
+    if [ -f "$CONFIG_PATH" ]; then
+        val=$(jq -r ".${key} // empty" "$CONFIG_PATH" 2>/dev/null)
+        if [ -n "$val" ] && [ "$val" != "null" ]; then
+            echo "$val"
+            return
+        fi
     fi
+    echo "$default"
 }
 
-log_warning() {
-    if command -v bashio::log.warning &>/dev/null; then
-        bashio::log.warning "$1"
-    else
-        echo "[WARNING] $1"
-    fi
-}
-
-log_error() {
-    if command -v bashio::log.error &>/dev/null; then
-        bashio::log.error "$1"
-    else
-        echo "[ERROR] $1"
-    fi
-}
+# --- Logging ---
+log_info()    { echo "[INFO] $1"; }
+log_warning() { echo "[WARNING] $1"; }
+log_error()   { echo "[ERROR] $1"; }
 
 # --- Cleanup / Graceful Shutdown ---
 WEBUI_PID=""
@@ -56,53 +48,54 @@ fi
 log_info "HomeConnect2MQTT starting (HA Addon mode)..."
 
 # 1. Load configuration
-set -o allexport
-
-HCPY_DEVICES_FILE="$(bashio::config 'HCPY_DEVICES_FILE')"
-HCPY_DISCOVERY_FILE="$(bashio::config 'HCPY_DISCOVERY_FILE')"
-HCPY_MQTT_PREFIX="$(bashio::config 'HCPY_MQTT_PREFIX')"
-HCPY_MQTT_SSL="$(bashio::config 'HCPY_MQTT_SSL')"
-HCPY_MQTT_CAFILE="$(bashio::config 'HCPY_MQTT_CAFILE')"
-HCPY_MQTT_CERTFILE="$(bashio::config 'HCPY_MQTT_CERTFILE')"
-HCPY_MQTT_KEYFILE="$(bashio::config 'HCPY_MQTT_KEYFILE')"
-HCPY_MQTT_CLIENTNAME="$(bashio::config 'HCPY_MQTT_CLIENTNAME')"
-HCPY_HA_DISCOVERY="$(bashio::config 'HCPY_HA_DISCOVERY')"
-HCPY_DOMAIN_SUFFIX="$(bashio::config 'HCPY_DOMAIN_SUFFIX')"
-HCPY_DEBUG="$(bashio::config 'HCPY_DEBUG')"
-HCPY_EVENTS_AS_SENSORS="$(bashio::config 'HCPY_EVENTS_AS_SENSORS')"
-HCPY_AUTO_RESOLVE_HOSTS="$(bashio::config 'HCPY_AUTO_RESOLVE_HOSTS')"
+export HCPY_DEVICES_FILE="$(cfg HCPY_DEVICES_FILE '/config/devices.json')"
+export HCPY_DISCOVERY_FILE="$(cfg HCPY_DISCOVERY_FILE '/config/discovery.yaml')"
+export HCPY_MQTT_PREFIX="$(cfg HCPY_MQTT_PREFIX 'homeconnect/')"
+export HCPY_MQTT_SSL="$(cfg HCPY_MQTT_SSL 'false')"
+export HCPY_MQTT_CAFILE="$(cfg HCPY_MQTT_CAFILE '')"
+export HCPY_MQTT_CERTFILE="$(cfg HCPY_MQTT_CERTFILE '')"
+export HCPY_MQTT_KEYFILE="$(cfg HCPY_MQTT_KEYFILE '')"
+export HCPY_MQTT_CLIENTNAME="$(cfg HCPY_MQTT_CLIENTNAME 'hcpy')"
+export HCPY_HA_DISCOVERY="$(cfg HCPY_HA_DISCOVERY 'true')"
+export HCPY_DOMAIN_SUFFIX="$(cfg HCPY_DOMAIN_SUFFIX '')"
+export HCPY_DEBUG="$(cfg HCPY_DEBUG 'false')"
+export HCPY_EVENTS_AS_SENSORS="$(cfg HCPY_EVENTS_AS_SENSORS 'false')"
+export HCPY_AUTO_RESOLVE_HOSTS="$(cfg HCPY_AUTO_RESOLVE_HOSTS 'true')"
 
 # Config dir for Web-UI
-HCPY_CONFIG_DIR="/config"
-INGRESS_PORT="${INGRESS_PORT:-8099}"
-
-set +o allexport
+export HCPY_CONFIG_DIR="/config"
+export INGRESS_PORT="${INGRESS_PORT:-8099}"
 
 # 2. MQTT Auto-Discovery
-HCPY_MQTT_HOST="$(bashio::config 'HCPY_MQTT_HOST' 2>/dev/null || true)"
-HCPY_MQTT_PORT="$(bashio::config 'HCPY_MQTT_PORT' 2>/dev/null || true)"
-HCPY_MQTT_USERNAME="$(bashio::config 'HCPY_MQTT_USERNAME' 2>/dev/null || true)"
-HCPY_MQTT_PASSWORD="$(bashio::config 'HCPY_MQTT_PASSWORD' 2>/dev/null || true)"
+HCPY_MQTT_HOST="$(cfg HCPY_MQTT_HOST '')"
+HCPY_MQTT_PORT="$(cfg HCPY_MQTT_PORT '')"
+HCPY_MQTT_USERNAME="$(cfg HCPY_MQTT_USERNAME '')"
+HCPY_MQTT_PASSWORD="$(cfg HCPY_MQTT_PASSWORD '')"
 HCPY_MQTT_AUTO="false"
 
 mqtt_configured="false"
 
 # Check if manually configured
-if [ -n "$HCPY_MQTT_HOST" ] && [ "$HCPY_MQTT_HOST" != "null" ] && [ "$HCPY_MQTT_HOST" != "" ]; then
-    if [ -n "$HCPY_MQTT_PORT" ] && [ "$HCPY_MQTT_PORT" != "null" ] && [ "$HCPY_MQTT_PORT" -gt 0 ] 2>/dev/null; then
+if [ -n "$HCPY_MQTT_HOST" ] && [ "$HCPY_MQTT_HOST" != "" ]; then
+    if [ -n "$HCPY_MQTT_PORT" ] && [ "$HCPY_MQTT_PORT" -gt 0 ] 2>/dev/null; then
         log_info "MQTT: Manuell konfiguriert ($HCPY_MQTT_HOST:$HCPY_MQTT_PORT)"
         mqtt_configured="true"
     fi
 fi
 
-# Try bashio services discovery
-if [ "$mqtt_configured" = "false" ]; then
-    if bashio::services "mqtt" 2>/dev/null; then
-        HCPY_MQTT_HOST="$(bashio::services mqtt "host" 2>/dev/null || true)"
-        HCPY_MQTT_PORT="$(bashio::services mqtt "port" 2>/dev/null || true)"
-        HCPY_MQTT_USERNAME="$(bashio::services mqtt "username" 2>/dev/null || true)"
-        HCPY_MQTT_PASSWORD="$(bashio::services mqtt "password" 2>/dev/null || true)"
-        if [ -n "$HCPY_MQTT_HOST" ] && [ "$HCPY_MQTT_HOST" != "null" ]; then
+# Try HA Supervisor services API for MQTT
+if [ "$mqtt_configured" = "false" ] && [ -n "$SUPERVISOR_TOKEN" ]; then
+    mqtt_json=$(curl -s -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/services/mqtt 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$mqtt_json" ]; then
+        mqtt_host_api=$(echo "$mqtt_json" | jq -r '.data.host // empty' 2>/dev/null)
+        mqtt_port_api=$(echo "$mqtt_json" | jq -r '.data.port // empty' 2>/dev/null)
+        mqtt_user_api=$(echo "$mqtt_json" | jq -r '.data.username // empty' 2>/dev/null)
+        mqtt_pass_api=$(echo "$mqtt_json" | jq -r '.data.password // empty' 2>/dev/null)
+        if [ -n "$mqtt_host_api" ] && [ "$mqtt_host_api" != "null" ]; then
+            HCPY_MQTT_HOST="$mqtt_host_api"
+            HCPY_MQTT_PORT="${mqtt_port_api:-1883}"
+            HCPY_MQTT_USERNAME="${mqtt_user_api}"
+            HCPY_MQTT_PASSWORD="${mqtt_pass_api}"
             log_info "MQTT: Auto-Discovery über HA Services ($HCPY_MQTT_HOST:$HCPY_MQTT_PORT)"
             HCPY_MQTT_AUTO="true"
             mqtt_configured="true"
@@ -129,7 +122,6 @@ if [ "$mqtt_configured" = "false" ]; then
 fi
 
 export HCPY_MQTT_HOST HCPY_MQTT_PORT HCPY_MQTT_USERNAME HCPY_MQTT_PASSWORD HCPY_MQTT_AUTO
-export HCPY_CONFIG_DIR INGRESS_PORT
 
 # 3. Start Web-UI as background process
 log_info "Starte Web-UI auf Port $INGRESS_PORT..."
@@ -140,7 +132,6 @@ WEBUI_PID=$!
 if [ ! -f "${HCPY_DEVICES_FILE}" ]; then
     log_warning "devices.json nicht gefunden (${HCPY_DEVICES_FILE})"
     log_info "Bitte über die Web-UI anmelden um Geräte zu konfigurieren."
-    # Wait loop — check every 10 seconds for devices.json
     while [ ! -f "${HCPY_DEVICES_FILE}" ]; do
         sleep 10
     done
