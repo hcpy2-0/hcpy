@@ -11,10 +11,13 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   network tcp,
   network udp,
 
-  # Python runtime
+  # Python runtime (both /usr/bin and /usr/local/bin)
   /usr/bin/python3* rix,
+  /usr/local/bin/python3* rix,
   /usr/lib/python3/** r,
   /usr/lib/python3/**/*.so mr,
+  /usr/local/lib/python3*/** r,
+  /usr/local/lib/python3*/**/*.so mr,
 
   # Application files
   /app/** r,
@@ -37,14 +40,24 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   # Shell and utilities
   /bin/bash rix,
   /usr/bin/bashio rix,
+  /usr/lib/bashio/** r,
   /bin/sh rix,
   /bin/busybox rix,
   /usr/bin/curl rix,
   /usr/bin/timeout rix,
   /usr/bin/jq rix,
+  /usr/bin/env rix,
+
+  # Devices (required for /dev/null, /dev/urandom etc.)
+  /dev/null rw,
+  /dev/zero r,
+  /dev/urandom r,
+  /dev/random r,
+  /dev/tty rw,
 
   # SSL/TLS certificates
   /etc/ssl/** r,
+  /etc/** r,
   /usr/share/ca-certificates/** r,
 
   # Proc (minimal)
@@ -55,7 +68,6 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   # Deny sensitive paths
   deny /sys/** w,
   deny /proc/*/mem rw,
-  deny /dev/** rw,
   deny /boot/** rw,
   deny /lib/modules/** rw,
 }
