@@ -1,4 +1,6 @@
-#!/usr/bin/env bashio
+#!/bin/bash
+# shellcheck source=/dev/null
+source /usr/lib/bashio/bashio.sh 2>/dev/null || true
 # HomeConnect2MQTT run script
 # Supports both HA Addon mode and standalone mode
 
