@@ -20,6 +20,16 @@ def hcprint(*args):
     print(now(), *args, flush=True)
 
 
+def redact_device(device):
+    """Entfernt sensible Felder aus dem Device-Dict für Logging."""
+    safe = {k: v for k, v in device.items() if k not in ('key', 'iv')}
+    if 'key' in device:
+        safe['key'] = '***REDACTED***'
+    if 'iv' in device:
+        safe['iv'] = '***REDACTED***'
+    return safe
+
+
 @click.command()
 @click.option("-d", "--devices_file", default="config/devices.json")
 @click.option("-h", "--mqtt_host", default="localhost")
@@ -135,7 +145,7 @@ def hc2mqtt(
 
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
-        f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
+        f"{mqtt_port=} {mqtt_username=} mqtt_password='***' "
         f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
         f"{domain_suffix=} {debug=} {ha_discovery=}"
     )
@@ -163,7 +173,20 @@ def hc2mqtt(
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
     client.on_message = on_message
-    client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
+
+    try:
+        client.connect(host=mqtt_host, port=mqtt_port, keepalive=70)
+    except ConnectionRefusedError:
+        if mqtt_host in ("localhost", "127.0.0.1"):
+            hcprint(f"MQTT: {mqtt_host} verweigert, versuche core-mosquitto...")
+            try:
+                client.connect(host="core-mosquitto", port=mqtt_port, keepalive=70)
+                hcprint("MQTT: Verbindung über core-mosquitto erfolgreich")
+            except Exception as e2:
+                hcprint(f"ERROR: MQTT auch über core-mosquitto nicht erreichbar: {e2}")
+                raise
+        else:
+            raise
 
     for device in devices:
         mqtt_topic = mqtt_prefix + device["name"]
@@ -183,8 +206,34 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug):
     host = device["host"]
     name = device["name"]
     mydevice = None
+    last_message_time = time.time()
+
+    def watchdog():
+        nonlocal last_message_time
+        while True:
+            time.sleep(60)
+            if time.time() - last_message_time > 300:  # 5 Minuten ohne Nachricht
+                hcprint(name, "WATCHDOG: Keine Nachrichten seit 5 Min, erzwinge Reconnect...")
+                try:
+                    if mydevice and hasattr(mydevice, 'ws') and mydevice.ws:
+                        mydevice.ws.close()
+                except Exception:
+                    pass
+                last_message_time = time.time()  # Reset um Endlos-Loop zu vermeiden
+            # Watchdog-Status per MQTT publishen
+            if client.is_connected():
+                client.publish(
+                    f"{mqtt_topic}/watchdog",
+                    json.dumps({"last_message": int(last_message_time)}),
+                    retain=True,
+                )
+
+    watchdog_thread = Thread(target=watchdog, daemon=True)
+    watchdog_thread.start()
 
     def on_message(msg):
+        nonlocal last_message_time
+        last_message_time = time.time()
         try:
             if msg is not None:
                 if len(msg) > 0:

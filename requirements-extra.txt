@@ -1,0 +1,2 @@
+flask>=3.0
+zeroconf>=0.131.0

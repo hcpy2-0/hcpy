@@ -1,29 +1,35 @@
-FROM python:3.13-slim
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-ARG BASHIO_VERSION="v0.16.2"
-ARG BASHIO_SHA256="d0f0c780c4badd103c00c572b1bf9645520d15a8a8070d6e3d64e35cb9f583aa"
+LABEL \
+  io.hass.version="VERSION" \
+  io.hass.type="addon" \
+  io.hass.arch="armhf|aarch64|i386|amd64"
+
+RUN apk add --no-cache \
+    python3 py3-pip py3-cryptography py3-cffi \
+    bash curl \
+    openssl-dev gcc musl-dev python3-dev libffi-dev
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY requirements.txt /app/
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends curl tar gcc jq python3-dev libxml2-dev libxslt-dev && \
-  pip3 install -r requirements.txt && \
-  apt-get remove -y gcc python3-dev && \
-  apt-get autoremove -y \
-    && curl -J -L -o /tmp/bashio.tar.gz \
-        "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" \
-    && echo "${BASHIO_SHA256} /tmp/bashio.tar.gz" | sha256sum --check \
-    && mkdir /tmp/bashio \
-    && tar zxvf \
-        /tmp/bashio.tar.gz \
-        --strip 1 -C /tmp/bashio \
-    && mv /tmp/bashio/lib /usr/lib/bashio \
-    && ln -s /usr/lib/bashio/bashio /usr/bin/bashio
+COPY requirements-extra.txt /app/
+RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements-extra.txt
 
-COPY hc2mqtt.py hc-login.py HADiscovery.py HCDevice.py HCSocket.py HCxml2json.py run.sh discovery.yaml ./
+# Build-Dependencies entfernen
+RUN apk del gcc musl-dev python3-dev libffi-dev openssl-dev
 
-RUN chmod a+x ./run.sh
+# Original hcpy Quellcode
+COPY hc-login.py hc2mqtt.py HCDevice.py HCSocket.py HCxml2json.py HADiscovery.py /app/
+COPY discovery.yaml /app/
 
-CMD ["./run.sh"]
+# Neue Dateien
+COPY web-ui/ /app/web-ui/
+COPY scripts/ /app/scripts/
+COPY run.sh /app/run.sh
+RUN chmod +x /app/run.sh /app/scripts/*.py
+
+CMD [ "/app/run.sh" ]

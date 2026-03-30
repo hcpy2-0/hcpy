@@ -1,0 +1,53 @@
+---
+configuration:
+  HCPY_DEVICES_FILE:
+    name: Devices file
+    description: Path to the devices.json configuration file.
+  HCPY_DISCOVERY_FILE:
+    name: Discovery file
+    description: Path to the discovery.yaml configuration file.
+  HCPY_MQTT_HOST:
+    name: MQTT Host
+    description: "MQTT broker hostname. Leave empty for automatic detection."
+  HCPY_MQTT_PORT:
+    name: MQTT Port
+    description: "MQTT broker port. Leave empty for automatic detection."
+  HCPY_MQTT_PREFIX:
+    name: MQTT Prefix
+    description: Prefix for all MQTT topics (e.g. homeconnect/).
+  HCPY_MQTT_USERNAME:
+    name: MQTT Username
+    description: "MQTT broker username. Leave empty for automatic detection."
+  HCPY_MQTT_PASSWORD:
+    name: MQTT Password
+    description: "MQTT broker password. Leave empty for automatic detection."
+  HCPY_MQTT_SSL:
+    name: MQTT SSL
+    description: Enable SSL/TLS for the MQTT connection.
+  HCPY_MQTT_CAFILE:
+    name: MQTT CA File
+    description: Path to the CA certificate file for SSL.
+  HCPY_MQTT_CERTFILE:
+    name: MQTT Certificate File
+    description: Path to the client certificate file for SSL.
+  HCPY_MQTT_KEYFILE:
+    name: MQTT Key File
+    description: Path to the client key file for SSL.
+  HCPY_MQTT_CLIENTNAME:
+    name: MQTT Client Name
+    description: Client name for the MQTT connection.
+  HCPY_DOMAIN_SUFFIX:
+    name: Domain Suffix
+    description: "DNS suffix for device host resolution (e.g. fritz.box). Leave empty for automatic detection."
+  HCPY_HA_DISCOVERY:
+    name: HA Discovery
+    description: Enable Home Assistant MQTT auto-discovery.
+  HCPY_DEBUG:
+    name: Debug Mode
+    description: Enable debug logging.
+  HCPY_EVENTS_AS_SENSORS:
+    name: Events as Sensors
+    description: Model device events as sensors instead of event entities.
+  HCPY_AUTO_RESOLVE_HOSTS:
+    name: Auto Resolve Hosts
+    description: Automatically resolve device hostnames after login.

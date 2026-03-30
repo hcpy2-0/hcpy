@@ -1,0 +1,34 @@
+# HomeConnect2MQTT Configuration (Standalone mode)
+# Copy this file to config/config.ini and adjust the values
+
+# Path to devices.json (created by hc-login.py)
+devices_file = "./config/devices.json"
+
+# MQTT Broker settings
+mqtt_host = "localhost"
+mqtt_port = 1883
+mqtt_username = "mqtt"
+mqtt_password = "password"
+mqtt_prefix = "homeconnect/"
+mqtt_clientname = "hcpy"
+
+# MQTT SSL/TLS (optional)
+mqtt_ssl = False
+mqtt_cafile = None
+mqtt_certfile = None
+mqtt_keyfile = None
+
+# Home Assistant MQTT Auto-Discovery
+ha_discovery = True
+
+# Discovery configuration file
+discovery_file = "./config/discovery.yaml"
+
+# Domain suffix for device hostname resolution (e.g. fritz.box)
+domain_suffix =
+
+# Model events as sensors instead of event entities
+events_as_sensors = False
+
+# Enable debug logging
+debug = False

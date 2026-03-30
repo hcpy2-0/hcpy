@@ -7,6 +7,16 @@ from HCSocket import now
 CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
 
 
+def redact_device(device):
+    """Entfernt sensible Felder aus dem Device-Dict für Logging."""
+    safe = {k: v for k, v in device.items() if k not in ('key', 'iv')}
+    if 'key' in device:
+        safe['key'] = '***REDACTED***'
+    if 'iv' in device:
+        safe['iv'] = '***REDACTED***'
+    return safe
+
+
 def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events_as_sensors):
     config = None
     try:
@@ -37,7 +47,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
     DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
     ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
 
-    print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
+    print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']} ({redact_device(device).get('description', {}).get('model', 'unknown')})")
 
     device_ident = device["name"]
     device_description = device.get("description", {})

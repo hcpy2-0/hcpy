@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -f compose.yaml .pre-commit-config.yaml .yamllint .editorconfig)",
+      "Bash(rm -rf .github .vscode)"
+    ]
+  }
+}

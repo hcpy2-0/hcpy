@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
-description: "View and control HomeConnect appliances over the local network."
-version: "v0.4.8"
+description: "View and control HomeConnect appliances over the local network with Web-UI setup."
+version: "v0.5.0"
 slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
@@ -11,47 +11,55 @@ arch:
   - amd64
   - armv7
   - i386
+ingress: true
+ingress_port: 8099
+panel_icon: "mdi:dishwasher"
+panel_title: "Home Connect"
+host_network: false
 map:
   - addon_config:rw
-  - share
+hassio_api: true
+hassio_role: default
+services:
+  - mqtt:want
+apparmor: true
+watchdog: "tcp://[HOST]:[PORT:8099]"
+stage: experimental
+backup: hot
+backup_exclude:
+  - "*.log"
+  - "*.backup"
 url: https://github.com/hcpy2-0/hcpy
-options:
-  HCPY_DEVICES_FILE: "/config/devices.json"
-  HCPY_DISCOVERY_FILE: "/config/discovery.yaml"
-  HCPY_MQTT_HOST: localhost
-  HCPY_MQTT_PORT: 1883
-  HCPY_MQTT_PREFIX: "homeconnect/"
-  HCPY_MQTT_USERNAME: ""
-  HCPY_MQTT_PASSWORD: ""
-  HCPY_MQTT_SSL: false
-  HCPY_MQTT_CAFILE: ""
-  HCPY_MQTT_CERTFILE: ""
-  HCPY_MQTT_KEYFILE: ""
-  HCPY_MQTT_CLIENTNAME: "hcpy1"
-  HCPY_HA_DISCOVERY: true
-  HCPY_DOMAIN_SUFFIX: ""
-  HCPY_DEBUG: false
-  HCPY_EVENTS_AS_SENSORS: false
-schema:
-  HCPY_DEVICES_FILE: str
-  HCPY_DISCOVERY_FILE: str
-  HCPY_MQTT_HOST: str
-  HCPY_MQTT_PORT: int
-  HCPY_MQTT_PREFIX: str
-  HCPY_MQTT_USERNAME: str
-  HCPY_MQTT_PASSWORD: password
-  HCPY_MQTT_SSL: bool?
-  HCPY_MQTT_CAFILE: str
-  HCPY_MQTT_CERTFILE: str
-  HCPY_MQTT_KEYFILE: str
-  HCPY_MQTT_CLIENTNAME: str
-  HCPY_DOMAIN_SUFFIX: str
-  HCPY_HA_DISCOVERY: bool?
-  HCPY_DEBUG: bool?
-  HCPY_EVENTS_AS_SENSORS: bool?
 startup: services
 discovery:
   - hcpy
 boot: auto
-panel_title: "HomeConnect2MQTT"
-panel_icon: mdi:washing-machine
+options:
+  HCPY_DEVICES_FILE: "/config/devices.json"
+  HCPY_DISCOVERY_FILE: "/config/discovery.yaml"
+  HCPY_MQTT_PREFIX: "homeconnect/"
+  HCPY_MQTT_SSL: false
+  HCPY_MQTT_CLIENTNAME: "hcpy"
+  HCPY_HA_DISCOVERY: true
+  HCPY_EVENTS_AS_SENSORS: false
+  HCPY_AUTO_RESOLVE_HOSTS: true
+  HCPY_DOMAIN_SUFFIX: ""
+  HCPY_DEBUG: false
+schema:
+  HCPY_DEVICES_FILE: str
+  HCPY_DISCOVERY_FILE: str
+  HCPY_MQTT_HOST: str?
+  HCPY_MQTT_PORT: int?
+  HCPY_MQTT_PREFIX: str
+  HCPY_MQTT_USERNAME: str?
+  HCPY_MQTT_PASSWORD: password?
+  HCPY_MQTT_SSL: bool?
+  HCPY_MQTT_CAFILE: str?
+  HCPY_MQTT_CERTFILE: str?
+  HCPY_MQTT_KEYFILE: str?
+  HCPY_MQTT_CLIENTNAME: str
+  HCPY_DOMAIN_SUFFIX: str?
+  HCPY_HA_DISCOVERY: bool?
+  HCPY_DEBUG: bool?
+  HCPY_EVENTS_AS_SENSORS: bool?
+  HCPY_AUTO_RESOLVE_HOSTS: bool?

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Connect Setup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#e0e0e0;padding:16px;max-width:680px;margin:0 auto}
+h1{font-size:1.4em;margin-bottom:16px;color:#fff}
+h2{font-size:1.1em;margin-bottom:10px;color:#ccc}
+.card{background:#16213e;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #0f3460}
+.success{border-color:#00b894;background:#0a3d2e}
+.error{border-color:#e17055;background:#3d1a0a}
+.info{border-color:#0984e3;background:#0a2a3d}
+label{display:block;font-size:.9em;color:#aaa;margin-bottom:6px}
+textarea{width:100%;min-height:80px;background:#0f3460;border:1px solid #333;border-radius:8px;color:#fff;padding:10px;font-size:.95em;resize:vertical}
+textarea:focus{outline:none;border-color:#0984e3}
+button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.95em;margin:4px 4px 4px 0;transition:opacity .2s}
+button:hover{opacity:.85}
+.btn-primary{background:#0984e3;color:#fff}
+.btn-danger{background:#e17055;color:#fff}
+.btn-success{background:#00b894;color:#fff}
+.btn-secondary{background:#636e72;color:#fff}
+.bg{background:#2d3436;color:#ddd;border:1px solid #555}
+.devices{list-style:none;padding:0}
+.devices li{padding:6px 0;border-bottom:1px solid #333;font-size:.9em}
+.devices li:last-child{border:none}
+.devices .host{color:#74b9ff;font-size:.85em}
+.mqtt-info{font-size:.9em;color:#81ecec;margin-bottom:8px}
+.phase{display:none}
+.phase.active{display:block}
+.steps{padding-left:20px;margin:12px 0}
+.steps li{margin:6px 0;line-height:1.5}
+.sp{display:inline-block;width:16px;height:16px;border:2px solid #0984e3;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#msg{margin:12px 0;padding:10px;border-radius:8px;display:none}
+#msg.s{display:block;background:#0a3d2e;border:1px solid #00b894}
+#msg.e{display:block;background:#3d1a0a;border:1px solid #e17055}
+#msg.i{display:block;background:#0a2a3d;border:1px solid #0984e3}
+a{color:#74b9ff}
+</style>
+</head>
+<body>
+<h1>Home Connect Setup</h1>
+
+<!-- Status Card -->
+<div class="card">
+<h2>Status</h2>
+<div class="mqtt-info">
+{% if status.mqtt_host %}
+MQTT: {{ status.mqtt_host }}:{{ status.mqtt_port }}
+{% if status.mqtt_auto %} (automatisch erkannt){% endif %}
+{% else %}
+MQTT: nicht konfiguriert
+{% endif %}
+</div>
+
+{% if status.devices_configured %}
+<div style="color:#00b894;margin-bottom:8px">{{ status.devices_count }} Gerät(e) konfiguriert</div>
+<ul class="devices">
+{% for d in status.devices %}
+<li>{{ d.name }} <span class="host">{{ d.host }}</span></li>
+{% endfor %}
+</ul>
+<button class="bg" style="margin-top:10px" onclick="refreshDevices()">Geräte aktualisieren (ohne Login)</button>
+{% else %}
+<div style="color:#fdcb6e">Keine Geräte konfiguriert</div>
+{% endif %}
+</div>
+
+<!-- Login Card -->
+<div class="card">
+<h2>Home Connect Login</h2>
+<div id="msg"></div>
+
+<!-- Phase: Start -->
+<div id="phase-start" class="phase active">
+{% if status.devices_configured %}
+<p style="color:#00b894;margin-bottom:10px">Geräte sind bereits konfiguriert.</p>
+<button class="btn-secondary" onclick="startLogin()">Erneut anmelden</button>
+{% else %}
+<button class="btn-primary" onclick="startLogin()">Mit Home Connect anmelden</button>
+{% endif %}
+</div>
+
+<!-- Phase: URL -->
+<div id="phase-url" class="phase">
+<ol class="steps">
+<li>Öffne den folgenden Link in einem neuen Browser-Tab</li>
+<li>Melde dich mit deinem Home Connect Konto an</li>
+<li>Nach dem Login wirst du auf eine Seite mit <code>hcauth://</code> weitergeleitet</li>
+<li>Kopiere die <strong>komplette URL</strong> aus der Adressleiste</li>
+<li>Füge sie unten ein und klicke "Geräte konfigurieren"</li>
+</ol>
+<p style="margin:12px 0">
+<a id="oauth-link" href="#" target="_blank" rel="noopener">Login-Seite öffnen</a>
+</p>
+<label for="hcauth-url">hcauth:// URL aus der Adressleiste:</label>
+<textarea id="hcauth-url" placeholder="hcauth://auth/prod?code=eyJ...&state=eXV..."></textarea>
+<div style="margin-top:10px">
+<button class="btn-primary" onclick="go()">Geräte konfigurieren</button>
+<button class="btn-secondary" onclick="reset()">Abbrechen</button>
+</div>
+</div>
+
+<!-- Phase: Result -->
+<div id="phase-result" class="phase">
+<div id="result-msg"></div>
+<div style="margin-top:12px">
+<button class="btn-success" onclick="restart()">Addon neustarten</button>
+<button class="btn-secondary" onclick="reset()">Zurück</button>
+</div>
+</div>
+</div>
+
+<script>
+const base = '{{ ingress }}';
+function u(path) { return base + path; }
+
+function showPhase(id) {
+    document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+    document.getElementById('phase-' + id).classList.add('active');
+}
+
+function msg(html, cls) {
+    const el = document.getElementById('msg');
+    el.innerHTML = html;
+    el.className = cls || '';
+}
+
+async function startLogin() {
+    msg('<span class="sp"></span>Generiere Login-URL...', 'i');
+    try {
+        const r = await fetch(u('/api/start-login'), { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('oauth-link').href = d.url;
+            msg('', '');
+            showPhase('url');
+        } else {
+            msg('Fehler: ' + (d.error || 'Unbekannt'), 'e');
+        }
+    } catch (e) {
+        msg('Fehler: ' + e.message, 'e');
+    }
+}
+
+async function go() {
+    const url = document.getElementById('hcauth-url').value.trim();
+    if (!url) { msg('Bitte die hcauth:// URL einfügen', 'e'); return; }
+    msg('<span class="sp"></span>Konfiguriere Geräte...', 'i');
+    try {
+        const r = await fetch(u('/api/complete-login'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url }),
+        });
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('result-msg').innerHTML =
+                '<div class="card success">' + d.message + '</div>';
+            showPhase('result');
+            msg('', '');
+        } else {
+            msg('Fehler: ' + (d.error || 'Unbekannt'), 'e');
+        }
+    } catch (e) {
+        msg('Fehler: ' + e.message, 'e');
+    }
+}
+
+async function restart() {
+    msg('<span class="sp"></span>Addon wird neugestartet...', 'i');
+    try {
+        await fetch(u('/api/restart-addon'), { method: 'POST' });
+        msg('Addon startet neu... Seite wird in 8 Sekunden neu geladen.', 'i');
+        setTimeout(() => location.reload(), 8000);
+    } catch (e) {
+        msg('Neustart angefordert. Seite wird neu geladen...', 'i');
+        setTimeout(() => location.reload(), 8000);
+    }
+}
+
+function reset() {
+    msg('', '');
+    showPhase('start');
+}
+
+async function refreshDevices() {
+    msg('<span class="sp"></span>Aktualisiere Geräteliste...', 'i');
+    try {
+        const r = await fetch(u('/api/refresh-devices'), { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+            msg(d.message, 's');
+            setTimeout(() => location.reload(), 2000);
+        } else if (d.login_required) {
+            msg(d.message + ' Bitte unten neu anmelden.', 'i');
+        } else {
+            msg(d.error || 'Unbekannter Fehler', 'e');
+        }
+    } catch (e) {
+        msg('Fehler: ' + e.message, 'e');
+    }
+}
+</script>
+</body>
+</html>

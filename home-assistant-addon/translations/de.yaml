@@ -1,0 +1,53 @@
+---
+configuration:
+  HCPY_DEVICES_FILE:
+    name: Geräte-Datei
+    description: Pfad zur devices.json Konfigurationsdatei.
+  HCPY_DISCOVERY_FILE:
+    name: Discovery-Datei
+    description: Pfad zur discovery.yaml Konfigurationsdatei.
+  HCPY_MQTT_HOST:
+    name: MQTT Host
+    description: "MQTT-Broker Hostname. Leer lassen für automatische Erkennung."
+  HCPY_MQTT_PORT:
+    name: MQTT Port
+    description: "MQTT-Broker Port. Leer lassen für automatische Erkennung."
+  HCPY_MQTT_PREFIX:
+    name: MQTT Prefix
+    description: Prefix für alle MQTT-Topics (z.B. homeconnect/).
+  HCPY_MQTT_USERNAME:
+    name: MQTT Benutzername
+    description: "MQTT-Broker Benutzername. Leer lassen für automatische Erkennung."
+  HCPY_MQTT_PASSWORD:
+    name: MQTT Passwort
+    description: "MQTT-Broker Passwort. Leer lassen für automatische Erkennung."
+  HCPY_MQTT_SSL:
+    name: MQTT SSL
+    description: SSL/TLS für die MQTT-Verbindung aktivieren.
+  HCPY_MQTT_CAFILE:
+    name: MQTT CA-Datei
+    description: Pfad zur CA-Zertifikatsdatei für SSL.
+  HCPY_MQTT_CERTFILE:
+    name: MQTT Zertifikat-Datei
+    description: Pfad zur Client-Zertifikatsdatei für SSL.
+  HCPY_MQTT_KEYFILE:
+    name: MQTT Schlüssel-Datei
+    description: Pfad zur Client-Schlüsseldatei für SSL.
+  HCPY_MQTT_CLIENTNAME:
+    name: MQTT Client-Name
+    description: Client-Name für die MQTT-Verbindung.
+  HCPY_DOMAIN_SUFFIX:
+    name: Domain-Suffix
+    description: "DNS-Suffix für die Geräte-Auflösung (z.B. fritz.box). Leer lassen für automatische Erkennung."
+  HCPY_HA_DISCOVERY:
+    name: HA Discovery
+    description: Home Assistant MQTT Auto-Discovery aktivieren.
+  HCPY_DEBUG:
+    name: Debug-Modus
+    description: Debug-Logging aktivieren.
+  HCPY_EVENTS_AS_SENSORS:
+    name: Events als Sensoren
+    description: Geräte-Events als Sensoren statt Event-Entitäten darstellen.
+  HCPY_AUTO_RESOLVE_HOSTS:
+    name: Auto Host-Auflösung
+    description: Geräte-Hostnamen nach dem Login automatisch auflösen.
