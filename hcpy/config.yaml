@@ -3,7 +3,6 @@ name: "HomeConnect2MQTT"
 description: "View and control HomeConnect appliances over the local network with Web-UI setup."
 version: "v0.5.0"
 slug: "hcpy"
-image: ghcr.io/hcpy2-0/hcpy
 init: false
 arch:
   - armhf
