@@ -30,6 +30,7 @@ button:hover{opacity:.85}
 .mqtt-info{font-size:.9em;color:#81ecec;margin-bottom:8px}
 .phase{display:none}
 .phase.active{display:block}
+.logs{background:#0f141f;border:1px solid #2a354f;border-radius:8px;padding:10px;max-height:260px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em;white-space:pre-wrap;line-height:1.35}
 .steps{padding-left:20px;margin:12px 0}
 .steps li{margin:6px 0;line-height:1.5}
 .sp{display:inline-block;width:16px;height:16px;border:2px solid #0984e3;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
@@ -57,15 +58,15 @@ MQTT: nicht konfiguriert
 </div>
 
 {% if status.devices_configured %}
-<div style="color:#00b894;margin-bottom:8px">{{ status.devices_count }} Gerät(e) konfiguriert</div>
+<div style="color:#00b894;margin-bottom:8px">{{ status.devices_count }} Geraet(e) konfiguriert</div>
 <ul class="devices">
 {% for d in status.devices %}
 <li>{{ d.name }} <span class="host">{{ d.host }}</span></li>
 {% endfor %}
 </ul>
-<button class="bg" style="margin-top:10px" onclick="refreshDevices()">Geräte aktualisieren (ohne Login)</button>
+<button class="bg" style="margin-top:10px" onclick="refreshDevices()">Geraete aktualisieren (ohne Login)</button>
 {% else %}
-<div style="color:#fdcb6e">Keine Geräte konfiguriert</div>
+<div style="color:#fdcb6e">Keine Geraete konfiguriert</div>
 {% endif %}
 </div>
 
@@ -77,7 +78,7 @@ MQTT: nicht konfiguriert
 <!-- Phase: Start -->
 <div id="phase-start" class="phase active">
 {% if status.devices_configured %}
-<p style="color:#00b894;margin-bottom:10px">Geräte sind bereits konfiguriert.</p>
+<p style="color:#00b894;margin-bottom:10px">Geraete sind bereits konfiguriert.</p>
 <button class="btn-secondary" onclick="startLogin()">Erneut anmelden</button>
 {% else %}
 <button class="btn-primary" onclick="startLogin()">Mit Home Connect anmelden</button>
@@ -87,19 +88,19 @@ MQTT: nicht konfiguriert
 <!-- Phase: URL -->
 <div id="phase-url" class="phase">
 <ol class="steps">
-<li>Öffne den folgenden Link in einem neuen Browser-Tab</li>
+<li>Oeffne den folgenden Link in einem neuen Browser-Tab</li>
 <li>Melde dich mit deinem Home Connect Konto an</li>
 <li>Nach dem Login wirst du auf eine Seite mit <code>hcauth://</code> weitergeleitet</li>
 <li>Kopiere die <strong>komplette URL</strong> aus der Adressleiste</li>
-<li>Füge sie unten ein und klicke "Geräte konfigurieren"</li>
+<li>Fuege sie unten ein und klicke "Geraete konfigurieren"</li>
 </ol>
 <p style="margin:12px 0">
-<a id="oauth-link" href="#" target="_blank" rel="noopener">Login-Seite öffnen</a>
+<a id="oauth-link" href="#" target="_blank" rel="noopener">Login-Seite oeffnen</a>
 </p>
 <label for="hcauth-url">hcauth:// URL aus der Adressleiste:</label>
 <textarea id="hcauth-url" placeholder="hcauth://auth/prod?code=eyJ...&state=eXV..."></textarea>
 <div style="margin-top:10px">
-<button class="btn-primary" onclick="go()">Geräte konfigurieren</button>
+<button class="btn-primary" onclick="go()">Geraete konfigurieren</button>
 <button class="btn-secondary" onclick="reset()">Abbrechen</button>
 </div>
 </div>
@@ -109,8 +110,17 @@ MQTT: nicht konfiguriert
 <div id="result-msg"></div>
 <div style="margin-top:12px">
 <button class="btn-success" onclick="restart()">Addon neustarten</button>
-<button class="btn-secondary" onclick="reset()">Zurück</button>
+<button class="btn-secondary" onclick="reset()">Zurueck</button>
 </div>
+</div>
+</div>
+
+<!-- Logs Card -->
+<div class="card">
+<h2>Addon-Logs</h2>
+<div id="log-box" class="logs">Lade Logs...</div>
+<div style="margin-top:10px">
+<button class="btn-secondary" onclick="loadLogs()">Logs aktualisieren</button>
 </div>
 </div>
 
@@ -148,8 +158,8 @@ async function startLogin() {
 
 async function go() {
     const url = document.getElementById('hcauth-url').value.trim();
-    if (!url) { msg('Bitte die hcauth:// URL einfügen', 'e'); return; }
-    msg('<span class="sp"></span>Konfiguriere Geräte...', 'i');
+    if (!url) { msg('Bitte die hcauth:// URL einfuegen', 'e'); return; }
+    msg('<span class="sp"></span>Konfiguriere Geraete...', 'i');
     try {
         const r = await fetch(u('/api/complete-login'), {
             method: 'POST',
@@ -188,7 +198,7 @@ function reset() {
 }
 
 async function refreshDevices() {
-    msg('<span class="sp"></span>Aktualisiere Geräteliste...', 'i');
+    msg('<span class="sp"></span>Aktualisiere Geraeteliste...', 'i');
     try {
         const r = await fetch(u('/api/refresh-devices'), { method: 'POST' });
         const d = await r.json();
@@ -204,6 +214,27 @@ async function refreshDevices() {
         msg('Fehler: ' + e.message, 'e');
     }
 }
+
+async function loadLogs() {
+    const box = document.getElementById('log-box');
+    box.textContent = 'Lade Logs...';
+    try {
+        const r = await fetch(u('/api/logs?n=120'));
+        const d = await r.json();
+        if (d.lines && d.lines.length > 0) {
+            box.textContent = d.lines.join('\\n');
+        } else {
+            box.textContent = 'Keine Logs verfuegbar';
+        }
+        box.scrollTop = box.scrollHeight;
+    } catch (e) {
+        box.textContent = 'Logs konnten nicht geladen werden: ' + e.message;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadLogs();
+});
 </script>
 </body>
 </html>

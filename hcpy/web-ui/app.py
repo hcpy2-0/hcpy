@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Flask Web-UI for HomeConnect2MQTT addon setup."""
 import json
+import logging
 import os
 import re
 import subprocess
@@ -15,6 +16,7 @@ from Crypto.Random import get_random_bytes
 from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 # Configuration from environment
 CONFIG_DIR = os.environ.get("HCPY_CONFIG_DIR", "/config")
@@ -136,7 +138,7 @@ def fetch_and_save_devices(token):
         configs.append(config)
 
     if not configs:
-        return False, "Keine Geräte im Account gefunden"
+        return False, "Keine Geraete im Account gefunden"
 
     # Merge with existing devices.json
     existing = []
@@ -196,9 +198,39 @@ def token_status():
         return jsonify({"has_token": False})
 
 
+@app.route("/api/logs")
+def api_logs():
+    n = request.args.get("n", 100, type=int)
+    n = min(n, 500)
+    log_lines = []
+    token = os.environ.get("SUPERVISOR_TOKEN", "")
+    if token:
+        try:
+            import urllib.request
+
+            req_obj = urllib.request.Request(
+                "http://supervisor/addons/self/logs",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            with urllib.request.urlopen(req_obj, timeout=10) as resp:
+                raw = resp.read().decode("utf-8", errors="replace")
+                log_lines = raw.strip().split("\n")[-n:]
+        except Exception:
+            pass
+    if not log_lines:
+        log_file = "/data/hcpy.log"
+        if os.path.exists(log_file):
+            try:
+                with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+                    log_lines = f.readlines()[-n:]
+            except Exception:
+                log_lines = ["Log nicht verfuegbar"]
+    return jsonify({"lines": log_lines, "count": len(log_lines)})
+
+
 @app.route("/api/start-login", methods=["POST"])
 def start_login():
-    """Generate OAuth URL with PKCE — no subprocess, direct generation."""
+    """Generate OAuth URL with PKCE - no subprocess, direct generation."""
     global _login_session
     try:
         verifier = b64(get_random_bytes(32))
@@ -293,7 +325,7 @@ def complete_login():
                 pass
 
         _login_session = {}
-        return jsonify({"success": True, "message": f"{result} Gerät(e) erfolgreich konfiguriert!"})
+        return jsonify({"success": True, "message": f"{result} Geraet(e) erfolgreich konfiguriert!"})
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -301,61 +333,47 @@ def complete_login():
 
 @app.route("/api/refresh-devices", methods=["POST"])
 def refresh_devices():
-    """Refresh devices using stored token — no browser login needed."""
-    if not os.path.exists(TOKEN_FILE):
-        return jsonify({"success": False, "login_required": True, "message": "Kein Token gespeichert — bitte anmelden."})
-
     try:
-        with open(TOKEN_FILE) as f:
-            stored = json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return jsonify({"success": False, "login_required": True, "message": "Token-Datei beschädigt — bitte erneut anmelden."})
-
-    refresh_token = stored.get("refresh_token", "")
-    if not refresh_token:
-        return jsonify({"success": False, "login_required": True, "message": "Kein Refresh-Token — bitte erneut anmelden."})
-
-    try:
-        # Try token refresh
-        r = req.post(BASE_URL + "token", data={
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-        }, allow_redirects=False, timeout=30)
-
-        if r.status_code != 200:
-            return jsonify({"success": False, "login_required": True, "message": "Token abgelaufen — bitte erneut anmelden."})
-
-        token_response = r.json()
-        token = token_response["access_token"]
-
-        # Save new token
-        token_data = {
-            "access_token": token,
-            "refresh_token": token_response.get("refresh_token", refresh_token),
-            "expires_at": int(_time.time()) + token_response.get("expires_in", 86400),
-            "saved_at": int(_time.time()),
-        }
-        with open(TOKEN_FILE, "w") as tf:
-            json.dump(token_data, tf, indent=2)
-
-        # Fetch devices
-        success, result = fetch_and_save_devices(token)
-        if not success:
-            return jsonify({"success": False, "error": result}), 500
-
-        # Run host resolution
-        if os.environ.get("HCPY_AUTO_RESOLVE_HOSTS", "true").lower() == "true":
-            try:
-                subprocess.run(
-                    [sys.executable, "/app/scripts/resolve_hosts.py",
-                     DEVICES_FILE, os.environ.get("HCPY_DOMAIN_SUFFIX", "")],
-                    timeout=30, capture_output=True,
-                )
-            except Exception:
-                pass
-
-        return jsonify({"success": True, "message": f"{result} Gerät(e) aktualisiert — kein Login nötig!", "login_required": False})
-
+        result = subprocess.run(
+            [sys.executable, "/app/hc-login.py", DEVICES_FILE],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            input="\n\n",
+        )
+        if result.returncode == 0 and os.path.exists(DEVICES_FILE):
+            with open(DEVICES_FILE) as f:
+                n = len(json.load(f))
+            if os.environ.get("HCPY_AUTO_RESOLVE_HOSTS", "true").lower() == "true":
+                try:
+                    subprocess.run(
+                        [
+                            sys.executable,
+                            "/app/scripts/resolve_hosts.py",
+                            DEVICES_FILE,
+                            os.environ.get("HCPY_DOMAIN_SUFFIX", ""),
+                        ],
+                        timeout=30,
+                        capture_output=True,
+                    )
+                except Exception:
+                    pass
+            return jsonify(
+                {
+                    "success": True,
+                    "message": f"{n} Geraet(e) aktualisiert!",
+                    "login_required": False,
+                }
+            )
+        return jsonify(
+            {
+                "success": False,
+                "login_required": True,
+                "message": "Token abgelaufen - bitte erneut anmelden.",
+            }
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "error": "Timeout"}), 500
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -363,7 +381,7 @@ def refresh_devices():
 @app.route("/api/restart-addon", methods=["POST"])
 def restart_addon():
     if not SUPERVISOR_TOKEN:
-        return jsonify({"success": False, "error": "Kein SUPERVISOR_TOKEN verfügbar"}), 500
+        return jsonify({"success": False, "error": "Kein SUPERVISOR_TOKEN verfuegbar"}), 500
     try:
         r = req.post(
             "http://supervisor/addons/self/restart",

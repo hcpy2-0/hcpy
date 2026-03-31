@@ -32,6 +32,4 @@ COPY scripts/ /app/scripts/
 COPY run.sh /app/run.sh
 RUN chmod +x /app/run.sh /app/scripts/*.py
 
-# Override base image ENTRYPOINT (/init from S6)
-ENTRYPOINT []
 CMD [ "/app/run.sh" ]
