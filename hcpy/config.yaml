@@ -1,7 +1,7 @@
 ---
 name: "HomeConnect2MQTT"
 description: "View and control HomeConnect appliances over the local network with Web-UI setup."
-version: "v0.5.6"
+version: "v0.5.7"
 slug: "hcpy"
 arch:
   - armhf
@@ -20,7 +20,7 @@ hassio_api: true
 hassio_role: default
 services:
   - mqtt:want
-apparmor: true
+apparmor: false
 watchdog: "tcp://[HOST]:[PORT:8099]"
 stage: experimental
 backup: hot
