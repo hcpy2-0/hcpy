@@ -42,6 +42,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   @{PROC}/sys/net/** r,
 
   /usr/bin/bash rix,
+  /init rix,
   /usr/bin/with-contenv rix,
   /usr/bin/bashio rix,
   /bin/sh rix,
