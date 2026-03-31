@@ -1,177 +1,75 @@
 ![dishwasher installed in a kitchen](images/kitchen.jpg)
 
-# HomeConnect2MQTT — Local Control for Home Connect Appliances
+# HomeConnect2MQTT
 
-Local WebSocket bridge between Bosch/Siemens Home Connect appliances and MQTT, with Home Assistant integration.
+Local WebSocket bridge between Bosch/Siemens Home Connect appliances and MQTT, with Home Assistant add-on support.
 
-> **No cloud dependency for daily operation.** The cloud login is only needed once to retrieve device credentials.
+> Cloud login is only needed for initial setup/token refresh. Daily device control is local.
 
-## Features
+## Quick Start (Home Assistant Add-on)
 
-| Feature | Original | This Fork |
-|---------|----------|-----------|
-| Local WebSocket control | Yes | Yes |
-| MQTT bridge | Yes | Yes |
-| HA MQTT Auto-Discovery | Yes | Yes |
-| **Web-UI for setup** | No (SSH/Docker required) | **Yes (HA Ingress)** |
-| **MQTT Auto-Discovery** | No (manual config) | **Yes (automatic)** |
-| **Host auto-resolution** | No (manual DNS) | **Yes (fritz.box, mDNS, etc.)** |
-| **Token refresh** | No (re-login every time) | **Yes (persistent token)** |
-| **Device merge** | No (overwrites devices.json) | **Yes (preserves manual edits)** |
-| **Watchdog reconnect** | No (silent disconnect) | **Yes (5 min timeout)** |
-| **AppArmor security** | No | **Yes** |
-| **Secret redaction in logs** | No | **Yes** |
+### 1. Add repository
 
-## Quick Start (Home Assistant Addon)
+[![Add this add-on repository to your Home Assistant instance.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FDerSep%2Fhcpyhc2mqtt)
 
-### 1. Add Repository
+### 2. Install add-on and open Web UI
 
-[![Add this add-on repository to your Home Assistant instance.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub%2Ecom%2Fhcpy2%2D0%2Fhcpy%2F)
+Open **Home Connect** in the Home Assistant sidebar.
 
-### 2. Login via Web-UI
+### 3. Login and configure devices
 
-Open "Home Connect" in the HA sidebar, click "Login", follow the steps.
+1. Click **Mit Home Connect anmelden**.
+2. Complete login in the opened browser tab.
+3. Paste the final redirect URL into the add-on UI.
+4. Click **Geraete konfigurieren**.
 
-### 3. Done
+Important: The pasted URL must contain `code=`.
 
-Devices appear automatically in Home Assistant via MQTT Discovery.
+If your browser does not show the final URL clearly:
 
-## MQTT Auto-Discovery
+1. Press `F12`
+2. Open `Network`
+3. Find request URL starting with `hcauth://auth/prod?code=`
+4. Copy that full URL and paste it into the add-on UI
 
-The addon automatically detects your MQTT broker:
+## Features in this fork
 
-1. **HA Services** — detected via `bashio::services mqtt` (Mosquitto addon)
-2. **Network probe** — connection test on `core-mosquitto`, `localhost:1883`
-3. **Manual config** — set MQTT Host/Port in addon settings
+- Ingress Web UI for setup
+- MQTT auto-discovery (HA service + fallback probe)
+- Token persistence and refresh
+- Device merge (preserve existing hosts)
+- Hostname auto-resolution (`fritz.box`, `lan`, `local`, mDNS)
+- WebSocket watchdog/reconnect
+- Add-on logs panel in UI
 
-No manual MQTT configuration needed if you use the Mosquitto addon.
+## Current Add-on Status
 
-## Host Resolution
-
-Device hostnames from the Home Connect cloud are short names (e.g. `Bosch-Dishwasher-ABC123`). The addon resolves them automatically:
-
-1. User-configured suffix (e.g. `fritz.box`)
-2. Common router suffixes: `fritz.box`, `speedport.ip`, `home`, `lan`, `local`
-3. mDNS/Zeroconf discovery
+- `apparmor: false` (temporary compatibility setting in this fork)
+- `host_network: false`
+- `hassio_api: true`
+- `hassio_role: default`
 
 ## MQTT Topics
 
-| Topic | Description |
-|-------|-------------|
-| `homeconnect/{device}/state/{property}` | Device state values |
-| `homeconnect/{device}/event/{event}` | Device events |
-| `homeconnect/{device}/set` | Set values (JSON) |
-| `homeconnect/{device}/activeProgram` | Start a program |
-| `homeconnect/{device}/selectedProgram` | Select a program |
-| `homeconnect/{device}/LWT` | Device online/offline |
-| `homeconnect/{device}/watchdog` | Last message timestamp |
-| `homeconnect/LWT` | Bridge online/offline |
-
-### Setting values
-
-```json
-[{"uid": 539, "value": 2}]
-```
-
-Topic: `homeconnect/coffeemaker/set`
-
-### Starting a program
-
-```json
-{"program": 8196, "options": [{"uid": 558, "value": 600}]}
-```
-
-Topic: `homeconnect/dishwasher/activeProgram`
-
-## Security
-
-| Measure | Details |
-|---------|---------|
-| AppArmor | Restrictive profile, only needed paths allowed |
-| host_network | `false` — no host network access |
-| hassio_role | `default` — minimal Supervisor API rights |
-| MQTT password | Masked in HA UI (password schema type) |
-| Secret redaction | `key` and `iv` fields redacted in all log output |
-| MQTT Auto-Discovery | No cleartext passwords in config needed |
-| Graceful shutdown | SIGTERM/SIGINT handling with process cleanup |
-| Container isolation | Token stored in `/data` (not user-accessible) |
-
-## Standalone Usage (without Home Assistant)
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install -r requirements-extra.txt
-
-# Login (once)
-python3 hc-login.py config/devices.json
-
-# Copy and edit config
-cp config/config.ini.example config/config.ini
-
-# Run
-python3 hc2mqtt.py --config config/config.ini
-```
-
-## File Structure
-
-```
-├── Dockerfile                    # HA Base Image (Alpine)
-├── build.yaml                    # Multi-arch build config
-├── run.sh                        # Entrypoint (HA Addon + Standalone)
-├── requirements.txt              # Core Python dependencies
-├── requirements-extra.txt        # Web-UI + zeroconf
-├── hc2mqtt.py                    # MQTT bridge (patched: watchdog, fallback)
-├── hc-login.py                   # OAuth login (patched: token refresh, merge)
-├── HADiscovery.py                # HA MQTT Discovery (patched: redaction)
-├── HCDevice.py                   # Device abstraction
-├── HCSocket.py                   # WebSocket (TLS-PSK / AES-CBC)
-├── HCxml2json.py                 # XML → JSON converter
-├── discovery.yaml                # Discovery configuration
-├── web-ui/                       # Flask Web-UI
-│   ├── app.py
-│   └── templates/index.html
-├── scripts/
-│   └── resolve_hosts.py          # Automatic host resolution
-├── home-assistant-addon/
-│   ├── config.yaml               # Addon config (Ingress, AppArmor, etc.)
-│   ├── apparmor.txt              # Security profile
-│   ├── DOCS.md                   # Addon documentation
-│   └── translations/
-│       ├── de.yaml
-│       └── en.yaml
-└── config/
-    └── config.ini.example        # Standalone config template
-```
-
-## Supported Devices
-
-- Dishwashers (TLS-PSK encrypted)
-- Washing machines (AES-CBC encrypted)
-- Dryers
-- Coffee machines
-- Ovens
-- Range hoods
-- Refrigerators
-- Cleaning robots
+- `homeconnect/{device}/state/{property}`
+- `homeconnect/{device}/event/{event}`
+- `homeconnect/{device}/set`
+- `homeconnect/{device}/activeProgram`
+- `homeconnect/{device}/selectedProgram`
+- `homeconnect/{device}/LWT`
+- `homeconnect/{device}/watchdog`
+- `homeconnect/LWT`
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| "No devices configured" | Login via Web-UI |
-| MQTT not connected | Install Mosquitto addon or configure MQTT manually |
-| Device unreachable | Enter IP address in devices.json manually |
-| Silent disconnect | Watchdog detects and reconnects (max 5 min) |
-| Login failed | Paste the complete `hcauth://` URL |
-| `sslpsk` build error | Expected on Python 3.13+ (TLS-PSK devices won't work) |
-| `[Errno 111] Connection refused` | MQTT auto-discovery handles this automatically |
+- Login fails with `invalid_grant`: pasted link is not the final URL with `code=`.
+- Web UI shows no devices: finish login once, then restart add-on.
+- MQTT not connected: install/configure Mosquitto add-on or set MQTT host/port manually.
 
 ## Credits
 
-Based on [hcpy2-0/hcpy](https://github.com/hcpy2-0/hcpy) by @pmagyar, @Meatballs1 and contributors.
+Based on [hcpy2-0/hcpy](https://github.com/hcpy2-0/hcpy).
 
 ## License
 
-MIT License — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
