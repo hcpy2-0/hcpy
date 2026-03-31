@@ -25,6 +25,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
 
   /app/ r,
   /app/** r,
+  /app/run.sh rix,
   /app/**/*.py rix,
   /app/**/*.sh rix,
 

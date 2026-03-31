@@ -30,6 +30,6 @@ COPY discovery.yaml /app/
 COPY web-ui/ /app/web-ui/
 COPY scripts/ /app/scripts/
 COPY run.sh /app/run.sh
-RUN chmod +x /app/run.sh /app/scripts/*.py
+RUN chmod 755 /app/run.sh && chmod +x /app/scripts/*.py
 
 ENTRYPOINT [ "/app/run.sh" ]
