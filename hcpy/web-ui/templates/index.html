@@ -126,7 +126,22 @@ MQTT: nicht konfiguriert
 
 <script>
 const base = '{{ ingress }}';
-function u(path) { return base + path; }
+function u(path) {
+    const clean = path.startsWith('/') ? path.slice(1) : path;
+    if (base && base.length > 0) {
+        return base.replace(/\/$/, '') + '/' + clean;
+    }
+    return clean;
+}
+
+async function readJson(r) {
+    const txt = await r.text();
+    try {
+        return JSON.parse(txt);
+    } catch {
+        throw new Error(txt ? txt.slice(0, 300) : 'Leere Antwort');
+    }
+}
 
 function showPhase(id) {
     document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
@@ -143,7 +158,7 @@ async function startLogin() {
     msg('<span class="sp"></span>Generiere Login-URL...', 'i');
     try {
         const r = await fetch(u('/api/start-login'), { method: 'POST' });
-        const d = await r.json();
+        const d = await readJson(r);
         if (d.success) {
             document.getElementById('oauth-link').href = d.url;
             msg('', '');
@@ -166,7 +181,7 @@ async function go() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url }),
         });
-        const d = await r.json();
+        const d = await readJson(r);
         if (d.success) {
             document.getElementById('result-msg').innerHTML =
                 '<div class="card success">' + d.message + '</div>';
@@ -201,7 +216,7 @@ async function refreshDevices() {
     msg('<span class="sp"></span>Aktualisiere Geraeteliste...', 'i');
     try {
         const r = await fetch(u('/api/refresh-devices'), { method: 'POST' });
-        const d = await r.json();
+        const d = await readJson(r);
         if (d.success) {
             msg(d.message, 's');
             setTimeout(() => location.reload(), 2000);
@@ -220,7 +235,7 @@ async function loadLogs() {
     box.textContent = 'Lade Logs...';
     try {
         const r = await fetch(u('/api/logs?n=120'));
-        const d = await r.json();
+        const d = await readJson(r);
         if (d.lines && d.lines.length > 0) {
             box.textContent = d.lines.join('\\n');
         } else {

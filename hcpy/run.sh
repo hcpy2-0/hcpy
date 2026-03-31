@@ -4,10 +4,16 @@
 
 set -u
 
-USE_BASHIO=true
-if ! command -v bashio &>/dev/null; then
-    echo "[WARN] bashio nicht gefunden, nutze Fallback"
-    USE_BASHIO=false
+USE_BASHIO=false
+if [ -f "/usr/lib/bashio/bashio.sh" ]; then
+    # shellcheck source=/usr/lib/bashio/bashio.sh
+    source /usr/lib/bashio/bashio.sh || true
+    if declare -F bashio::config >/dev/null 2>&1; then
+        USE_BASHIO=true
+    fi
+fi
+if [ "$USE_BASHIO" = false ]; then
+    echo "[WARN] bashio nicht verfuegbar, nutze Fallback"
 fi
 
 read_config() {
