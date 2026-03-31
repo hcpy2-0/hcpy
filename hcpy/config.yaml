@@ -1,9 +1,8 @@
 ---
 name: "HomeConnect2MQTT"
 description: "View and control HomeConnect appliances over the local network with Web-UI setup."
-version: "v0.5.2"
+version: "v0.5.3"
 slug: "hcpy"
-init: false
 arch:
   - armhf
   - aarch64
