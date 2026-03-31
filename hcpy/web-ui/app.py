@@ -81,11 +81,10 @@ def parse_hcauth_url(raw):
     if not raw:
         return None, None
 
-    # Keep raw-code fallback for old/manual flows.
     code, state = _extract(raw)
     if code:
         return code, state
-    return raw, None
+    return None, None
 
 
 def get_status():
@@ -301,7 +300,15 @@ def complete_login():
 
     code, state = parse_hcauth_url(raw_url)
     if not code:
-        return jsonify({"success": False, "error": "Kein Code in der URL gefunden"}), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": (
+                    "Kein authorization code gefunden. Bitte den finalen Redirect nach dem Login "
+                    "kopieren (URL muss 'code=' enthalten, z.B. .../redirect_target?code=...)."
+                ),
+            }
+        ), 400
 
     if not _login_session.get("verifier"):
         return jsonify({"success": False, "error": "Keine aktive Login-Session. Bitte erneut starten."}), 400
