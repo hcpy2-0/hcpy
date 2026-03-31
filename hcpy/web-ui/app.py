@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time as _time
 from base64 import urlsafe_b64encode as base64url_encode
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 import requests as req
 from Crypto.Hash import SHA256
@@ -43,20 +43,48 @@ def b64(b):
 
 
 def parse_hcauth_url(raw):
-    """Parse hcauth:// URL, query string, or raw code from user."""
+    """Parse hcauth URL, redirect_target URL, nested returnUrl, query string, or raw code."""
+
+    def _extract(candidate):
+        candidate = (candidate or "").strip()
+        if not candidate:
+            return None, None
+
+        # Direct query string or URL with query params.
+        if "code=" in candidate or "state=" in candidate:
+            params = parse_qs(candidate.split("?", 1)[-1] if "?" in candidate else candidate)
+            code = params.get("code", [None])[0]
+            state = params.get("state", [None])[0]
+            if code:
+                return code, state
+
+        # SingleKey-style wrapper: ...?returnUrl=<encoded-url-or-path>
+        try:
+            parsed = urlparse(candidate)
+            params = parse_qs(parsed.query)
+            if "returnUrl" in params:
+                nested = unquote(params["returnUrl"][0])
+                code, state = _extract(nested)
+                if code:
+                    return code, state
+        except Exception:
+            pass
+
+        # Last-resort: URL-decoded text may expose code=...
+        decoded = unquote(candidate)
+        if decoded != candidate:
+            return _extract(decoded)
+
+        return None, None
+
     raw = raw.strip()
     if not raw:
         return None, None
 
-    if raw.startswith("hcauth://"):
-        parsed = urlparse(raw)
-        params = parse_qs(parsed.query)
-        return params.get("code", [None])[0], params.get("state", [None])[0]
-
-    if "code=" in raw:
-        params = parse_qs(raw.split("?")[-1] if "?" in raw else raw)
-        return params.get("code", [None])[0], params.get("state", [None])[0]
-
+    # Keep raw-code fallback for old/manual flows.
+    code, state = _extract(raw)
+    if code:
+        return code, state
     return raw, None
 
 
