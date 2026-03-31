@@ -32,4 +32,4 @@ COPY scripts/ /app/scripts/
 COPY run.sh /app/run.sh
 RUN chmod +x /app/run.sh /app/scripts/*.py
 
-CMD [ "/app/run.sh" ]
+ENTRYPOINT [ "/app/run.sh" ]
