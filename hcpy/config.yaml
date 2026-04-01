@@ -27,7 +27,7 @@ backup: hot
 backup_exclude:
   - "*.log"
   - "*.backup"
-url: https://github.com/DerSep/hcpyhc2mqtt
+url: https://github.com/DerSep/hcpy-ui
 startup: services
 discovery:
   - hcpy
