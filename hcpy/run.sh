@@ -70,6 +70,7 @@ export HCPY_AUTO_RESOLVE_HOSTS="$(read_config HCPY_AUTO_RESOLVE_HOSTS 'true')"
 
 export HCPY_CONFIG_DIR="/config"
 export INGRESS_PORT="${INGRESS_PORT:-8099}"
+export PYTHONPATH="/app${PYTHONPATH:+:${PYTHONPATH}}"
 
 HCPY_MQTT_HOST="$(read_config HCPY_MQTT_HOST '')"
 HCPY_MQTT_PORT="$(read_config HCPY_MQTT_PORT '')"
