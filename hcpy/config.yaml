@@ -20,7 +20,7 @@ hassio_api: true
 hassio_role: default
 services:
   - mqtt:want
-apparmor: false
+apparmor: true
 watchdog: "tcp://[HOST]:[PORT:8099]"
 stage: experimental
 backup: hot
