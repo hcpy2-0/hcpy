@@ -9,6 +9,8 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   /bin/busybox rix,
   /usr/bin/python3* rix,
   /usr/local/bin/python3* rix,
+  /usr/lib/python3*/** r,
+  /usr/lib/python3*/**/*.so mr,
   /usr/local/lib/python3*/** r,
   /usr/local/lib/python3*/**/*.so mr,
   /usr/local/lib/libpython*.so* mr,
