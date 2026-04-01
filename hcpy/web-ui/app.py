@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Flask Web-UI for HomeConnect2MQTT addon setup."""
 import json
+import importlib.util
 import logging
 import os
 import re
@@ -117,9 +118,17 @@ def get_status():
 
 def fetch_and_save_devices(token):
     """Fetch devices from HC cloud and save to devices.json (reuses hc-login.py logic)."""
-    # Import from hc-login.py
-    sys.path.insert(0, "/app")
-    from HCxml2json import xml2json
+    # Import robustly even if PYTHONPATH is not propagated as expected.
+    try:
+        from HCxml2json import xml2json
+    except ModuleNotFoundError:
+        module_path = "/app/HCxml2json.py"
+        spec = importlib.util.spec_from_file_location("HCxml2json", module_path)
+        if spec is None or spec.loader is None:
+            raise
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        xml2json = mod.xml2json
     import io
     from zipfile import ZipFile
 

@@ -17,7 +17,18 @@ import requests
 from Crypto.Hash import SHA256
 from Crypto.Random import get_random_bytes
 
-from HCxml2json import xml2json
+try:
+    from HCxml2json import xml2json
+except ModuleNotFoundError:
+    import importlib.util
+
+    _module_path = os.path.join(os.path.dirname(__file__), "HCxml2json.py")
+    _spec = importlib.util.spec_from_file_location("HCxml2json", _module_path)
+    if _spec is None or _spec.loader is None:
+        raise
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    xml2json = _mod.xml2json
 
 
 def debug(*args):
