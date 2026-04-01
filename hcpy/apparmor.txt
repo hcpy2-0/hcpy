@@ -15,7 +15,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   /usr/ r,
   /usr/** r,
   /lib/ r,
-  /lib/** r,
+  /lib/**/*.so* mr,
   /etc/ r,
   /etc/hosts r,
   /etc/resolv.conf r,
