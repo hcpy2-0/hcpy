@@ -13,7 +13,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   /usr/bin/jq rix,
   /usr/bin/timeout rix,
   /usr/ r,
-  /usr/bin/* r,
+  /usr/** r,
   /lib/ r,
   /lib/**/*.so* mr,
   /etc/ r,
