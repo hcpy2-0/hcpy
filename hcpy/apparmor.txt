@@ -28,6 +28,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   /usr/local/lib/python3*.zip r,
   /usr/local/lib/python3*/encodings/** r,
   /usr/local/lib/libpython*.so* mr,
+  /app/ r,
   /app/** r,
   /app/**/*.py rix,
   /config/** rw,
