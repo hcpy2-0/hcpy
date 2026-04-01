@@ -5,6 +5,7 @@ profile hcpy flags=(attach_disconnected,mediate_deleted) {
   /app/run.sh rix,
   /bin/bash rix,
   /usr/bin/dirname rix,
+  /bin/busybox rix,
   /usr/bin/python3* rix,
   /usr/local/bin/python3* rix,
   /app/** r,
