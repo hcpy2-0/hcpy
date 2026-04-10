@@ -62,9 +62,6 @@ class HCSocket:
             self.port = 443
             self.uri = f"wss://{host}:443/homeconnect"
 
-        # don't connect automatically so that debug etc can be set
-        # self.reconnect()
-
     # restore the encryption state for a fresh connection
     # this is only used by the HTTP connection
     def reset(self):
@@ -168,18 +165,6 @@ class HCSocket:
         # append the new hmac to the message
         return enc_msg + self.last_tx_hmac
 
-    def reconnect(self):
-        self.reset()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.host, self.port))
-
-        if not self.http:
-            sock = self.wrap_socket_psk(sock)
-
-        print(now(), "CON:", self.uri)
-        self.ws = websocket.WebSocket()
-        self.ws.connect(self.uri, socket=sock, origin="")
-
     def send(self, msg):
         buf = json.dumps(msg, separators=(",", ":"))
         # swap " for '
@@ -205,9 +190,8 @@ class HCSocket:
 
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
-        sock.settimeout(10)
+        sock = socket.create_connection((self.host, self.port), timeout=10)
         idle = 30
         interval = 10
         count = 3
@@ -224,7 +208,6 @@ class HCSocket:
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle*1000, interval*1000))
 
-        sock.connect((self.host, self.port))
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
         if not self.http:
