@@ -206,7 +206,7 @@ class HCSocket:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
 
         elif sys.platform.startswith("win"):
-            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle*1000, interval*1000))
+            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
 
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
