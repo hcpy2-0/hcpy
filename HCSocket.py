@@ -5,7 +5,6 @@ import re
 import socket
 import ssl
 import sys
-import struct
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
@@ -221,7 +220,7 @@ class HCSocket:
 
         elif sys.platform.startswith("win"):
             SIO_KEEPALIVE_VALS = 0x98000004
-            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle*1000, interval*1000))
+            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
 
         sock.connect((self.host, self.port))
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
