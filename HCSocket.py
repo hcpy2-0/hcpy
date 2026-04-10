@@ -1,11 +1,11 @@
 # Create a websocket that wraps a connection to a
 # Bosh-Siemens Home Connect device
+import ipaddress
 import json
 import re
 import socket
 import ssl
 import sys
-import ipaddress
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
@@ -13,6 +13,7 @@ import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
+
 
 def is_ip_address(host: str) -> bool:
     try:
