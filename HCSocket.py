@@ -5,6 +5,7 @@ import re
 import socket
 import ssl
 import sys
+import struct
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
@@ -208,6 +209,20 @@ class HCSocket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
         sock.settimeout(10)
+        if sys.platform.startswith("linux"):
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
+
+        elif sys.platform == "darwin":
+            TCP_KEEPALIVE = 0x10
+            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+
+        elif sys.platform.startswith("win"):
+            SIO_KEEPALIVE_VALS = 0x98000004
+            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle*1000, interval*1000))
+
         sock.connect((self.host, self.port))
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
