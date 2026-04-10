@@ -116,7 +116,6 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
         value = feature.get("value", None)
         values = feature.get("values", None)
         state_topic = f"{mqtt_topic}/state/{feature_id}"
-        step = feature.get("stepSize", None)
 
         discovery_payload = {
             "name": friendly_name,
@@ -166,7 +165,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             discovery_payload["unit_of_measurement"] = "°C"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
-        elif refCID == "03" and refDID == "80":
+        elif refDID == "80" and (refCID in ("02", "03")) and values is not None:
             if component_type != "event":
                 discovery_payload["device_class"] = "enum"
             discovery_payload["options"] = list(values.values())
@@ -178,6 +177,11 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
         ):
             discovery_payload["unit_of_measurement"] = "s"
             discovery_payload["device_class"] = "duration"
+            # Cooking.Oven.Setting.Cavity.001.AlarmClock doesnt set min/max
+            # HA default of 1,100 is too small so warnings raised.
+            # Duration often has a min value of 1 but will be set to 0 by device
+            discovery_payload["min"] = float(0)
+            discovery_payload["max"] = float(feature.get("max", 86400))
 
         if name == "BSH.Common.Status.ProgramSessionSummary.Latest":
             value_template = "{{ value_json.counter }}"
@@ -216,6 +220,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
             elif (
                 refCID == "03"
                 and refDID == "80"
+                and values is not None
                 and len(values.values()) == 2
                 and "On" in values.values()
                 and "Off" in values.values()
@@ -228,7 +233,8 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 discovery_payload["payload_on"] = f'[{{"uid":{uid},"value":"On"}}]'
                 discovery_payload["payload_off"] = f'[{{"uid":{uid},"value":"Off"}}]'
                 discovery_payload["device_class"] = "switch"
-            elif refCID == "03" and refDID == "80":
+            # 02/80 can be an enum e.g. Cooking.Oven.Option.Doneness
+            elif refDID == "80" and (refCID in ("02", "03")) and values is not None:
                 component_type = "select"
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                 template = f'[{{"uid":{uid},"value":"{{{{value}}}}"}}]'
@@ -240,6 +246,7 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 or (refCID == "11" and refDID == "A0")
                 or (refCID == "11" and refDID == "80")
                 or (refCID == "14" and refDID == "80")
+                # 02/80 can be a number e.g. Cooking.Oven.Setting.DisplayBrightness
                 or (refCID == "02" and refDID == "80")
                 or (refCID == "81" and refDID == "60")
                 or (refCID == "10" and refDID == "81")
@@ -251,12 +258,16 @@ def publish_ha_discovery(discovery_yaml_path, device, client, mqtt_topic, events
                 template = f'[{{"uid":{uid},"value":{{{{value}}}}}}]'
                 discovery_payload["command_template"] = template
 
+                # Min/Max may be already set for durations above
                 minimum = feature.get("min", None)
+                if discovery_payload.get("min") is None and minimum is not None:
+                    discovery_payload["min"] = float(minimum)
+
                 maximum = feature.get("max", None)
-                if minimum is not None:
-                    discovery_payload["min"] = minimum
-                if maximum is not None:
-                    discovery_payload["max"] = maximum
+                if discovery_payload.get("max") is None and maximum is not None:
+                    discovery_payload["max"] = float(maximum)
+
+                step = feature.get("stepSize", None)
                 if step is not None:
                     discovery_payload["step"] = float(step)
 
