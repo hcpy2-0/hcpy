@@ -179,7 +179,7 @@ for app in appliances["appliances"]:
         continue
 
     encryptionDetails = json.loads(r.text)
-    #debug(encryptionDetails)
+    # debug(encryptionDetails)
 
     tls = encryptionDetails.get("tls", None)
     aes = encryptionDetails.get("aes", None)
