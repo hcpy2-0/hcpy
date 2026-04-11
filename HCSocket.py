@@ -1,5 +1,6 @@
 # Create a websocket that wraps a connection to a
 # Bosh-Siemens Home Connect device
+import ipaddress
 import json
 import re
 import socket
@@ -12,6 +13,14 @@ import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
+
+
+def is_ip_address(host: str) -> bool:
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return False
 
 
 def now():
@@ -43,8 +52,10 @@ def hmac(key, msg):
 class HCSocket:
     def __init__(self, host, psk64, iv64=None, domain_suffix=""):
         self.host = host
-        if domain_suffix:
+        if domain_suffix and not is_ip_address(host):
             self.host = f"{host}.{domain_suffix}"
+        else:
+            self.host = host
 
         self.psk = base64url(psk64 + "===")
         self.debug = False
@@ -61,9 +72,6 @@ class HCSocket:
             self.http = False
             self.port = 443
             self.uri = f"wss://{host}:443/homeconnect"
-
-        # don't connect automatically so that debug etc can be set
-        # self.reconnect()
 
     # restore the encryption state for a fresh connection
     # this is only used by the HTTP connection
@@ -168,18 +176,6 @@ class HCSocket:
         # append the new hmac to the message
         return enc_msg + self.last_tx_hmac
 
-    def reconnect(self):
-        self.reset()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self.host, self.port))
-
-        if not self.http:
-            sock = self.wrap_socket_psk(sock)
-
-        print(now(), "CON:", self.uri)
-        self.ws = websocket.WebSocket()
-        self.ws.connect(self.uri, socket=sock, origin="")
-
     def send(self, msg):
         buf = json.dumps(msg, separators=(",", ":"))
         # swap " for '
@@ -205,10 +201,24 @@ class HCSocket:
 
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
-        sock.settimeout(10)
-        sock.connect((self.host, self.port))
+        sock = socket.create_connection((self.host, self.port), timeout=10)
+        idle = 30
+        interval = 10
+        count = 3
+        if sys.platform.startswith("linux"):
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
+
+        elif sys.platform == "darwin":
+            TCP_KEEPALIVE = 0x10
+            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+
+        elif sys.platform.startswith("win"):
+            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
+
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
         if not self.http:
