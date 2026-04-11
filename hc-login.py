@@ -7,7 +7,8 @@ import io
 import json
 import re
 import sys
-from base64 import urlsafe_b64encode as base64url_encode, urlsafe_b64decode
+from base64 import urlsafe_b64decode
+from base64 import urlsafe_b64encode as base64url_encode
 from urllib.parse import unquote, urlencode
 from zipfile import ZipFile
 
@@ -29,10 +30,12 @@ from HCxml2json import xml2json
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 
+
 def b64url_decode(data):
     # Add required padding
     data += "=" * (-len(data) % 4)
     return urlsafe_b64decode(data)
+
 
 def debug(*args):
     print(*args, file=sys.stderr)
@@ -130,7 +133,7 @@ headers = {
     "Authorization": "Bearer " + token,
 }
 
-header_b64, payload_b64, signature_b64 = token.split('.')
+header_b64, payload_b64, signature_b64 = token.split(".")
 payload_json = b64url_decode(payload_b64)
 payload = json.loads(payload_json)
 subject = payload.get("sub")
@@ -138,7 +141,9 @@ subject = payload.get("sub")
 base_url = ""
 # Try to request paired appliances from all geos. Whichever works first we will workr with
 for asset_url in asset_urls:
-    r = requests.get(asset_url + "/api/account/v2/accounts/" + subject + "/paired-appliances", headers=headers)
+    r = requests.get(
+        asset_url + "/api/account/v2/accounts/" + subject + "/paired-appliances", headers=headers
+    )
     if r.status_code == requests.codes.ok:
         base_url = asset_url
         break
@@ -149,7 +154,7 @@ if r.status_code != requests.codes.ok:
     print(r.headers, r.text)
     exit(1)
 
-#debug(r.text)
+# debug(r.text)
 appliances = json.loads(r.text)
 configs = []
 
@@ -176,9 +181,8 @@ for app in appliances["appliances"]:
     encryptionDetails = json.loads(r.text)
     debug(encryptionDetails)
 
-    tls = encryptionDetails.get("tls",None)
-    aes = encryptionDetails.get("aes",None)
-
+    tls = encryptionDetails.get("tls", None)
+    aes = encryptionDetails.get("aes", None)
 
     if tls:
         # fancy machine with TLS support
