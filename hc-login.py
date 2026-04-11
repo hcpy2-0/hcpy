@@ -7,6 +7,7 @@ import io
 import json
 import re
 import sys
+from base64 import urlsafe_b64decode
 from base64 import urlsafe_b64encode as base64url_encode
 from urllib.parse import unquote, urlencode
 from zipfile import ZipFile
@@ -30,6 +31,12 @@ from HCxml2json import xml2json
 # requests_log.propagate = True
 
 
+def b64url_decode(data):
+    # Add required padding
+    data += "=" * (-len(data) % 4)
+    return urlsafe_b64decode(data)
+
+
 def debug(*args):
     print(*args, file=sys.stderr)
 
@@ -40,8 +47,8 @@ session = requests.Session()
 
 base_url = "https://api.home-connect.com/security/oauth/"
 asset_urls = [
-    "https://prod.reu.rest.homeconnectegw.com/",  # EU
-    "https://prod.rna.rest.homeconnectegw.com/",  # US
+    "https://eu.services.home-connect.com/",  # EU
+    "https://na.services.home-connect.com/",  # US
 ]
 
 #
@@ -126,11 +133,19 @@ headers = {
     "Authorization": "Bearer " + token,
 }
 
+header_b64, payload_b64, signature_b64 = token.split(".")
+payload_json = b64url_decode(payload_b64)
+payload = json.loads(payload_json)
+subject = payload.get("sub")
 
-# Try to request account details from all geos. Whichever works, we'll use next.
+base_url = ""
+# Try to request paired appliances from all geos. Whichever works first we will workr with
 for asset_url in asset_urls:
-    r = requests.get(asset_url + "account/details", headers=headers)
+    r = requests.get(
+        asset_url + "/api/account/v2/accounts/" + subject + "/paired-appliances", headers=headers
+    )
     if r.status_code == requests.codes.ok:
+        base_url = asset_url
         break
 
 # now we can fetch the rest of the account info
@@ -139,16 +154,16 @@ if r.status_code != requests.codes.ok:
     print(r.headers, r.text)
     exit(1)
 
-# print(r.text)
-account = json.loads(r.text)
+# debug(r.text)
+appliances = json.loads(r.text)
 configs = []
 
-print(account, file=sys.stderr)
+print(appliances, file=sys.stderr)
 
-for app in account["data"]["homeAppliances"]:
+for app in appliances["appliances"]:
     app_brand = app["brand"]
-    app_type = app["type"]
-    app_id = app["identifier"]
+    app_type = app["haType"]
+    app_id = app["haId"]
 
     config = {
         "name": app_type.lower(),
@@ -156,15 +171,28 @@ for app in account["data"]["homeAppliances"]:
 
     configs.append(config)
 
-    if "tls" in app:
+    encryptionUrl = base_url + "/api/appliance/v2/appliances/" + app_id + "/encryption-information"
+    r = requests.get(encryptionUrl, headers=headers)
+    if r.status_code != requests.codes.ok:
+        print("unable to fetch device encryption details details", file=sys.stderr)
+        print(r.headers, r.text)
+        continue
+
+    encryptionDetails = json.loads(r.text)
+    # debug(encryptionDetails)
+
+    tls = encryptionDetails.get("tls", None)
+    aes = encryptionDetails.get("aes", None)
+
+    if tls:
         # fancy machine with TLS support
         config["host"] = app_brand + "-" + app_type + "-" + app_id
-        config["key"] = app["tls"]["key"]
+        config["key"] = tls["key"]
     else:
         # less fancy machine with HTTP support
         config["host"] = app_id
-        config["key"] = app["aes"]["key"]
-        config["iv"] = app["aes"]["iv"]
+        config["key"] = aes["key"]
+        config["iv"] = aes["iv"]
 
     # Fetch the XML zip file for this device
     app_url = asset_url + "api/iddf/v1/iddf/" + app_id
