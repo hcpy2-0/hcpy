@@ -58,6 +58,7 @@ class HCSocket:
             self.host = host
 
         self.psk = base64url(psk64 + "===")
+        self.ws = None
         self.debug = False
 
         if iv64:
@@ -263,6 +264,10 @@ class HCSocket:
         websocket.setdefaulttimeout(30)
 
         self.ws.run_forever(ping_interval=120, ping_timeout=10)
+
+    def close(self):
+        if self.ws:
+            self.ws.close()
 
     # Debug print
     def dprint(self, *args):
