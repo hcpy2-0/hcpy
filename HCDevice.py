@@ -44,7 +44,6 @@ import json
 import re
 import sys
 import threading
-import time
 import traceback
 from base64 import urlsafe_b64encode as base64url_encode
 from datetime import datetime
@@ -67,7 +66,7 @@ class HCDevice:
         self.device_name = "hcpy"
         self.device_id = "0badcafe"
         self.debug = debug
-        self.services_initialized = False
+        self._services_event = threading.Event()
         self.services = {}
         self.token = None
         self.connected = False
@@ -339,10 +338,10 @@ class HCDevice:
 
     # send a message to the device
     def get(self, resource, version=1, action="GET", data=None):
-        if self.services_initialized:
+        if self._services_event.is_set():
             resource_parts = resource.split("/")
             if len(resource_parts) > 1:
-                service = resource.split("/")[1]
+                service = resource_parts[1]
                 if service in self.services.keys():
                     version = self.services[service]["version"]
                 else:
@@ -386,40 +385,31 @@ class HCDevice:
         # Receive initialization message /ei/initialValues
         # Automatically responds in the handle_message function
 
-        # ask the device which services it supports
-        # registered devices gets pushed down too hence the loop
+        # Ask the device which services it supports and wait for the response.
         self.get("/ci/services")
-        while True:
-            time.sleep(1)
-            if self.services_initialized:
-                break
+        if not self._services_event.wait(timeout=10):
+            self.print("timeout waiting for /ci/services, closing connection")
+            self.ws.close()
+            return
 
-        # We override the version based on the registered services received above
-
-        # the clothes washer wants this, the token doesn't matter,
-        # although they do not handle padding characters
-        # they send a response, not sure how to interpet it
-        self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
-        self.token = re.sub(r"=", "", self.token)
-        self.get("/ci/authentication", version=2, data={"nonce": self.token})
-
-        self.get("/ci/info")  # clothes washer
-        self.get("/iz/info")  # dish washer
-
-        # Retrieves registered clients like phone/hcpy itself
-        # self.get("/ci/registeredDevices")
-
-        # tzInfo all returns empty?
-        # self.get("/ci/tzInfo")
+        # Gate endpoints based on advertised services (see /ci/services response).
+        # iz-capable devices (ci:3) use /iz/info for device identity.
+        # Non-iz devices (ci:2) use /ci/authentication + /ci/info.
+        if "iz" in self.services:
+            self.get("/iz/info")
+        else:
+            self.token = base64url_encode(get_random_bytes(32)).decode("UTF-8")
+            self.token = re.sub(r"=", "", self.token)
+            self.get("/ci/authentication", version=2, data={"nonce": self.token})
+            self.get("/ci/info")
 
         # We need to send deviceReady for some devices or /ni/ will come back as 403 unauth
         self.get("/ei/deviceReady", version=2, action="NOTIFY")
-        self.get("/ni/info")
-        # self.get("/ni/config", data={"interfaceID": 0})
 
-        # self.get("/ro/allDescriptionChanges")
+        if "ni" in self.services:
+            self.get("/ni/info")
+
         self.get("/ro/allMandatoryValues")
-        self.get("/ro/values")
         self.get("/ro/allDescriptionChanges")
 
     def handle_message(self, buf):
@@ -534,7 +524,7 @@ class HCDevice:
                     self.services[service["service"]] = {
                         "version": service["version"],
                     }
-                self.services_initialized = True
+                self._services_event.set()
 
             elif resource == "/ro/selectedProgram" or resource == "/ro/activeProgram":
                 code = msg.get("code", None)
