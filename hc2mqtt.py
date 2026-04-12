@@ -131,7 +131,6 @@ def hc2mqtt(
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
-                mqtt_topic = f"{mqtt_prefix}{device['name']}"
                 mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
                 hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
@@ -155,11 +154,6 @@ def hc2mqtt(
                                 device["name"], f"program topic: {mqtt_selected_program_topic}"
                             )
                             client.subscribe(mqtt_selected_program_topic)
-                if ha_discovery:
-                    time.sleep(15)
-                    publish_ha_discovery(
-                        discovery_file, device, client, mqtt_topic, events_as_sensors
-                    )
         else:
             hcprint(f"ERROR MQTT connection failed: {rc}")
 
@@ -237,7 +231,17 @@ def hc2mqtt(
         mqtt_topic = mqtt_prefix + device["name"]
         thread = Thread(
             target=client_connect,
-            args=(client, device, mqtt_topic, domain_suffix, debug, shutdown),
+            args=(
+                client,
+                device,
+                mqtt_topic,
+                domain_suffix,
+                debug,
+                shutdown,
+                ha_discovery,
+                discovery_file,
+                events_as_sensors,
+            ),
             daemon=True,
         )
         thread.start()
@@ -255,15 +259,30 @@ global dev
 dev = {}
 
 
-def client_connect(client, device, mqtt_topic, domain_suffix, debug, shutdown=None):
+def client_connect(
+    client,
+    device,
+    mqtt_topic,
+    domain_suffix,
+    debug,
+    shutdown=None,
+    ha_discovery=False,
+    discovery_file=None,
+    events_as_sensors=False,
+):
     host = device["host"]
     name = device["name"]
     mydevice = None
     published_state = {}
+    discovery_published = False
 
     def on_message(msg):
+        nonlocal discovery_published
         try:
             handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name)
+            if ha_discovery and not discovery_published and published_state:
+                publish_ha_discovery(discovery_file, device, client, mqtt_topic, events_as_sensors)
+                discovery_published = True
         except Exception as e:
             print(repr(e))
 
@@ -280,6 +299,7 @@ def client_connect(client, device, mqtt_topic, domain_suffix, debug, shutdown=No
             ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice = HCDevice(ws, device, debug)
             published_state.clear()
+            discovery_published = False  # Re-publish discovery on each new connection.
             dev[name] = mydevice
             hcprint(name, f"connecting to {host}")
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
