@@ -221,10 +221,37 @@ class TestClientConnectDiscovery:
         dev.run_forever = run_forever
         return dev
 
-    def test_fires_after_state(self, _print, mock_discovery, MockDevice, MockSocket, _time):
+    def test_regular_state_does_not_trigger(
+        self, _print, mock_discovery, MockDevice, MockSocket, _time
+    ):
+        """Sensor state arrives before /ci/info or /iz/info. Discovery must wait."""
+        client = make_client()
         MockDevice.return_value = self._make_device(
             [
                 {"BSH.Common.Status.DoorState": "Closed"},
+            ]
+        )
+        MockSocket.side_effect = [Mock(), SystemExit]
+
+        with pytest.raises(SystemExit):
+            client_connect(
+                client,
+                self.DEVICE,
+                TOPIC,
+                "",
+                False,
+                ha_discovery=True,
+                discovery_file="d",
+                events_as_sensors=False,
+            )
+
+        assert client.publish.call_count >= 1  # State was published.
+        mock_discovery.assert_not_called()
+
+    def test_fires_on_device_info(self, _print, mock_discovery, MockDevice, MockSocket, _time):
+        MockDevice.return_value = self._make_device(
+            [
+                {"mac": "AA-BB-CC-DD-EE-FF", "swVersion": "1.0.0"},
             ]
         )
         MockSocket.side_effect = [Mock(), SystemExit]
@@ -247,7 +274,7 @@ class TestClientConnectDiscovery:
         client = make_client()
         MockDevice.return_value = self._make_device(
             [
-                {"BSH.Common.Status.DoorState": "Closed"},
+                {"mac": "AA-BB-CC-DD-EE-FF", "swVersion": "1.0.0"},
             ]
         )
         MockSocket.side_effect = [Mock(), SystemExit]
@@ -273,8 +300,8 @@ class TestClientConnectDiscovery:
         client = make_client()
         MockDevice.return_value = self._make_device(
             [
+                {"mac": "AA-BB-CC-DD-EE-FF", "swVersion": "1.0.0"},
                 {"BSH.Common.Status.DoorState": "Closed"},
-                {"BSH.Common.Setting.PowerState": "On"},
             ]
         )
         MockSocket.side_effect = [Mock(), SystemExit]
@@ -296,8 +323,8 @@ class TestClientConnectDiscovery:
 
     def test_refires_after_reconnect(self, _print, mock_discovery, MockDevice, MockSocket, _time):
         MockDevice.side_effect = [
-            self._make_device([{"BSH.Common.Status.DoorState": "Closed"}]),
-            self._make_device([{"BSH.Common.Status.DoorState": "Closed"}]),
+            self._make_device([{"mac": "AA-BB-CC-DD-EE-FF", "swVersion": "1.0.0"}]),
+            self._make_device([{"mac": "AA-BB-CC-DD-EE-FF", "swVersion": "1.0.0"}]),
         ]
         MockSocket.side_effect = [Mock(), Mock(), SystemExit]
 

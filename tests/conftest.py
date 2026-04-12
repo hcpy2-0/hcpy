@@ -6,6 +6,23 @@ import pytest
 
 
 @pytest.fixture
+def device_state():
+    """Default /ci/info or /iz/info runtime state for testing."""
+    return {
+        "brand": "BOSCH",
+        "vib": "TESTOVEN01",
+        "deviceType": "Oven",
+        "mac": "02-00-00-00-00-01",
+        "eNumber": "TESTOVEN01/01",
+        "fdString": "0101",
+        "serialNumber": "000000000000000001",
+        "haVersion": "1.0",
+        "swVersion": "1.0.0",
+        "hwVersion": "1.0.0.1",
+    }
+
+
+@pytest.fixture
 def mock_mqtt_client():
     """Mock MQTT client for testing"""
     client = Mock()
