@@ -1,9 +1,12 @@
 import json
+
 import yaml
-from utils import clean_international_text
+
 from HCSocket import now
+from utils import clean_international_text
 
 CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
+
 
 def publish_ha_discovery(
     discovery_yaml_path, device, device_state, client, mqtt_topic, events_as_sensors
@@ -362,8 +365,8 @@ def publish_ha_discovery(
             f"{component_type}.{discovery_payload['unique_id']}"
         )
 
-        discovery_topic = (
-            clean_international_text(f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config")
+        discovery_topic = clean_international_text(
+            f"{HA_DISCOVERY_PREFIX}/{component_type}/hcpy/{device_ident}_{feature_id}/config"
         )
 
         if overrides:

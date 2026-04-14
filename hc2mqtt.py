@@ -7,7 +7,7 @@ import ssl
 import sys
 import time
 from threading import Event, Thread
-from utils import clean_international_text
+
 import click
 import click_config_file
 import paho.mqtt.client as mqtt
@@ -15,6 +15,7 @@ import paho.mqtt.client as mqtt
 from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
 from HCSocket import HCSocket, now
+from utils import clean_international_text
 
 SENTINEL = object()
 
@@ -141,17 +142,13 @@ def hc2mqtt(
                     # and scheduled via /ro/activeProgram
                     if "name" in device["features"][value]:
                         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
-                            mqtt_active_program_topic = (
-                                f"{mqtt_prefix}{clean_international_text(device['name'])}/activeProgram"
-                            )
+                            mqtt_active_program_topic = f"{mqtt_prefix}{clean_international_text(device['name'])}/activeProgram"
                             hcprint(device["name"], f"program topic: {mqtt_active_program_topic}")
                             client.subscribe(mqtt_active_program_topic)
                         # If the device has the SelectedProgram feature it allows programs to be
                         # selected via /ro/selectedProgram
                         if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
-                            mqtt_selected_program_topic = (
-                                f"{mqtt_prefix}{clean_international_text(device['name'])}/selectedProgram"
-                            )
+                            mqtt_selected_program_topic = f"{mqtt_prefix}{clean_international_text(device['name'])}/selectedProgram"
                             hcprint(
                                 device["name"], f"program topic: {mqtt_selected_program_topic}"
                             )
