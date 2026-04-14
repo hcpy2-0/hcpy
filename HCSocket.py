@@ -6,6 +6,7 @@ import re
 import socket
 import ssl
 import sys
+import traceback
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
@@ -223,6 +224,7 @@ class HCSocket:
         try:
             sock.getpeername()
         except OSError:
+            self.dprint("Socket not established")
             sock.close()
             raise
 
@@ -240,17 +242,14 @@ class HCSocket:
             return
 
         def _on_open(ws):
-            self.dprint("on connect")
+            self.dprint("WebSocket OnOpen")
             on_open(ws)
 
         def _on_close(ws, close_status_code, close_msg):
-            self.dprint(f"close: {close_msg}")
-            try:
-                ws.sock.shutdown(socket.SHUT_RDWR)
-            except:
-                pass
+            self.dprint(f"Websocket OnClose - close status code: {close_status_code}, close message: {close_msg}")
             try:
                 ws.sock.close()
+                self.dprint("Socket closed")
             except:
                 pass
             on_close(ws, close_status_code, close_msg)
@@ -262,13 +261,13 @@ class HCSocket:
             on_message(ws, message)
 
         def _on_error(ws, error):
-            self.dprint(f"error {error}")
+            self.dprint(f"Websocket OnError: {repr(error)}")
+            if self.debug:
+                traceback.print_exc()
             try:
-                ws.sock.shutdown(socket.SHUT_RDWR)
-            except:
-                pass
-            try:
+                self.dprint("Socket closing")
                 ws.sock.close()
+                self.dprint("Socket closed")
             except:
                 pass
             on_error(ws, error)
@@ -285,7 +284,7 @@ class HCSocket:
 
         websocket.setdefaulttimeout(30)
 
-        self.ws.run_forever(ping_interval=120, ping_timeout=10)
+        self.ws.run_forever(ping_interval=20, ping_timeout=10)
 
     def close(self):
         if self.ws:
@@ -294,4 +293,4 @@ class HCSocket:
     # Debug print
     def dprint(self, *args):
         if self.debug:
-            print(now(), *args, flush=True)
+            print(now(), "HCSocket", self.host, *args, flush=True)
