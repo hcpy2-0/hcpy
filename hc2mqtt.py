@@ -7,7 +7,7 @@ import ssl
 import sys
 import time
 from threading import Event, Thread
-
+from utils import clean_international_text
 import click
 import click_config_file
 import paho.mqtt.client as mqtt
@@ -133,7 +133,7 @@ def hc2mqtt(
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
-                mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
+                mqtt_set_topic = f"{mqtt_prefix}{clean_international_text(device['name'])}/set"
                 hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
                 for value in device["features"]:
@@ -142,7 +142,7 @@ def hc2mqtt(
                     if "name" in device["features"][value]:
                         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
                             mqtt_active_program_topic = (
-                                f"{mqtt_prefix}{device['name']}/activeProgram"
+                                f"{mqtt_prefix}{clean_international_text(device['name'])}/activeProgram"
                             )
                             hcprint(device["name"], f"program topic: {mqtt_active_program_topic}")
                             client.subscribe(mqtt_active_program_topic)
@@ -150,7 +150,7 @@ def hc2mqtt(
                         # selected via /ro/selectedProgram
                         if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
                             mqtt_selected_program_topic = (
-                                f"{mqtt_prefix}{device['name']}/selectedProgram"
+                                f"{mqtt_prefix}{clean_international_text(device['name'])}/selectedProgram"
                             )
                             hcprint(
                                 device["name"], f"program topic: {mqtt_selected_program_topic}"
@@ -230,7 +230,7 @@ def hc2mqtt(
     shutdown = Event()
 
     for device in devices:
-        mqtt_topic = mqtt_prefix + device["name"]
+        mqtt_topic = mqtt_prefix + clean_international_text(device["name"])
         thread = Thread(
             target=client_connect,
             args=(
