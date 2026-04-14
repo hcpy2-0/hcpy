@@ -220,7 +220,7 @@ class HCSocket:
 
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
-        
+
         try:
             sock.getpeername()
         except OSError:
