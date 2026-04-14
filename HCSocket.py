@@ -284,7 +284,7 @@ class HCSocket:
 
         websocket.setdefaulttimeout(30)
 
-        self.ws.run_forever(ping_interval=20, ping_timeout=10)
+        self.ws.run_forever(ping_interval=120, ping_timeout=10)
 
     def close(self):
         if self.ws:
