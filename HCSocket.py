@@ -277,7 +277,6 @@ class HCSocket:
                     self.dprint("OnClose socket closed")
                 except Exception as e:
                     self.dprint(f"OnClose Exception {e}")
-                    pass
             on_close(ws, close_status_code, close_msg)
 
         def _on_message(ws, message):
@@ -297,7 +296,6 @@ class HCSocket:
                     self.dprint("OnError socket closed")
                 except Exception as e:
                     self.dprint(f"OnError Exception {e}")
-                    pass
             on_error(ws, error)
 
         def _on_reconnect(ws):
