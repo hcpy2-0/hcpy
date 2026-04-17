@@ -8,12 +8,13 @@ import ssl
 import sys
 import traceback
 from base64 import urlsafe_b64decode as base64url
-from utils import now
 
 import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
+
+from utils import now
 
 
 def is_ip_address(host: str) -> bool:
@@ -22,6 +23,7 @@ def is_ip_address(host: str) -> bool:
         return True
     except ValueError:
         return False
+
 
 if sys.version_info[1] < 13:
     try:

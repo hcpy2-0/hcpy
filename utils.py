@@ -9,5 +9,6 @@ def clean_international_text(text):
     ascii_text = normalized.encode("ASCII", "ignore").decode("ASCII")
     return ascii_text
 
+
 def now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
