@@ -6,13 +6,15 @@ import re
 import socket
 import ssl
 import sys
+import traceback
 from base64 import urlsafe_b64decode as base64url
-from datetime import datetime
 
 import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
+
+from utils import now
 
 
 def is_ip_address(host: str) -> bool:
@@ -21,10 +23,6 @@ def is_ip_address(host: str) -> bool:
         return True
     except ValueError:
         return False
-
-
-def now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 if sys.version_info[1] < 13:
@@ -50,7 +48,7 @@ def hmac(key, msg):
 
 
 class HCSocket:
-    def __init__(self, host, psk64, iv64=None, domain_suffix=""):
+    def __init__(self, host, psk64, iv64=None, domain_suffix="", debug=False):
         self.host = host
         if domain_suffix and not is_ip_address(host):
             self.host = f"{host}.{domain_suffix}"
@@ -59,7 +57,7 @@ class HCSocket:
 
         self.psk = base64url(psk64 + "===")
         self.ws = None
-        self.debug = False
+        self.debug = debug
 
         if iv64:
             # an HTTP self-encrypted socket
@@ -220,6 +218,13 @@ class HCSocket:
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
 
+        try:
+            sock.getpeername()
+        except OSError:
+            self.dprint("Socket not established")
+            sock.close()
+            raise
+
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
         if not self.http:
@@ -234,11 +239,19 @@ class HCSocket:
             return
 
         def _on_open(ws):
-            self.dprint("on connect")
+            self.dprint("WebSocket OnOpen")
             on_open(ws)
 
         def _on_close(ws, close_status_code, close_msg):
-            self.dprint(f"close: {close_msg}")
+            self.dprint(
+                f"Websocket OnClose - close status code: {close_status_code}, "
+                f"close message: {close_msg}"
+            )
+            try:
+                ws.sock.close()
+                self.dprint("Socket closed")
+            except Exception:
+                pass
             on_close(ws, close_status_code, close_msg)
 
         def _on_message(ws, message):
@@ -248,7 +261,15 @@ class HCSocket:
             on_message(ws, message)
 
         def _on_error(ws, error):
-            self.dprint(f"error {error}")
+            self.dprint(f"Websocket OnError: {repr(error)}")
+            if self.debug:
+                traceback.print_exc()
+            try:
+                self.dprint("Socket closing")
+                ws.sock.close()
+                self.dprint("Socket closed")
+            except Exception:
+                pass
             on_error(ws, error)
 
         print(now(), "CON:", self.uri)
@@ -272,4 +293,4 @@ class HCSocket:
     # Debug print
     def dprint(self, *args):
         if self.debug:
-            print(now(), *args, flush=True)
+            print(now(), "HCSocket", self.host, *args, flush=True)

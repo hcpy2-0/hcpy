@@ -14,7 +14,8 @@ import paho.mqtt.client as mqtt
 
 from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
-from HCSocket import HCSocket, now
+from HCSocket import HCSocket
+from utils import clean_international_text, now
 
 SENTINEL = object()
 
@@ -23,12 +24,13 @@ def hcprint(*args):
     print(now(), *args, flush=True)
 
 
-def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name):
+def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug=False):
     """Process a device message: update state, publish only changed keys to MQTT."""
     if msg is None or len(msg) == 0:
         return
 
-    hcprint(name, msg)
+    if debug:
+        hcprint(name, msg)
 
     changed = {}
     events = {}
@@ -68,7 +70,8 @@ def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, na
                 retain=True,
             )
         if changed:
-            hcprint(name, f"publishing {len(changed)} changed keys: {json.dumps(changed)}")
+            if debug:
+                hcprint(name, f"publishing {len(changed)} changed keys: {json.dumps(changed)}")
             for key, value in changed.items():
                 state_topic_name = key.lower().replace(".", "_")
                 if isinstance(value, dict):
@@ -131,7 +134,8 @@ def hc2mqtt(
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
-                mqtt_set_topic = f"{mqtt_prefix}{device['name']}/set"
+                cleaned_name = clean_international_text(device["name"])
+                mqtt_set_topic = f"{mqtt_prefix}{cleaned_name}/set"
                 hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
                 for value in device["features"]:
@@ -140,7 +144,7 @@ def hc2mqtt(
                     if "name" in device["features"][value]:
                         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
                             mqtt_active_program_topic = (
-                                f"{mqtt_prefix}{device['name']}/activeProgram"
+                                f"{mqtt_prefix}{cleaned_name}/activeProgram"
                             )
                             hcprint(device["name"], f"program topic: {mqtt_active_program_topic}")
                             client.subscribe(mqtt_active_program_topic)
@@ -148,7 +152,7 @@ def hc2mqtt(
                         # selected via /ro/selectedProgram
                         if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
                             mqtt_selected_program_topic = (
-                                f"{mqtt_prefix}{device['name']}/selectedProgram"
+                                f"{mqtt_prefix}{cleaned_name}/selectedProgram"
                             )
                             hcprint(
                                 device["name"], f"program topic: {mqtt_selected_program_topic}"
@@ -228,7 +232,7 @@ def hc2mqtt(
     shutdown = Event()
 
     for device in devices:
-        mqtt_topic = mqtt_prefix + device["name"]
+        mqtt_topic = mqtt_prefix + clean_international_text(device["name"])
         thread = Thread(
             target=client_connect,
             args=(
@@ -279,7 +283,7 @@ def client_connect(
     def on_message(msg):
         nonlocal discovery_published
         try:
-            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name)
+            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug)
             # Wait until /ci/info or /iz/info has been processed so discovery
             # has access to MAC, firmware, etc.
             device_info_ready = "mac" in mydevice.state or "swVersion" in mydevice.state
@@ -301,7 +305,7 @@ def client_connect(
     retry_delay = 5
     while not (shutdown and shutdown.is_set()):
         try:
-            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix, debug)
             mydevice = HCDevice(ws, device, debug)
             published_state.clear()
             discovery_published = False  # Re-publish discovery on each new connection.
