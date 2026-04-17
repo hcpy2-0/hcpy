@@ -46,14 +46,9 @@ import sys
 import threading
 import traceback
 from base64 import urlsafe_b64encode as base64url_encode
-from datetime import datetime
+from utils import now
 
 from Crypto.Random import get_random_bytes
-
-
-def now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-
 
 class HCDevice:
     def __init__(self, ws, device, debug=False):

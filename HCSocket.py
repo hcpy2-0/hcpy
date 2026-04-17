@@ -7,7 +7,7 @@ import socket
 import ssl
 import sys
 from base64 import urlsafe_b64decode as base64url
-from datetime import datetime
+from utils import now
 
 import websocket
 from Crypto.Cipher import AES
@@ -21,11 +21,6 @@ def is_ip_address(host: str) -> bool:
         return True
     except ValueError:
         return False
-
-
-def now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-
 
 if sys.version_info[1] < 13:
     try:

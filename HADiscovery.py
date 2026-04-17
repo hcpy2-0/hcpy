@@ -2,8 +2,7 @@ import json
 
 import yaml
 
-from HCSocket import now
-from utils import clean_international_text
+from utils import clean_international_text, now
 
 CONTROL_COMPONENT_TYPES = ["switch", "number", "light", "button", "select"]
 

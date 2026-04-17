@@ -14,8 +14,8 @@ import paho.mqtt.client as mqtt
 
 from HADiscovery import publish_ha_discovery
 from HCDevice import HCDevice
-from HCSocket import HCSocket, now
-from utils import clean_international_text
+from HCSocket import HCSocket
+from utils import clean_international_text, now
 
 SENTINEL = object()
 
