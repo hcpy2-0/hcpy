@@ -1,9 +1,11 @@
 # Create a websocket that wraps a connection to a
 # Bosh-Siemens Home Connect device
+import errno
 import ipaddress
 import json
 import re
-import socket, errno, select
+import select
+import socket
 import ssl
 import sys
 import traceback
@@ -204,47 +206,47 @@ class HCSocket:
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
         self.dprint(f"connecting to tcp socket: {self.host}:{self.port}")
-    
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setblocking(False)
-    
+
         try:
             sock.connect((self.host, self.port))
         except BlockingIOError:
             # Expected for non‑blocking connect
             pass
-    
+
         timeout = 10
         self.dprint("Calling select with timeout: {timeout}")
         _, writable, _ = select.select([], [sock], [], timeout)
-    
+
         if sock not in writable:
             sock.close()
             raise TimeoutError(f"Connect timed out after {timeout} seconds")
-            
+
         err = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
         if err != 0:
             sock.close()
             raise OSError(err, f"Connect failed: {errno.errorcode.get(err, err)}")
-    
+
         idle = 30
         interval = 10
         count = 3
-    
+
         self.dprint("Setting TCP KEEPALIVE values")
         if sys.platform.startswith("linux"):
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
-    
+
         elif sys.platform == "darwin":
             TCP_KEEPALIVE = 0x10
             sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-    
+
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
-    
+
         try:
             self.dprint("Calling getpeername")
             sock.getpeername()
@@ -252,7 +254,7 @@ class HCSocket:
             self.dprint("Socket not established")
             sock.close()
             raise
-    
+
         self.dprint(f"connected to tcp socket: {self.host}:{self.port}")
         sock.setblocking(True)
 
