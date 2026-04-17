@@ -247,7 +247,8 @@ class HCSocket:
 
         def _on_close(ws, close_status_code, close_msg):
             self.dprint(
-                f"Websocket OnClose - close status code: {close_status_code}, close message: {close_msg}"
+                f"Websocket OnClose - close status code: {close_status_code}, "
+                f"close message: {close_msg}"
             )
             try:
                 ws.sock.close()
