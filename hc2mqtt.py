@@ -134,7 +134,7 @@ def hc2mqtt(
             client.publish(f"{mqtt_prefix}LWT", payload="online", qos=0, retain=True)
             # Re-subscribe to all device topics on reconnection
             for device in devices:
-                cleaned_name = clean_international_text(device['name'])
+                cleaned_name = clean_international_text(device["name"])
                 mqtt_set_topic = f"{mqtt_prefix}{cleaned_name}/set"
                 hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
@@ -143,13 +143,17 @@ def hc2mqtt(
                     # and scheduled via /ro/activeProgram
                     if "name" in device["features"][value]:
                         if "BSH.Common.Root.ActiveProgram" == device["features"][value]["name"]:
-                            mqtt_active_program_topic = f"{mqtt_prefix}{cleaned_name}/activeProgram"
+                            mqtt_active_program_topic = (
+                                f"{mqtt_prefix}{cleaned_name}/activeProgram"
+                            )
                             hcprint(device["name"], f"program topic: {mqtt_active_program_topic}")
                             client.subscribe(mqtt_active_program_topic)
                         # If the device has the SelectedProgram feature it allows programs to be
                         # selected via /ro/selectedProgram
                         if "BSH.Common.Root.SelectedProgram" == device["features"][value]["name"]:
-                            mqtt_selected_program_topic = f"{mqtt_prefix}{cleaned_name}/selectedProgram"
+                            mqtt_selected_program_topic = (
+                                f"{mqtt_prefix}{cleaned_name}/selectedProgram"
+                            )
                             hcprint(
                                 device["name"], f"program topic: {mqtt_selected_program_topic}"
                             )
