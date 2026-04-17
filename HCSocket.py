@@ -252,7 +252,7 @@ class HCSocket:
             try:
                 ws.sock.close()
                 self.dprint("Socket closed")
-            except:
+            except Exception:
                 pass
             on_close(ws, close_status_code, close_msg)
 
@@ -270,7 +270,7 @@ class HCSocket:
                 self.dprint("Socket closing")
                 ws.sock.close()
                 self.dprint("Socket closed")
-            except:
+            except Exception:
                 pass
             on_error(ws, error)
 
