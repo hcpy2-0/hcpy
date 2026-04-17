@@ -217,7 +217,7 @@ class HCSocket:
             pass
 
         timeout = 10
-        self.dprint("Calling select with timeout: {timeout}")
+        self.dprint(f"Calling select with timeout: {timeout}")
         _, writable, _ = select.select([], [sock], [], timeout)
 
         if sock not in writable:
@@ -247,14 +247,6 @@ class HCSocket:
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
 
-        try:
-            self.dprint("Calling getpeername")
-            sock.getpeername()
-        except OSError:
-            self.dprint("Socket not established")
-            sock.close()
-            raise
-
         self.dprint(f"connected to tcp socket: {self.host}:{self.port}")
         sock.setblocking(True)
 
@@ -278,11 +270,14 @@ class HCSocket:
                 f"Websocket OnClose - close status code: {close_status_code}, "
                 f"close message: {close_msg}"
             )
-            try:
-                ws.sock.close()
-                self.dprint("Socket closed")
-            except Exception:
-                pass
+            if ws.sock:
+                try:
+                    self.dprint("OnClose closing socket")
+                    ws.sock.close()
+                    self.dprint("OnClose socket closed")
+                except Exception as e:
+                    self.dprint(f"OnClose Exception {e}")
+                    pass
             on_close(ws, close_status_code, close_msg)
 
         def _on_message(ws, message):
@@ -295,15 +290,20 @@ class HCSocket:
             self.dprint(f"Websocket OnError: {repr(error)}")
             if self.debug:
                 traceback.print_exc()
-            try:
-                self.dprint("Socket closing")
-                ws.sock.close()
-                self.dprint("Socket closed")
-            except Exception:
-                pass
+            if ws.sock:
+                try:
+                    self.dprint("OnError closing socket")
+                    ws.sock.close()
+                    self.dprint("OnError socket closed")
+                except Exception as e:
+                    self.dprint(f"OnError Exception {e}")
+                    pass
             on_error(ws, error)
 
-        print(now(), "CON:", self.uri)
+        def _on_reconnect(ws):
+            self.dprint("Reconnecting!!!")
+
+        self.dprint("Initializing WebSocket", self.uri)
         self.ws = websocket.WebSocketApp(
             self.uri,
             socket=sock,
@@ -315,6 +315,7 @@ class HCSocket:
 
         websocket.setdefaulttimeout(30)
 
+        self.dprint("Starting WebSocket run_forever")
         self.ws.run_forever(ping_interval=120, ping_timeout=10)
 
     def close(self):
