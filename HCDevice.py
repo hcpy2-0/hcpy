@@ -46,9 +46,11 @@ import sys
 import threading
 import traceback
 from base64 import urlsafe_b64encode as base64url_encode
-from utils import now
 
 from Crypto.Random import get_random_bytes
+
+from utils import now
+
 
 class HCDevice:
     def __init__(self, ws, device, debug=False):
