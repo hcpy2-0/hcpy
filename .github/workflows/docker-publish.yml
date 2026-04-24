@@ -33,6 +33,11 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm/v7
+          - linux/aarch64
 
     steps:
       -
