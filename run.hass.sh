@@ -1,4 +1,4 @@
-#!/usr/bin/env bashio
+#!/usr/bin/with-contenv bashio
 CONFIG_PATH=/data/options.json
 if [ -f ${CONFIG_PATH} ]; then
 
@@ -18,7 +18,7 @@ if [ -f ${CONFIG_PATH} ]; then
         HCPY_HA_DISCOVERY="$(bashio::config 'HCPY_HA_DISCOVERY')"
         HCPY_DOMAIN_SUFFIX="$(bashio::config 'HCPY_DOMAIN_SUFFIX')"
         HCPY_DEBUG="$(bashio::config 'HCPY_DEBUG')"
-	HCPY_EVENTS_AS_SENSORS="$(bashio::config 'HCPY_EVENTS_AS_SENSORS')"
+	    HCPY_EVENTS_AS_SENSORS="$(bashio::config 'HCPY_EVENTS_AS_SENSORS')"
 
         set +o allexport
         
@@ -30,7 +30,7 @@ if [ -f ${CONFIG_PATH} ]; then
 
         if [ ! -f "${HCPY_DISCOVERY_FILE}" ]; then
                 echo "File not found ${HCPY_DISCOVERY_FILE} copying default file"
-		cp discovery.yaml "${HCPY_DISCOVERY_FILE}"
+                cp discovery.yaml "${HCPY_DISCOVERY_FILE}"
         fi
         exec python3 hc2mqtt.py
 fi
