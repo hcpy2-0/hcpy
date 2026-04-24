@@ -33,6 +33,10 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/aarch64
 
     steps:
       -
@@ -93,7 +97,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+<<<<<<< HEAD
           platforms: linux/amd64,linux/arm64
+=======
+          platforms: ${{ matrix.platform }}
+>>>>>>> ae668bc1f570764fe6d55cfd51f4c0b1fa2b2d2f
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
