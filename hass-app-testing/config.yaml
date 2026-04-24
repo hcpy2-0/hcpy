@@ -1,8 +1,8 @@
 ---
-name: "HomeConnect2MQTT"
+name: "HomeConnect2MQTT (Testing)"
 description: "View and control HomeConnect appliances over the local network."
-version: "v0.4.10"
-slug: "hcpy"
+version: "v0.4.10-testing"
+slug: "hcpy-testing"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
 arch:
