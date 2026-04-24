@@ -16,6 +16,4 @@ COPY discovery.yaml .
 
 COPY run.hass.sh .
 RUN chmod +x /app/run.hass.sh
-
-COPY home-assistant-addon/rootfs/ /
-
+CMD /app/run.hass.sh
