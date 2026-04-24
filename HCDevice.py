@@ -504,7 +504,8 @@ class HCDevice:
                 if "data" in msg:
                     values = self.parse_values(msg["data"])
                 else:
-                    self.print(f"received {msg}")
+                    if self.debug:
+                        self.print(f"received {msg}")
 
             elif resource == "/ci/registeredDevices":
                 # This contains details of Phone/HCPY registered as clients to the device

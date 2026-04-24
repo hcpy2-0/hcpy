@@ -33,6 +33,10 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/aarch64
 
     steps:
       -
@@ -83,12 +87,13 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09  # v5.0.0
         with:
           context: .
+          file: home-assistant-addon/Dockerfile.ha
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64, linux/arm/v7, linux/armhf, linux/aarch64, linux/i386
+          platforms: ${{ matrix.platform }}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker

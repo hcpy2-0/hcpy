@@ -1,7 +1,9 @@
 ---
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: on-failure
     volumes:
       - ./config:/app/config

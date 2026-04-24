@@ -50,7 +50,7 @@ def hmac(key, msg):
 
 
 class HCSocket:
-    def __init__(self, host, psk64, iv64=None, domain_suffix=""):
+    def __init__(self, host, psk64, iv64=None, domain_suffix="", debug=False):
         self.host = host
         if domain_suffix and not is_ip_address(host):
             self.host = f"{host}.{domain_suffix}"
@@ -59,7 +59,7 @@ class HCSocket:
 
         self.psk = base64url(psk64 + "===")
         self.ws = None
-        self.debug = False
+        self.debug = debug
 
         if iv64:
             # an HTTP self-encrypted socket
@@ -220,6 +220,12 @@ class HCSocket:
         elif sys.platform.startswith("win"):
             sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
 
+        try:
+            sock.getpeername()
+        except OSError:
+            sock.close()
+            raise
+
         self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
 
         if not self.http:
@@ -239,6 +245,14 @@ class HCSocket:
 
         def _on_close(ws, close_status_code, close_msg):
             self.dprint(f"close: {close_msg}")
+            try:
+                ws.sock.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            try:
+                ws.sock.close()
+            except:
+                pass
             on_close(ws, close_status_code, close_msg)
 
         def _on_message(ws, message):
@@ -249,6 +263,14 @@ class HCSocket:
 
         def _on_error(ws, error):
             self.dprint(f"error {error}")
+            try:
+                ws.sock.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            try:
+                ws.sock.close()
+            except:
+                pass
             on_error(ws, error)
 
         print(now(), "CON:", self.uri)
