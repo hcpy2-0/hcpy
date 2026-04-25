@@ -2,12 +2,17 @@
 # Bosh-Siemens Home Connect device
 import ipaddress
 import json
+import os
 import re
+import select
 import socket
 import ssl
 import sys
+import threading
+import traceback
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
+from typing import Optional
 
 import websocket
 from Crypto.Cipher import AES
@@ -50,7 +55,7 @@ def hmac(key, msg):
 
 
 class HCSocket:
-    def __init__(self, host, psk64, iv64=None, domain_suffix=""):
+    def __init__(self, host, psk64, iv64=None, domain_suffix="", debug=False):
         self.host = host
         if domain_suffix and not is_ip_address(host):
             self.host = f"{host}.{domain_suffix}"
@@ -59,7 +64,7 @@ class HCSocket:
 
         self.psk = base64url(psk64 + "===")
         self.ws = None
-        self.debug = False
+        self.debug = debug
 
         if iv64:
             # an HTTP self-encrypted socket
@@ -200,27 +205,106 @@ class HCSocket:
         self.dprint("RX:", buf)
         return buf
 
+    def apply_keepalive(self, sock, idle, interval, count):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        except OSError:
+            return
+
+        try:
+            if sys.platform.startswith("linux"):
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
+            elif sys.platform == "darwin":
+                TCP_KEEPALIVE = 0x10
+                sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
+                try:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                except Exception:
+                    pass
+            elif sys.platform.startswith("win"):
+                sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
+        except Exception:
+            pass
+
+    def connect_with_watchdog(self, host, port, timeout):
+        last_exc: Optional[Exception] = None
+
+        addrinfos = socket.getaddrinfo(
+            host, port, family=socket.AF_UNSPEC, type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP
+        )
+
+        for family, socktype, proto, canonname, sockaddr in addrinfos:
+            sock = None
+            timer = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                sock.setblocking(False)
+
+                try:
+                    sock.connect(sockaddr)
+                except BlockingIOError:
+                    # expected for nonblocking connect in progress
+                    pass
+
+                # watchdog closes the socket if timeout elapses
+                def _close(s: socket.socket):
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+
+                timer = threading.Timer(timeout, _close, args=(sock,))
+                timer.daemon = True
+                timer.start()
+
+                _, writable, _ = select.select([], [sock], [], timeout)
+                timer.cancel()
+
+                if sock not in writable:
+                    raise TimeoutError(
+                        f"connect to {host}:{port} timed out after {timeout} seconds"
+                    )
+
+                err = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                if err != 0:
+                    raise OSError(err, os.strerror(err))
+
+                sock.setblocking(True)
+                return sock
+
+            except Exception as exc:
+                last_exc = exc
+                try:
+                    if timer:
+                        timer.cancel()
+                except Exception:
+                    pass
+                try:
+                    if sock:
+                        sock.close()
+                except Exception:
+                    pass
+                # try next address
+                continue
+
+        # all addresses failed
+        if last_exc is None:
+            raise TimeoutError(f"connect to {host}:{port} failed")
+        raise last_exc
+
     def run_forever(self, on_message, on_open, on_close, on_error):
-        self.reset()
-        self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
-        sock = socket.create_connection((self.host, self.port), timeout=10)
+        timeout = 10
         idle = 30
         interval = 10
         count = 3
-        if sys.platform.startswith("linux"):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
 
-        elif sys.platform == "darwin":
-            TCP_KEEPALIVE = 0x10
-            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-
-        elif sys.platform.startswith("win"):
-            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
-
-        self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
+        self.reset()
+        self.dprint(f"connecting to tcp socket: {self.host}:{self.port}")
+        sock = self.connect_with_watchdog(self.host, self.port, timeout)
+        self.dprint("connected to tcp socket, applying keepalive")
+        self.apply_keepalive(sock, idle, interval, count)
 
         if not self.http:
             self.dprint("wrapping socket: " + self.host + ":" + str(self.port))
@@ -234,11 +318,21 @@ class HCSocket:
             return
 
         def _on_open(ws):
-            self.dprint("on connect")
+            self.dprint("WebSocket OnOpen")
             on_open(ws)
 
         def _on_close(ws, close_status_code, close_msg):
-            self.dprint(f"close: {close_msg}")
+            self.dprint(
+                f"Websocket OnClose - close status code: {close_status_code}, "
+                f"close message: {close_msg}"
+            )
+            if ws.sock:
+                try:
+                    self.dprint("OnClose closing socket")
+                    ws.sock.close()
+                    self.dprint("OnClose socket closed")
+                except Exception as e:
+                    self.dprint(f"OnClose Exception {e}")
             on_close(ws, close_status_code, close_msg)
 
         def _on_message(ws, message):
@@ -248,10 +342,23 @@ class HCSocket:
             on_message(ws, message)
 
         def _on_error(ws, error):
-            self.dprint(f"error {error}")
+            self.dprint(f"Websocket OnError: {repr(error)}")
+            if self.debug:
+                traceback.print_exc()
+            if ws.sock:
+                try:
+                    self.dprint("OnError closing socket")
+                    ws.sock.close()
+                    self.dprint("OnError socket closed")
+                except Exception as e:
+                    self.dprint(f"OnError Exception {e}")
             on_error(ws, error)
 
-        print(now(), "CON:", self.uri)
+        def _on_reconnect(ws):
+            self.dprint("Reconnecting!!!")
+
+        self.dprint("Initializing WebSocket", self.uri)
+        websocket.setdefaulttimeout(30)
         self.ws = websocket.WebSocketApp(
             self.uri,
             socket=sock,
@@ -261,8 +368,7 @@ class HCSocket:
             on_error=_on_error,
         )
 
-        websocket.setdefaulttimeout(30)
-
+        self.dprint("Starting WebSocket run_forever")
         self.ws.run_forever(ping_interval=120, ping_timeout=10)
 
     def close(self):
@@ -272,4 +378,4 @@ class HCSocket:
     # Debug print
     def dprint(self, *args):
         if self.debug:
-            print(now(), *args, flush=True)
+            print(now(), "HCSocket", self.host, *args, flush=True)

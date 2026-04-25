@@ -480,9 +480,9 @@ class HCDevice:
                                     self.features[str(uid)]["default"] = change["default"]
 
                                 if self.debug:
-                                    self.print(
-                                        f"Access change {self.features[uid]['name']} - {change}"
-                                    )
+                                    feature = self.features.get(uid, {})
+                                    name = feature.get("name", f"<missing name for uid {uid}>")
+                                    self.print(f"Access change {name} - {change}")
 
                             else:
                                 # We wont have name for this item, so have to be careful
@@ -504,7 +504,8 @@ class HCDevice:
                 if "data" in msg:
                     values = self.parse_values(msg["data"])
                 else:
-                    self.print(f"received {msg}")
+                    if self.debug:
+                        self.print(f"received {msg}")
 
             elif resource == "/ci/registeredDevices":
                 # This contains details of Phone/HCPY registered as clients to the device

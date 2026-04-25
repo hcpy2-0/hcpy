@@ -23,12 +23,13 @@ def hcprint(*args):
     print(now(), *args, flush=True)
 
 
-def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name):
+def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug=False):
     """Process a device message: update state, publish only changed keys to MQTT."""
     if msg is None or len(msg) == 0:
         return
 
-    hcprint(name, msg)
+    if debug:
+        hcprint(name, msg)
 
     changed = {}
     events = {}
@@ -68,7 +69,8 @@ def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, na
                 retain=True,
             )
         if changed:
-            hcprint(name, f"publishing {len(changed)} changed keys: {json.dumps(changed)}")
+            if debug:
+                hcprint(name, f"publishing {len(changed)} changed keys: {json.dumps(changed)}")
             for key, value in changed.items():
                 state_topic_name = key.lower().replace(".", "_")
                 if isinstance(value, dict):
@@ -279,7 +281,7 @@ def client_connect(
     def on_message(msg):
         nonlocal discovery_published
         try:
-            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name)
+            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug)
             # Wait until /ci/info or /iz/info has been processed so discovery
             # has access to MAC, firmware, etc.
             device_info_ready = "mac" in mydevice.state or "swVersion" in mydevice.state
@@ -301,7 +303,7 @@ def client_connect(
     retry_delay = 5
     while not (shutdown and shutdown.is_set()):
         try:
-            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix, debug)
             mydevice = HCDevice(ws, device, debug)
             published_state.clear()
             discovery_published = False  # Re-publish discovery on each new connection.
