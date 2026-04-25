@@ -303,7 +303,7 @@ class HCSocket:
         self.reset()
         self.dprint(f"connecting to tcp socket: {self.host}:{self.port}")
         sock = self.connect_with_watchdog(self.host, self.port, timeout)
-        self.dprint(f"connected to tcp socket, applying keepalive")
+        self.dprint("connected to tcp socket, applying keepalive")
         self.apply_keepalive(sock, idle, interval, count)
 
         if not self.http:
