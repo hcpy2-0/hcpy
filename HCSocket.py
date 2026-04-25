@@ -9,6 +9,9 @@ import socket
 import ssl
 import sys
 import traceback
+import threading
+import os
+from typing import Optional
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
 
@@ -203,52 +206,104 @@ class HCSocket:
         self.dprint("RX:", buf)
         return buf
 
-    def run_forever(self, on_message, on_open, on_close, on_error):
-        self.reset()
-        self.dprint(f"connecting to tcp socket: {self.host}:{self.port}")
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setblocking(False)
+    def apply_keepalive(self, sock, idle, interval, count):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        except OSError:
+            return
 
         try:
-            sock.connect((self.host, self.port))
-        except BlockingIOError:
-            # Expected for non‑blocking connect
+            if sys.platform.startswith("linux"):
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
+            elif sys.platform == "darwin":
+                TCP_KEEPALIVE = 0x10
+                sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
+                try:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                except Exception:
+                    pass
+            elif sys.platform.startswith("win"):
+                sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
+        except Exception:
             pass
 
+
+    def connect_with_watchdog(self, host, port, timeout):
+        last_exc: Optional[Exception] = None
+
+        addrinfos = socket.getaddrinfo(host, port, family=socket.AF_UNSPEC,
+                                       type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP)
+
+        for family, socktype, proto, canonname, sockaddr in addrinfos:
+            sock = None
+            timer = None
+            try:
+                sock = socket.socket(family, socktype, proto)
+                sock.setblocking(False)
+
+                try:
+                    sock.connect(sockaddr)
+                except BlockingIOError:
+                    # expected for nonblocking connect in progress
+                    pass
+
+                # watchdog closes the socket if timeout elapses
+                def _close(s: socket.socket):
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+
+                timer = threading.Timer(timeout, _close, args=(sock,))
+                timer.daemon = True
+                timer.start()
+
+                _, writable, _ = select.select([], [sock], [], timeout)
+                timer.cancel()
+
+                if sock not in writable:
+                    raise TimeoutError(f"connect to {host}:{port} timed out after {timeout} seconds")
+
+                err = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                if err != 0:
+                    raise OSError(err, os.strerror(err))
+
+                sock.setblocking(True)
+                return sock
+
+            except Exception as exc:
+                last_exc = exc
+                try:
+                    if timer:
+                        timer.cancel()
+                except Exception:
+                    pass
+                try:
+                    if sock:
+                        sock.close()
+                except Exception:
+                    pass
+                # try next address
+                continue
+
+        # all addresses failed
+        if last_exc is None:
+            raise TimeoutError(f"connect to {host}:{port} failed")
+        raise last_exc
+
+    def run_forever(self, on_message, on_open, on_close, on_error):
         timeout = 10
-        self.dprint(f"Calling select with timeout: {timeout}")
-        _, writable, _ = select.select([], [sock], [], timeout)
-
-        if sock not in writable:
-            sock.close()
-            raise TimeoutError(f"Connect timed out after {timeout} seconds")
-
-        err = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
-        if err != 0:
-            sock.close()
-            raise OSError(err, f"Connect failed: {errno.errorcode.get(err, err)}")
-
         idle = 30
         interval = 10
         count = 3
 
-        self.dprint("Setting TCP KEEPALIVE values")
-        if sys.platform.startswith("linux"):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
-
-        elif sys.platform == "darwin":
-            TCP_KEEPALIVE = 0x10
-            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-
-        elif sys.platform.startswith("win"):
-            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
-
-        self.dprint(f"connected to tcp socket: {self.host}:{self.port}")
-        sock.setblocking(True)
+        self.reset()
+        self.dprint(f"connecting to tcp socket: {self.host}:{self.port}")
+        sock = self.connect_with_watchdog(self.host, self.port, timeout)
+        self.dprint(f"connected to tcp socket, applying keepalive")
+        self.apply_keepalive(sock, idle, interval, count)
 
         if not self.http:
             self.dprint("wrapping socket: " + self.host + ":" + str(self.port))
@@ -304,6 +359,7 @@ class HCSocket:
             self.dprint("Reconnecting!!!")
 
         self.dprint("Initializing WebSocket", self.uri)
+        websocket.setdefaulttimeout(30)
         self.ws = websocket.WebSocketApp(
             self.uri,
             socket=sock,
@@ -312,8 +368,6 @@ class HCSocket:
             on_close=_on_close,
             on_error=_on_error,
         )
-
-        websocket.setdefaulttimeout(30)
 
         self.dprint("Starting WebSocket run_forever")
         self.ws.run_forever(ping_interval=120, ping_timeout=10)
