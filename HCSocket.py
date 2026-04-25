@@ -1,19 +1,18 @@
 # Create a websocket that wraps a connection to a
 # Bosh-Siemens Home Connect device
-import errno
 import ipaddress
 import json
+import os
 import re
 import select
 import socket
 import ssl
 import sys
-import traceback
 import threading
-import os
-from typing import Optional
+import traceback
 from base64 import urlsafe_b64decode as base64url
 from datetime import datetime
+from typing import Optional
 
 import websocket
 from Crypto.Cipher import AES
@@ -229,12 +228,12 @@ class HCSocket:
         except Exception:
             pass
 
-
     def connect_with_watchdog(self, host, port, timeout):
         last_exc: Optional[Exception] = None
 
-        addrinfos = socket.getaddrinfo(host, port, family=socket.AF_UNSPEC,
-                                       type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP)
+        addrinfos = socket.getaddrinfo(
+            host, port, family=socket.AF_UNSPEC, type=socket.SOCK_STREAM, proto=socket.IPPROTO_TCP
+        )
 
         for family, socktype, proto, canonname, sockaddr in addrinfos:
             sock = None
@@ -264,7 +263,9 @@ class HCSocket:
                 timer.cancel()
 
                 if sock not in writable:
-                    raise TimeoutError(f"connect to {host}:{port} timed out after {timeout} seconds")
+                    raise TimeoutError(
+                        f"connect to {host}:{port} timed out after {timeout} seconds"
+                    )
 
                 err = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
                 if err != 0:
