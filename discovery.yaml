@@ -138,6 +138,7 @@ SKIP_ENTITIES:
 - LaundryCare.Washer.Program.
 - LaundryCare.WasherDryer.Program.
 - Cooking.Oven.Program.
+- Cooking.Hob.Program.
 
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
