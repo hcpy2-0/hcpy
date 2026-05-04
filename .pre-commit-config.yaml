@@ -24,7 +24,7 @@ repos:
           - '--max-line-length'
           - '99'
   - repo: https://github.com/PyCQA/isort
-    rev: 8.0.1
+    rev: 9.0.0a3
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
