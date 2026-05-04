@@ -305,7 +305,7 @@ def client_connect(
     retry_delay = 5
     while not (shutdown and shutdown.is_set()):
         try:
-            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix, debug)
+            ws = HCSocket(host, device["key"], device.get("iv", None), domain_suffix)
             mydevice = HCDevice(ws, device, debug)
             published_state.clear()
             discovery_published = False  # Re-publish discovery on each new connection.
