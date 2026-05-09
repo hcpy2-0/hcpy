@@ -196,10 +196,11 @@ def hc2mqtt(
                 hcprint(device_name, "ERROR cant send message as websocket is not connected")
         except Exception as e:
             print(now(), device_name, "ERROR", e, file=sys.stderr, flush=True)
-
+            
+    masked_password = "***" if mqtt_password else None
     click.echo(
         f"Hello {devices_file=} {mqtt_host=} {mqtt_prefix=} "
-        f"{mqtt_port=} {mqtt_username=} {mqtt_password=} "
+        f"{mqtt_port=} {mqtt_username=} mqtt_password={masked_password!r} "
         f"{mqtt_ssl=} {mqtt_cafile=} {mqtt_certfile=} {mqtt_keyfile=} {mqtt_clientname=}"
         f"{domain_suffix=} {debug=} {ha_discovery=}"
     )
