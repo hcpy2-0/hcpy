@@ -20,7 +20,7 @@ from utils import clean_international_text, now
 SENTINEL = object()
 
 # Terminal OperationStates that trigger a ProgramPhase reset (issue #261).
-_TERMINAL_OP_STATES = {"Ready", "Inactive", "Finished"}
+_TERMINAL_OP_STATES = {"Ready", "Inactive", "Finished", "Error", "Aborting"}
 _OP_STATE_KEY = "BSH.Common.Status.OperationState"
 
 def hcprint(*args):
