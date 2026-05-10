@@ -23,6 +23,7 @@ SENTINEL = object()
 _TERMINAL_OP_STATES = {"Ready", "Inactive", "Finished", "Error", "Aborting"}
 _OP_STATE_KEY = "BSH.Common.Status.OperationState"
 
+
 def hcprint(*args):
     print(now(), *args, flush=True)
 
@@ -56,17 +57,19 @@ def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, na
         old_published = published_state.get(key, SENTINEL)
         if val != old_published:
             changed[key] = val
-            
+
     # Issue #261: devices don't send ProgramPhase=None on program end.
     # Reset it manually when OperationState becomes terminal.
     if _OP_STATE_KEY in changed and changed[_OP_STATE_KEY] in _TERMINAL_OP_STATES:
         for k in list(mydevice.state.keys()):
             if k.endswith(".Status.ProgramPhase") and mydevice.state[k] not in (None, "None"):
                 if debug:
-                    hcprint(name, f"resetting {k} to None (OperationState -> {changed[_OP_STATE_KEY]})")
+                    hcprint(
+                        name, f"resetting {k} to None (OperationState -> {changed[_OP_STATE_KEY]})"
+                    )
                 mydevice.state[k] = "None"
                 changed[k] = "None"
-                
+
     if not changed and not events:
         return
 
