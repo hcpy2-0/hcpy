@@ -38,9 +38,9 @@ MAGIC_OVERRIDES:
   LaundryCare.Washer.Setting.IDos1BaseLevel:
     component_type: "number"
   LaundryCare.Washer.Setting.IDos2BaseLevel:
-    component_type: "number" 
+    component_type: "number"
   Cooking.Oven.Option.SetpointTemperature:
-    component_type: "number"  
+    component_type: "number"
     min: 0
   Refrigeration.Common.Status.Door.Freezer:
     icon: mdi:door
@@ -84,7 +84,7 @@ MAGIC_OVERRIDES:
     effect_state_topic: "homeconnect/hood/state/bsh_common_setting_ambientlightcolor"
     effect_command_topic: "homeconnect/DEVICE_NAME/set"
     effect_command_template: '{"name":"BSH.Common.Setting.AmbientLightColor","value":"{{value}}"}'
-    effect_list: 
+    effect_list:
       - CustomColor
       - Color1 #1
       - Color2
@@ -139,6 +139,30 @@ SKIP_ENTITIES:
 - LaundryCare.WasherDryer.Program.
 - Cooking.Oven.Program.
 - Cooking.Hob.Program.
+- Cooking.Hob.StatusList.Zone.
+- Cooking.Hob.Status.Size.
+- Cooking.Hob.Status.Zone.100.Length
+- Cooking.Hob.Status.Zone.100.Position
+- Cooking.Hob.Status.Zone.100.Shape
+- Cooking.Hob.Status.Zone.100.ZoneSelector
+- Cooking.Hob.Status.Zone.200.Length
+- Cooking.Hob.Status.Zone.200.Position
+- Cooking.Hob.Status.Zone.200.Shape
+- Cooking.Hob.Status.Zone.200.ZoneSelector
+- Cooking.Hob.Status.Zone.300.Length
+- Cooking.Hob.Status.Zone.300.Position
+- Cooking.Hob.Status.Zone.300.Shape
+- Cooking.Hob.Status.Zone.300.ZoneSelector
+- Cooking.Hob.Status.Zone.400.Length
+- Cooking.Hob.Status.Zone.400.Position
+- Cooking.Hob.Status.Zone.400.Shape
+- Cooking.Hob.Status.Zone.400.ZoneSelector
+- Cooking.Hob.Status.Zone.120.
+- Cooking.Hob.Status.Zone.121.
+- Cooking.Hob.Status.Zone.201.
+- Cooking.Hob.Status.Zone.301.
+- Cooking.Hob.Status.Zone.340.
+- Cooking.Hob.Status.Zone.341.
 
 DISABLED_ENTITIES:
 - Refrigeration.Common.Status.
@@ -152,7 +176,7 @@ DISABLED_EXCEPTIONS:
 
 ADDITIONAL_FEATURES:
   - name: ipV4
-    value_template: |- 
+    value_template: |-
       {{ value_json.ipAddress }}
     entity_category: diagnostic
   - name: ipV6
