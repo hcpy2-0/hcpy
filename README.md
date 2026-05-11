@@ -46,6 +46,8 @@ Installing `sslpsk` needs some extra steps:
 
 ## Authenticate to the cloud servers
 
+The https://github.com/bruestel/homeconnect-profile-downloader can now be used to download a configuration file that is compatible. This workflow is straightforward, but the hc-login.py can still be used.
+
 ![laptop in a clothes washer with a display DoorState:Closed](images/doorclose.jpg)
 
 The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
