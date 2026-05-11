@@ -117,18 +117,6 @@ MAGIC_OVERRIDES:
       - Color29
       - Color30
       - Color31 #31
-  Cooking.Hob.Status.Zone.100.RemainingProgramTime:
-    device_class: duration
-    unit_of_measurement: s
-  Cooking.Hob.Status.Zone.200.RemainingProgramTime:
-    device_class: duration
-    unit_of_measurement: s
-  Cooking.Hob.Status.Zone.300.RemainingProgramTime:
-    device_class: duration
-    unit_of_measurement: s
-  Cooking.Hob.Status.Zone.400.RemainingProgramTime:
-    device_class: duration
-    unit_of_measurement: s
 
 EXPAND_NAME:
   BSH.Common.Setting.Favorite.: 3
