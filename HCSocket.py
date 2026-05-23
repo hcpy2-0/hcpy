@@ -6,13 +6,15 @@ import re
 import socket
 import ssl
 import sys
+import threading
 from base64 import urlsafe_b64decode as base64url
-from datetime import datetime
 
 import websocket
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 from Crypto.Random import get_random_bytes
+
+from utils import now
 
 
 def is_ip_address(host: str) -> bool:
@@ -21,10 +23,6 @@ def is_ip_address(host: str) -> bool:
         return True
     except ValueError:
         return False
-
-
-def now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 if sys.version_info[1] < 13:
@@ -50,7 +48,7 @@ def hmac(key, msg):
 
 
 class HCSocket:
-    def __init__(self, host, psk64, iv64=None, domain_suffix=""):
+    def __init__(self, host, psk64, iv64=None, domain_suffix="", debug=False):
         self.host = host
         if domain_suffix and not is_ip_address(host):
             self.host = f"{host}.{domain_suffix}"
@@ -59,7 +57,7 @@ class HCSocket:
 
         self.psk = base64url(psk64 + "===")
         self.ws = None
-        self.debug = False
+        self.debug = debug
 
         if iv64:
             # an HTTP self-encrypted socket
@@ -202,33 +200,67 @@ class HCSocket:
 
     def run_forever(self, on_message, on_open, on_close, on_error):
         self.reset()
-        self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
-        sock = socket.create_connection((self.host, self.port), timeout=10)
-        idle = 30
-        interval = 10
-        count = 3
-        if sys.platform.startswith("linux"):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
 
-        elif sys.platform == "darwin":
-            TCP_KEEPALIVE = 0x10
-            sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+        def connect_socket():
+            try:
+                self.dprint("connecting to tcp socket: " + self.host + ":" + str(self.port))
+                sock = socket.create_connection((self.host, self.port), timeout=10)
+                self.dprint("connected to socket")
+                idle = 30
+                interval = 10
+                count = 3
+                if sys.platform.startswith("linux"):
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, count)
 
-        elif sys.platform.startswith("win"):
-            sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
+                elif sys.platform == "darwin":
+                    TCP_KEEPALIVE = 0x10
+                    sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, idle)
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
 
-        self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
+                elif sys.platform.startswith("win"):
+                    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))
+
+                self.dprint("connected to tcp socket: " + self.host + ":" + str(self.port))
+                return sock
+            except Exception as e:
+                self.dprint(f"socket connection failed: {e}")
+                return None
+
+        # Create a thread for the socket connection to ensure timeout works
+        sock = None
+        connection_event = threading.Event()
+
+        def connect_in_thread():
+            nonlocal sock
+            sock = connect_socket()
+            connection_event.set()
+
+        thread = threading.Thread(target=connect_in_thread)
+        thread.daemon = True
+        thread.start()
+
+        # Wait for connection with timeout
+        if not connection_event.wait(timeout=15):  # 15 second timeout for connection
+            self.dprint("socket connection timeout")
+            return
+
+        if sock is None:
+            return
 
         if not self.http:
             self.dprint("wrapping socket: " + self.host + ":" + str(self.port))
-            sock = self.wrap_socket_psk(sock)
-            if sock is not None:
-                self.dprint("wrapping complete: " + self.host + ":" + str(self.port))
-            else:
-                self.dprint("wrapping failed")
+            try:
+                sock = self.wrap_socket_psk(sock)
+                if sock is not None:
+                    self.dprint("wrapping complete: " + self.host + ":" + str(self.port))
+                else:
+                    self.dprint("wrapping failed")
+                    return
+            except Exception as e:
+                self.dprint(f"socket wrapping failed: {e}")
+                return
 
         if sock is None:
             return
@@ -261,9 +293,18 @@ class HCSocket:
             on_error=_on_error,
         )
 
+        # Set a more robust timeout for the websocket operations
         websocket.setdefaulttimeout(30)
 
-        self.ws.run_forever(ping_interval=120, ping_timeout=10)
+        # Add a timeout for the entire connection process
+        try:
+            self.ws.run_forever(ping_interval=120, ping_timeout=10)
+        except Exception as e:
+            self.dprint(f"websocket run_forever failed: {e}")
+            # Ensure we clean up any open connections
+            if self.ws:
+                self.ws.close()
+            raise
 
     def close(self):
         if self.ws:
@@ -272,4 +313,4 @@ class HCSocket:
     # Debug print
     def dprint(self, *args):
         if self.debug:
-            print(now(), *args, flush=True)
+            print(now(), "HCSocket", self.host, *args, flush=True)
