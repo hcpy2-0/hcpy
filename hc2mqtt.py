@@ -310,7 +310,7 @@ def client_connect(
             mydevice = HCDevice(ws, device, debug)
             published_state.clear()
             discovery_published = False  # Re-publish discovery on each new connection.
-            dev[name] = mydevice
+            dev[clean_international_text(name)] = mydevice
             hcprint(name, f"connecting to {host}")
             mydevice.run_forever(on_message=on_message, on_open=on_open, on_close=on_close)
             hcprint(name, f"not connected {host}")
