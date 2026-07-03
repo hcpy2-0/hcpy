@@ -200,7 +200,7 @@ for app in appliances["appliances"]:
     r = requests.get(app_url, headers=headers)
     if r.status_code != requests.codes.ok:
         print(app_id, ": unable to fetch machine description?")
-        next
+        continue
 
     # we now have a zip file with XML, let's unpack them
     content = r.content
