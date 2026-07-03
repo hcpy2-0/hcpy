@@ -172,7 +172,7 @@ def publish_ha_discovery(
             "enabled_by_default": not disabled,
         }
 
-        # Is value_template and entity_category ever defined in feature anymore? It should come from MAGIC_OVERRIDES?
+        # Is value_template and entity_category ever defined in feature anymore?
         value_template = feature.get("value_template", None)
         if value_template:
             discovery_payload["value_template"] = value_template
