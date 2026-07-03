@@ -81,7 +81,7 @@ MAGIC_OVERRIDES:
     rgb_command_topic: "homeconnect/DEVICE_NAME/set"
     rgb_value_template: "{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}"
     rgb_command_template: '{"name":"BSH.Common.Setting.AmbientLightCustomColor","value":"{{ "#%02x%02x%02x" % (red,green,blue) }}"}'
-    effect_state_topic: "homeconnect/hood/state/bsh_common_setting_ambientlightcolor"
+    effect_state_topic: "homeconnect/DEVICE_NAME/state/bsh_common_setting_ambientlightcolor"
     effect_command_topic: "homeconnect/DEVICE_NAME/set"
     effect_command_template: '{"name":"BSH.Common.Setting.AmbientLightColor","value":"{{value}}"}'
     effect_list:
