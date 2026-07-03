@@ -37,6 +37,8 @@ def publish_ha_discovery(
     SKIP_ENTITIES = config.get("SKIP_ENTITIES", [])
     DISABLED_ENTITIES = config.get("DISABLED_ENTITIES", [])
     DISABLED_EXCEPTIONS = config.get("DISABLED_EXCEPTIONS", [])
+    CONFIG_ENTITIES = config.get("CONFIG_ENTITIES", [])
+    CONFIG_EXCEPTIONS = config.get("CONFIG_EXCEPTIONS", [])
     ADDITIONAL_FEATURES = config.get("ADDITIONAL_FEATURES", [])
 
     print(now(), f"HADiscovery - publishing MQTT discovery for {device['name']}")
@@ -170,11 +172,21 @@ def publish_ha_discovery(
             "enabled_by_default": not disabled,
         }
 
+        # Is value_template and entity_category ever defined in feature anymore? It should come from MAGIC_OVERRIDES?
         value_template = feature.get("value_template", None)
         if value_template:
             discovery_payload["value_template"] = value_template
 
         entity_category = feature.get("entity_category", None)
+        if entity_category is None:
+            for config_entity in CONFIG_ENTITIES:
+                if name.startswith(config_entity):
+                    print(now(), f"HADiscovery - HIT  {name}-{config_entity}")
+                    entity_category = "config"
+                    for config_exception in CONFIG_EXCEPTIONS:
+                        if config_exception in name:
+                            entity_category = None
+
         if entity_category is not None:
             discovery_payload["entity_category"] = entity_category
 
