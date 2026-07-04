@@ -9,7 +9,7 @@ import re
 import sys
 from base64 import urlsafe_b64decode
 from base64 import urlsafe_b64encode as base64url_encode
-from urllib.parse import unquote, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 from zipfile import ZipFile
 
 import requests
@@ -45,11 +45,23 @@ devicefile = sys.argv[1]
 
 session = requests.Session()
 
-base_url = "https://api.home-connect.com/security/oauth/"
-asset_urls = [
-    "https://eu.services.home-connect.com/",  # EU
-    "https://na.services.home-connect.com/",  # US
-]
+# Home Connect uses a region-specific API host for OAuth/token and a separate
+# asset host for account/appliance data. Previously only the EU hosts were
+# wired up; select the region and derive both hosts from it.
+# region -> (api base for oauth/token, asset base)
+REGION_MAP = {
+    "EU": ("https://api.home-connect.com", "https://eu.services.home-connect.com"),
+    "NA": ("https://api-rna.home-connect.com", "https://na.services.home-connect.com"),
+    "CN": ("https://api.home-connect.cn", "https://cn.services.home-connect.cn"),
+}
+
+region = (input("Select region [EU]/NA/CN: ").strip() or "EU").upper()
+if region not in REGION_MAP:
+    print(f"Invalid region '{region}'. Use EU, NA, or CN.", file=sys.stderr)
+    exit(1)
+api_base, asset_base = REGION_MAP[region]
+
+base_url = api_base + "/security/oauth/"
 
 #
 # Start by fetching the old login page, which gives
@@ -93,14 +105,40 @@ loginpage_url = base_url + "authorize?" + urlencode(login_query)
 token_url = base_url + "token"
 
 print(
-    "Visit the following URL in Chrome, use the F12 developer tools "
-    "to monitor the network responses, and look for the request starting "
-    "hcauth://auth for the relevant authentication tokens:"
+    "Visit the following URL in a browser, sign in and solve the CAPTCHA. The "
+    "browser will then try to open a 'hcauth://auth/prod?...' URL and fail (no "
+    "registered handler). That full URL is shown in the browser's developer "
+    "console (F12); copy it and paste it below:"
 )
 print(loginpage_url)
 
-code = unquote(input("Input code:"))
-state = input("Input state:")
+while True:
+    redirect_url = input("Paste redirect URL: ").strip()
+    parsed = urlparse(redirect_url)
+    params = parse_qs(parsed.query)
+    if "code" not in params:
+        params = parse_qs(parsed.fragment)
+    if "code" not in params:
+        print(
+            "No 'code' in that URL - it looks like the login page, not the final "
+            "redirect. Finish signing in (email, password, CAPTCHA) first, then copy "
+            "the 'hcauth://auth/prod?code=...' URL (address bar, or F12 -> Network -> "
+            "the home-connect.com entry whose Location starts with 'hcauth://'). "
+            "Then paste it here. (Ctrl+C to abort.)",
+            file=sys.stderr,
+        )
+        continue
+    if params.get("state", [None])[0] != login_query["state"]:
+        print(
+            "State mismatch - that URL is from a different or older login attempt. "
+            "Use the 'hcauth://auth/prod?...' URL from THIS run. (Ctrl+C to abort.)",
+            file=sys.stderr,
+        )
+        continue
+    code = params["code"][0]
+    state = params["state"][0]
+    break
+
 grant_type = "authorization_code"
 
 debug(f"{code=} {grant_type=} {state=}")
@@ -138,17 +176,14 @@ payload_json = b64url_decode(payload_b64)
 payload = json.loads(payload_json)
 subject = payload.get("sub")
 
-base_url = ""
-# Try to request paired appliances from all geos. Whichever works first we will workr with
-for asset_url in asset_urls:
-    r = requests.get(
-        asset_url + "/api/account/v2/accounts/" + subject + "/paired-appliances", headers=headers
-    )
-    if r.status_code == requests.codes.ok:
-        base_url = asset_url
-        break
-
-# now we can fetch the rest of the account info
+# Fetch the paired appliances from the selected region's asset host.
+r = requests.get(
+    asset_base + "/api/account/v2/accounts/" + subject + "/paired-appliances", headers=headers
+)
+if r.status_code == requests.codes.unauthorized:
+    print("Unauthorized - wrong region? Try a different region (EU/NA/CN).", file=sys.stderr)
+    print(r.headers, r.text)
+    exit(1)
 if r.status_code != requests.codes.ok:
     print("unable to fetch account details", file=sys.stderr)
     print(r.headers, r.text)
@@ -161,6 +196,11 @@ configs = []
 print(appliances, file=sys.stderr)
 
 for app in appliances["appliances"]:
+    # Demo appliances don't support encryption or local communication.
+    if app.get("isDemo"):
+        print("Skipping demo appliance: " + app.get("haId", "?"), file=sys.stderr)
+        continue
+
     app_brand = app["brand"]
     app_type = app["haType"]
     app_id = app["haId"]
@@ -171,7 +211,9 @@ for app in appliances["appliances"]:
 
     configs.append(config)
 
-    encryptionUrl = base_url + "/api/appliance/v2/appliances/" + app_id + "/encryption-information"
+    encryptionUrl = (
+        asset_base + "/api/appliance/v2/appliances/" + app_id + "/encryption-information"
+    )
     r = requests.get(encryptionUrl, headers=headers)
     if r.status_code != requests.codes.ok:
         print("unable to fetch device encryption details details", file=sys.stderr)
@@ -195,7 +237,7 @@ for app in appliances["appliances"]:
         config["iv"] = aes["iv"]
 
     # Fetch the XML zip file for this device
-    app_url = asset_url + "api/iddf/v1/iddf/" + app_id
+    app_url = asset_base + "/api/iddf/v1/iddf/" + app_id
     print("fetching", app_url, file=sys.stderr)
     r = requests.get(app_url, headers=headers)
     if r.status_code != requests.codes.ok:
