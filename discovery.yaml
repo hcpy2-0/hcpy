@@ -6,11 +6,24 @@ MAGIC_OVERRIDES:
   BSH.Common.Option.RemainingProgramTime:
     device_class: duration
     unit_of_measurement: s
+  # BSH.Common.Option.Duration (and all *ProgramTime options) are SECONDS on the
+  # wire -- max 266400 = 74 h in seconds, default 60 = 1 minute. The 10/82 number
+  # branch below keeps unit_of_measurement: s and device_class: duration; never
+  # reinterpret these as minutes. Verified against the Gaggenau BOP251102 oven
+  # (existing oven Duration number entity stays in seconds).
+  Cooking.Common.Event.ApplianceModuleError:
+    additive_binary_sensor: true
+    additive_binary_sensor_config:
+      device_class: problem
+      icon: mdi:alert
   BSH.Common.Option.StartInRelative:
     device_class: duration
     unit_of_measurement: s
   BSH.Common.Status.DoorState:
     icon: mdi:door
+  BSH.Common.Status.RemoteControlStartAllowed:
+    component_type: "binary_sensor"
+    icon: mdi:play
   BSH.Common.Status.Program.All.Count.Started:
     state_class: total_increasing
   BSH.Common.Setting.PowerState:

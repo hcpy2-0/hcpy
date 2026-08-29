@@ -500,3 +500,37 @@ MQTT auto-discovery messages. With `ha_discovery = True` in `config.ini` or by
 passing `--ha-discovery` on the commandline, `hcpy` will publish
 [HA discovery messages](https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery)
 for each recognised property of your devices.
+
+### Duration semantics (SECONDS, not minutes)
+
+`BSH.Common.Option.Duration` and the `*ProgramTime` options
+(`RemainingProgramTime`, `ElapsedProgramTime`, `StartInRelative`) are published
+as seconds on the wire and in discovery:
+
+- `unit_of_measurement: s` with `device_class: duration` on the HA entity.
+- The number entity bounds come from the DeviceDescription XML: e.g. the
+  Gaggenau BOP251102/BSP250101 `Duration` feature has `min=0`, `max=266400`
+  (= 74 hours in seconds) and default `60` (= 1 minute in seconds).
+- Never reinterpret these as minutes. A `{"uid": 548, "value": 60}` payload
+  sets a 60-second timer, not 60 minutes.
+
+This keeps the existing BOP251102 oven entities unchanged (still seconds).
+
+### Additive binary sensors from events
+
+Event features can additionally publish a `binary_sensor` that mirrors the
+event state (`Present` -> ON, `Off` -> OFF) *without* replacing the event
+entity. Enable it per feature in `discovery.yaml`:
+
+```yaml
+MAGIC_OVERRIDES:
+  Cooking.Common.Event.ApplianceModuleError:
+    additive_binary_sensor: true
+    additive_binary_sensor_config:
+      device_class: problem
+      icon: mdi:alert
+```
+
+The event entity (e.g. `event.<dev>_cooking_common_event_appliancemoduleerror`)
+is still published; the extra `binary_sensor` gets unique_id suffix `_active`
+and watches the same `/event/<feature>` state topic.

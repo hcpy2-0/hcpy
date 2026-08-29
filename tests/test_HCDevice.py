@@ -299,3 +299,78 @@ class TestServicesEvent:
             "ro": {"version": 1},
             "ci": {"version": 2},
         }
+
+
+@patch("HCDevice.HCDevice.print")
+class TestProgramData:
+    """test_program_data: named program conversion for oven steam programs (soven BSP250101)."""
+
+    SOVEN_PROGRAM_FEATURES = {
+        "8208": {"name": "Cooking.Oven.Program.HeatingMode.HotAir"},
+        "8212": {"name": "Cooking.Oven.Program.HeatingMode.HotAirGrilling"},
+        "8250": {"name": "Cooking.Oven.Program.HeatingMode.HotAir100Steam"},
+        "8253": {"name": "Cooking.Oven.Program.HeatingMode.HotAir80Steam"},
+        "8254": {"name": "Cooking.Oven.Program.HeatingMode.HotAir60Steam"},
+        "8255": {"name": "Cooking.Oven.Program.HeatingMode.HotAir30Steam"},
+        "8257": {"name": "Cooking.Oven.Program.HeatingMode.FullGrill01Steam"},
+        "8258": {"name": "Cooking.Oven.Program.HeatingMode.FullGrill02Steam"},
+        "5120": {"name": "Cooking.Oven.Option.SetpointTemperature"},
+        "548": {"name": "BSH.Common.Option.Duration"},
+    }
+
+    def make_soven_device(self):
+        return make_device(
+            IZ_SERVICES,
+            features={k: dict(v) for k, v in self.SOVEN_PROGRAM_FEATURES.items()},
+        )
+
+    def test_named_steam_programs_resolve_to_uids(self, _print):
+        dev = self.make_soven_device()
+        expected = {
+            "HotAir": 8208,
+            "HotAirGrilling": 8212,
+            "HotAir100Steam": 8250,
+            "HotAir80Steam": 8253,
+            "HotAir60Steam": 8254,
+            "HotAir30Steam": 8255,
+            "FullGrill01Steam": 8257,
+            "FullGrill02Steam": 8258,
+        }
+        for name, uid in expected.items():
+            out = dev.test_program_data([{"program": name, "options": []}])
+            assert (
+                out[0]["program"] == uid
+            ), f"{name} should resolve to {uid}, got {out[0]['program']}"
+
+    def test_named_program_with_options_resolves_program_and_keeps_options(self, _print):
+        dev = self.make_soven_device()
+        payload = [
+            {
+                "program": "HotAir60Steam",
+                "options": [
+                    {"uid": 5120, "value": 60},
+                    {"uid": 548, "value": 180},
+                ],
+            }
+        ]
+        out = dev.test_program_data(payload)
+        assert out[0]["program"] == 8254
+        assert out[0]["options"] == [
+            {"uid": 5120, "value": 60},
+            {"uid": 548, "value": 180},
+        ]
+
+    def test_numeric_program_passthrough(self, _print):
+        dev = self.make_soven_device()
+        out = dev.test_program_data([{"program": 8254, "options": []}])
+        assert out[0]["program"] == 8254
+
+    def test_unknown_program_raises(self, _print):
+        dev = self.make_soven_device()
+        with pytest.raises(ValueError):
+            dev.test_program_data([{"program": "NoSuchProgram", "options": []}])
+
+    def test_missing_program_key_raises(self, _print):
+        dev = self.make_soven_device()
+        with pytest.raises(TypeError):
+            dev.test_program_data([{"options": []}])
