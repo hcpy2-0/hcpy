@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
+    rev: v2.4.0
     hooks:
       - id: autoflake
         args:
@@ -24,7 +24,7 @@ repos:
           - '--max-line-length'
           - '99'
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0a3
+    rev: 9.0.1
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
