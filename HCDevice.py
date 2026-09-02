@@ -39,6 +39,8 @@
 # /ni/info
 #
 # /iz/services
+# /iz/info
+# /iz/hashOfCredential
 
 import json
 import re
@@ -50,6 +52,10 @@ from base64 import urlsafe_b64encode as base64url_encode
 from Crypto.Random import get_random_bytes
 
 from utils import now
+
+# refDID of the string data type in the device description. For these features
+# min/max is the permitted length in UTF-8 bytes rather than a numeric range.
+STRING_REF_DID = "8B"
 
 
 class HCDevice:
@@ -65,6 +71,9 @@ class HCDevice:
         self.debug = debug
         self._services_event = threading.Event()
         self.services = {}
+        # Filled from /iz/services when an appliance is asked for it: the
+        # resources each service exposes and the actions allowed on them.
+        self.resources = []
         self.token = None
         self.connected = False
         self.state_lock = threading.Lock()
@@ -288,7 +297,26 @@ class HCDevice:
             if "min" in feature:
                 min = int(feature["min"])
                 max = int(feature["max"])
-                if isinstance(value, int) is False or value < min or value > max:
+                if feature.get("refDID") == STRING_REF_DID:
+                    # For string features min/max is the permitted length, not a
+                    # numeric range, so the integer check below would reject every
+                    # value. The appliance counts UTF-8 bytes and silently drops a
+                    # longer string, so refuse it here where we can explain why.
+                    if isinstance(value, str) is False:
+                        raise Exception(
+                            "Unable to configure appliance. "
+                            f"Value {value} is not a valid value. "
+                            f"{feature.get('name', uid)} expects a string."
+                        )
+                    length = len(value.encode("utf-8"))
+                    if length < min or length > max:
+                        raise Exception(
+                            "Unable to configure appliance. "
+                            f"Value {value} is not a valid value. "
+                            f"The string must be between {min} and {max} UTF-8 bytes, "
+                            f"but is {length}."
+                        )
+                elif isinstance(value, int) is False or value < min or value > max:
                     raise Exception(
                         "Unable to configure appliance. "
                         f"Value {value} is not a valid value. "
@@ -523,6 +551,26 @@ class HCDevice:
                         "version": service["version"],
                     }
                 self._services_event.set()
+
+            elif resource == "/iz/services":
+                # Unlike /ci/services, this lists the resources each service
+                # offers and the actions allowed on them, so a client can tell
+                # what an appliance accepts instead of guessing. Appliances
+                # advertise a service more than once when it exists at several
+                # versions or in both the PROVIDER and CONSUMER role, so keep
+                # every entry rather than one per service name.
+                for service in msg.get("data", []):
+                    self.resources.append(
+                        {
+                            "service": service.get("service"),
+                            "version": service.get("version"),
+                            "role": service.get("role"),
+                            "resources": {
+                                r.get("name"): r.get("allowedActions", [])
+                                for r in service.get("resources", [])
+                            },
+                        }
+                    )
 
             elif resource == "/ro/selectedProgram" or resource == "/ro/activeProgram":
                 code = msg.get("code", None)
