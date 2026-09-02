@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -299,3 +300,139 @@ class TestServicesEvent:
             "ro": {"version": 1},
             "ci": {"version": 2},
         }
+
+
+# A string feature and a numeric one, as a Siemens TP713R09 coffee machine
+# reports them. For refDID 8B, min/max is the length in UTF-8 bytes.
+STRING_FEATURES = {
+    "32825": {
+        "name": "BSH.Common.Setting.Favorite.001.Name",
+        "access": "readWrite",
+        "available": "true",
+        "refCID": "05",
+        "refDID": "8B",
+        "min": "0",
+        "max": "30",
+    },
+    "4357": {
+        "name": "ConsumerProducts.CoffeeMaker.Setting.BrightnessDisplay",
+        "access": "readWrite",
+        "available": "true",
+        "refCID": "02",
+        "refDID": "80",
+        "min": "1",
+        "max": "5",
+    },
+}
+
+
+@patch("HCDevice.HCDevice.print")
+class TestStringFeatureValidation:
+    """min/max on a refDID 8B feature is a byte length, not a numeric range."""
+
+    def device(self):
+        return HCDevice(Mock(), {"name": "TestDevice", "features": STRING_FEATURES})
+
+    def test_accepts_string_within_budget(self, _print):
+        data = self.device().test_feature([{"uid": 32825, "value": "Cappuccino"}])
+        assert data == [{"uid": 32825, "value": "Cappuccino"}]
+
+    def test_accepts_exactly_max_bytes(self, _print):
+        value = "A" * 30
+        data = self.device().test_feature([{"uid": 32825, "value": value}])
+        assert data[0]["value"] == value
+
+    def test_rejects_too_many_bytes(self, _print):
+        with pytest.raises(Exception, match="UTF-8 bytes"):
+            self.device().test_feature([{"uid": 32825, "value": "A" * 31}])
+
+    def test_counts_bytes_not_characters(self, _print):
+        # 11 Braille characters are 33 UTF-8 bytes, so this must be rejected
+        # even though it is well under 30 characters.
+        with pytest.raises(Exception, match="but is 33"):
+            self.device().test_feature([{"uid": 32825, "value": "⣿" * 11}])
+
+    def test_accepts_multibyte_within_budget(self, _print):
+        value = "⣿" * 10  # 30 bytes
+        data = self.device().test_feature([{"uid": 32825, "value": value}])
+        assert data[0]["value"] == value
+
+    def test_rejects_non_string(self, _print):
+        with pytest.raises(Exception, match="expects a string"):
+            self.device().test_feature([{"uid": 32825, "value": 5}])
+
+    def test_numeric_feature_still_range_checked(self, _print):
+        with pytest.raises(Exception, match="integer in the range 1 and 5"):
+            self.device().test_feature([{"uid": 4357, "value": 99}])
+
+    def test_numeric_feature_accepts_valid_value(self, _print):
+        data = self.device().test_feature([{"uid": 4357, "value": 4}])
+        assert data[0]["value"] == 4
+
+
+@patch("HCDevice.HCDevice.print")
+class TestIzServices:
+    """/iz/services lists each service's resources and their allowed actions."""
+
+    # Trimmed from a Siemens TP713R09 response: ci appears at two versions and
+    # ro in both roles, so entries are kept per advertisement, not per name.
+    RESPONSE = {
+        "sID": 1,
+        "msgID": 1000,
+        "resource": "/iz/services",
+        "version": 1,
+        "action": "RESPONSE",
+        "data": [
+            {
+                "service": "ci",
+                "version": 1,
+                "role": "PROVIDER",
+                "resources": [{"name": "services", "allowedActions": ["GET"]}],
+            },
+            {
+                "service": "ci",
+                "version": 3,
+                "role": "PROVIDER",
+                "resources": [
+                    {"name": "register", "allowedActions": ["POST"]},
+                    {"name": "registeredDevices", "allowedActions": ["GET", "NOTIFY"]},
+                ],
+            },
+            {
+                "service": "ro",
+                "version": 1,
+                "role": "CONSUMER",
+                "resources": [{"name": "values", "allowedActions": ["POST", "GET", "NOTIFY"]}],
+            },
+        ],
+    }
+
+    def handled(self):
+        dev = HCDevice(Mock(), {"name": "TestDevice", "features": {}})
+        dev.session_id = 1
+        dev.tx_msg_id = 1000
+        dev.handle_message(json.dumps(self.RESPONSE))
+        return dev
+
+    def test_resources_populated(self, _print):
+        dev = self.handled()
+        assert len(dev.resources) == 3
+
+    def test_allowed_actions_recorded(self, _print):
+        dev = self.handled()
+        ro = next(e for e in dev.resources if e["service"] == "ro")
+        assert ro["resources"]["values"] == ["POST", "GET", "NOTIFY"]
+
+    def test_keeps_every_advertisement_of_a_service(self, _print):
+        dev = self.handled()
+        versions = sorted(e["version"] for e in dev.resources if e["service"] == "ci")
+        assert versions == [1, 3]
+
+    def test_role_recorded(self, _print):
+        dev = self.handled()
+        assert {e["role"] for e in dev.resources} == {"PROVIDER", "CONSUMER"}
+
+    def test_not_reported_as_unknown(self, _print):
+        self.handled()
+        logged = " ".join(str(c) for c in _print.call_args_list)
+        assert "Unknown response or notify" not in logged
