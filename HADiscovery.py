@@ -183,6 +183,67 @@ def publish_ha_discovery(
         if overrides:
             override_component_type = overrides.get("component_type", None)
 
+        # Event features can additionally publish a binary_sensor that mirrors the
+        # event state (Present -> ON, Off -> OFF) WITHOUT replacing the event
+        # entity -- automations may depend on the event entity itself.
+        additive_binary = False
+        if overrides and overrides.get("additive_binary_sensor", False):
+            additive_binary = True
+
+        is_event_feature = False
+
+        # AcknowledgeEvent (uid 6) must carry the EVENT's uid as its value, not
+        # true -- ovens silently ignore {"uid":6,"value":true} (upstream hcpy
+        # issue #270). The mature homeconnect_websocket lib acknowledges via
+        # Command.execute(self._uid), i.e. {"uid":6,"value":<event_uid>}.
+        # Publish ONE select per device listing the event features; the command
+        # template extracts the event uid from the chosen option, keeping HA's
+        # UI to a single dropdown instead of one button per event.
+        if (
+            name == "BSH.Common.Command.AcknowledgeEvent"
+            and uid is not None
+            and override_component_type is None
+        ):
+            event_options = []
+            for event_feature in ADDITIONAL_FEATURES + list(device["features"].values()):
+                event_name = event_feature.get("name", "")
+                event_uid = event_feature.get("uid", None)
+                if "Event." not in event_name or event_uid is None:
+                    continue
+                event_friendly = event_name.split(".")[-1]
+                event_options.append(f"{event_friendly} ({event_uid})")
+            if event_options:
+                ack_payload = {
+                    "name": friendly_name,
+                    "device": device_info,
+                    "availability_mode": "all",
+                    "availability": [
+                        {"topic": f"{base_topic}/LWT"},
+                        {"topic": f"{mqtt_topic}/LWT"},
+                    ],
+                    "unique_id": f"{device_ident}_acknowledgeevent",
+                    "enabled_by_default": True,
+                    "command_topic": f"{mqtt_topic}/set",
+                    "options": event_options,
+                    # extract the trailing "(<uid>)" from the option label
+                    "command_template": (
+                        '[{"uid":6,"value":{{ value.split(" (")[1] ' '| replace(")", "") }}}]'
+                    ),
+                }
+                if local_control_lockout:
+                    ack_payload["availability"] = ack_payload["availability"] + [
+                        {
+                            "topic": f"{mqtt_topic}/state/bsh_common_status_localcontrolactive",
+                            "payload_available": "False",
+                            "payload_not_available": "True",
+                        }
+                    ]
+                ack_topic = clean_international_text(
+                    f"{HA_DISCOVERY_PREFIX}/select/hcpy/" f"{device_ident}_acknowledgeevent/config"
+                )
+                client.publish(ack_topic, json.dumps(ack_payload), retain=True)
+            continue
+
         if (
             refCID == "01" and (refDID == "00" or refDID == "01")
         ) or override_component_type == "binary_sensor":
@@ -200,12 +261,21 @@ def publish_ha_discovery(
                 discovery_payload.pop("value_template", None)
                 discovery_payload.pop("options", None)
             discovery_payload["state_topic"] = f"{mqtt_topic}/event/{feature_id}"
+            is_event_feature = True
         else:
             component_type = "sensor"
 
         # Temperature
-        if refCID == "07" and (refDID == "A4" or refDID == "A1"):
+        # 07/A1|A4 = °C setpoints/reads (SetpointTemperature, MeatProbeTemperature,
+        # CurrentMeatprobeTemperature); 07/81 = °C read-only sensor
+        # (CurrentCavityTemperature); 08/A1|81 = °F variants
+        # (SetpointTemperatureFahrenheit, Current*TemperatureFahrenheit).
+        if refCID == "07" and (refDID in ("A1", "A4", "81")):
             discovery_payload["unit_of_measurement"] = "°C"
+            discovery_payload["device_class"] = "temperature"
+            discovery_payload["icon"] = "mdi:thermometer"
+        elif refCID == "08" and (refDID in ("A1", "81")):
+            discovery_payload["unit_of_measurement"] = "°F"
             discovery_payload["device_class"] = "temperature"
             discovery_payload["icon"] = "mdi:thermometer"
         elif refDID == "80" and (refCID in ("02", "03")) and values is not None:
@@ -239,7 +309,8 @@ def publish_ha_discovery(
         ) or override_component_type in CONTROL_COMPONENT_TYPES:
             # 01/00 is binary true/false
             # 01/01 is binary true/false only seen for Cooking.Common.Setting.ButtonTones
-            # 15/81 is accept/reject event - maybe it needs the event ID rather than true/false?
+            # 15/81 accept/reject commands: AcknowledgeEvent is special-cased above
+            # to publish one button per event carrying the event uid
             if (
                 (refCID == "01" and (refDID == "00" or refDID == "01"))
                 or (refCID == "15" and refDID == "81")
@@ -300,6 +371,13 @@ def publish_ha_discovery(
                 discovery_payload["command_topic"] = f"{mqtt_topic}/set"
                 template = f'[{{"uid":{uid},"value":{{{{value}}}}}}]'
                 discovery_payload["command_template"] = template
+
+                # Temperature numbers (07/A1|A4, e.g. Cooking.Oven.Option.SetpointTemperature)
+                # mirror the sensor branch: carry °C + temperature device class.
+                if refCID == "07" and (refDID == "A1" or refDID == "A4"):
+                    discovery_payload["device_class"] = "temperature"
+                    discovery_payload["unit_of_measurement"] = "°C"
+                    discovery_payload["icon"] = "mdi:thermometer"
 
                 # Min/Max may be already set for durations above
                 minimum = feature.get("min", None)
@@ -370,10 +448,58 @@ def publish_ha_discovery(
         )
 
         if overrides:
-            # Overwrite keys with override values
+            # Overwrite keys with override values. The additive_binary_sensor
+            # control key and its binary-sensor-only config belong to the
+            # additive binary sensor, not to the primary entity payload.
             for k, v in overrides.items():
+                if k in ("additive_binary_sensor", "additive_binary_sensor_config"):
+                    continue
                 if isinstance(v, str):
-                    overrides[k] = v.replace("DEVICE_NAME", device_ident)
-            discovery_payload = discovery_payload | overrides
+                    v = v.replace("DEVICE_NAME", device_ident)
+                    overrides[k] = v
+            discovery_payload = discovery_payload | {
+                k: v
+                for k, v in overrides.items()
+                if k not in ("additive_binary_sensor", "additive_binary_sensor_config")
+            }
 
         client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
+
+        # Additive binary_sensor: mirror an event feature (Present -> ON,
+        # Off -> OFF) as a binary_sensor WITHOUT replacing the event entity.
+        if additive_binary and is_event_feature:
+            binary_payload = {
+                "name": f"{friendly_name} Active",
+                "device": device_info,
+                "state_topic": f"{mqtt_topic}/event/{feature_id}",
+                "value_template": "{{ 'ON' if value_json.event_type == 'Present' else 'OFF' }}",
+                "payload_on": "ON",
+                "payload_off": "OFF",
+                "availability_mode": "all",
+                "availability": [{"topic": f"{base_topic}/LWT"}, {"topic": f"{mqtt_topic}/LWT"}],
+                "unique_id": f"{device_ident}_{feature_id}_active",
+                "enabled_by_default": not disabled,
+                "default_entity_id": f"binary_sensor.{device_ident}_{feature_id}_active",
+            }
+            if overrides:
+                for k, v in overrides.items():
+                    if k in (
+                        "component_type",
+                        "additive_binary_sensor",
+                        "additive_binary_sensor_config",
+                    ):
+                        continue
+                    if isinstance(v, str):
+                        v = v.replace("DEVICE_NAME", device_ident)
+                    binary_payload[k] = v
+                additive_config = overrides.get("additive_binary_sensor_config", None)
+                if additive_config:
+                    for k, v in additive_config.items():
+                        if isinstance(v, str):
+                            v = v.replace("DEVICE_NAME", device_ident)
+                        binary_payload[k] = v
+            binary_topic = clean_international_text(
+                f"{HA_DISCOVERY_PREFIX}/binary_sensor/hcpy/"
+                f"{device_ident}_{feature_id}_active/config"
+            )
+            client.publish(binary_topic, json.dumps(binary_payload), retain=True)
