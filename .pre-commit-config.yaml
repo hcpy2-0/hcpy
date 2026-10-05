@@ -1,14 +1,14 @@
 ---
 repos:
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
+    rev: v2.4.0
     hooks:
       - id: autoflake
         args:
           - --in-place
           - --remove-all-unused-imports
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.5.1
+    rev: 26.10.0
     hooks:
       - id: black
         args:
@@ -16,7 +16,7 @@ repos:
           - --line-length
           - '99'
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.3.0
+    rev: 7.4.1
     hooks:
       - id: flake8
         name: flake8 on changed files
@@ -24,7 +24,7 @@ repos:
           - '--max-line-length'
           - '99'
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0a3
+    rev: 9.0.2
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
