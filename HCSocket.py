@@ -298,7 +298,7 @@ class HCSocket:
 
         # Add a timeout for the entire connection process
         try:
-            self.ws.run_forever(ping_interval=120, ping_timeout=10)
+            self.ws.run_forever(ping_interval=120, ping_timeout=10, suppress_origin=True)
         except Exception as e:
             self.dprint(f"websocket run_forever failed: {e}")
             # Ensure we clean up any open connections
