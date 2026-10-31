@@ -6,11 +6,8 @@ slug: "hcpy"
 image: ghcr.io/hcpy2-0/hcpy
 init: false
 arch:
-  - armhf
   - aarch64
   - amd64
-  - armv7
-  - i386
 map:
   - addon_config:rw
   - share
