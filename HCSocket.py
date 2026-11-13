@@ -98,7 +98,7 @@ class HCSocket:
                 context.verify_mode = ssl.CERT_NONE
                 # TLSv1.3 doesn't appear to be supported
                 context.maximum_version = ssl.TLSVersion.TLSv1_2
-                context.minimum_version = ssl.TLSVersion.SSLv3
+                context.minimum_version = ssl.TLSVersion.TLSv1_2
                 context.set_ciphers("PSK")  # Originally ECDHE-PSK-CHACHA20-POLY1305a
                 # Identity hint from server is HCCOM_Local_App but can be null
                 context.set_psk_client_callback(lambda hint: ("HCCOM_Local_App", self.psk))
