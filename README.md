@@ -487,6 +487,33 @@ data:
 
 The `program` value can also take the display name of the program (e.g. `"Dishcare.Dishwasher.Program.Eco50"`) instead of a numeric UID, but this processing is not currently on the options.
 
+### Refreshing values
+
+Some values are never pushed by the appliance when they change and are only
+returned in the full value set that hcpy requests when it connects. One example
+is an oven's `Cooking.Oven.Status.Cavity.001.CurrentTemperature`: it stays at the
+value seen at connect time for the whole cooking program.
+
+Publishing any payload to `{prefix}/{devicename}/refresh` makes hcpy request the
+full value set again (`/ro/allMandatoryValues`). Only values that changed are
+republished, so it is cheap to poll, e.g. every minute while the oven is running:
+
+```yaml
+automation:
+  - triggers:
+      - trigger: time_pattern
+        minutes: /1
+    conditions:
+      - condition: state
+        entity_id: sensor.oven_bsh_common_status_operationstate
+        state: Run
+    actions:
+      - action: mqtt.publish
+        data:
+          topic: homeconnect/oven/refresh
+          payload: "1"
+```
+
 ## Notes
 - Sometimes when the device is off, there is the error `ERROR [ip] [Errno 113] No route to host`
 - `ERROR [ip] [Errno 113] No route to host` could also happen if you connect the device to an ssid which is isolated from the internal network.
