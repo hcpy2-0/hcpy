@@ -576,3 +576,66 @@ class TestSentinel:
             {"BSH.Common.Status.DoorState": None}, device, ps, client, TOPIC, NAME
         )
         client.publish.assert_not_called()
+
+
+@patch("hc2mqtt.hcprint")
+class TestEventDedup:
+    """With a published_events dict, an event is only republished when its value
+    changes. A full value dump (connect, reconnect, /refresh) repeats every
+    event's current value; HA would record each repeat as a new event (#269)."""
+
+    EVENT = "Cooking.Oven.Event.Cavity.001.ProgramFinished"
+
+    def event_calls(self, client):
+        return [c for c in client.publish.call_args_list if "/event/" in c.args[0]]
+
+    def test_first_occurrence_published(self, _hcprint):
+        client = make_client()
+        pe = {}
+        handle_device_message(
+            {self.EVENT: "Off"}, make_device(), {}, client, TOPIC, NAME, published_events=pe
+        )
+        assert len(self.event_calls(client)) == 1
+        assert pe == {self.EVENT: "Off"}
+
+    def test_repeated_value_not_republished(self, _hcprint):
+        client = make_client()
+        device, ps, pe = make_device(), {}, {}
+        for _ in range(3):
+            handle_device_message(
+                {self.EVENT: "Off"}, device, ps, client, TOPIC, NAME, published_events=pe
+            )
+        assert len(self.event_calls(client)) == 1
+
+    def test_changed_value_published(self, _hcprint):
+        client = make_client()
+        device, ps, pe = make_device(), {}, {}
+        for value in ("Off", "Present", "Present", "Confirmed", "Off"):
+            handle_device_message(
+                {self.EVENT: value}, device, ps, client, TOPIC, NAME, published_events=pe
+            )
+        payloads = [json.loads(c.args[1])["event_type"] for c in self.event_calls(client)]
+        assert payloads == ["Off", "Present", "Confirmed", "Off"]
+
+    def test_survives_published_state_clear(self, _hcprint):
+        """Reconnect clears published_state (states republish) but not
+        published_events (events stay de-duplicated)."""
+        client = make_client()
+        device, ps, pe = make_device(), {}, {}
+        msg = {"BSH.Common.Status.DoorState": "Closed", self.EVENT: "Off"}
+        handle_device_message(msg, device, ps, client, TOPIC, NAME, published_events=pe)
+        client.reset_mock()
+
+        ps.clear()
+        device.state.clear()
+        handle_device_message(msg, device, ps, client, TOPIC, NAME, published_events=pe)
+
+        topics = [c.args[0] for c in client.publish.call_args_list]
+        assert topics == [f"{TOPIC}/state/bsh_common_status_doorstate"]
+
+    def test_none_keeps_previous_behaviour(self, _hcprint):
+        client = make_client()
+        device, ps = make_device(), {}
+        for _ in range(2):
+            handle_device_message({self.EVENT: "Off"}, device, ps, client, TOPIC, NAME)
+        assert len(self.event_calls(client)) == 2

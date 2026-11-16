@@ -24,8 +24,17 @@ def hcprint(*args):
     print(now(), *args, flush=True)
 
 
-def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug=False):
-    """Process a device message: update state, publish only changed keys to MQTT."""
+def handle_device_message(
+    msg, mydevice, published_state, client, mqtt_topic, name, debug=False, published_events=None
+):
+    """Process a device message: update state, publish only changed keys to MQTT.
+
+    If ``published_events`` is a dict, an event is only published when its value
+    differs from the last one published for that key. A full value dump
+    (/ro/allMandatoryValues on connect, reconnect or /refresh) repeats every
+    event's current value, which Home Assistant would otherwise record as a new
+    event each time. Pass ``None`` to publish every event (previous behaviour).
+    """
     if msg is None or len(msg) == 0:
         return
 
@@ -40,6 +49,10 @@ def handle_device_message(msg, mydevice, published_state, client, mqtt_topic, na
 
         # Dont persist event to the device state
         if ".Event." in key:
+            if published_events is not None:
+                if published_events.get(key, SENTINEL) == val:
+                    continue
+                published_events[key] = val
             event_type = {"event_type": val}
             events[key] = event_type
             continue
@@ -138,6 +151,9 @@ def hc2mqtt(
                 mqtt_set_topic = f"{mqtt_prefix}{cleaned_name}/set"
                 hcprint(device["name"], f"set topic: {mqtt_set_topic}")
                 client.subscribe(mqtt_set_topic)
+                mqtt_refresh_topic = f"{mqtt_prefix}{cleaned_name}/refresh"
+                hcprint(device["name"], f"refresh topic: {mqtt_refresh_topic}")
+                client.subscribe(mqtt_refresh_topic)
                 for value in device["features"]:
                     # If the device has the ActiveProgram feature it allows programs to be started
                     # and scheduled via /ro/activeProgram
@@ -175,6 +191,18 @@ def hc2mqtt(
                 topic = mqtt_topic[-1]
             else:
                 raise Exception(f"Invalid mqtt topic {msg.topic}.")
+
+            # Any payload: re-request the full value set, as on connect. Some
+            # values are never pushed as changes (e.g. an oven's
+            # Cooking.Oven.Status.Cavity.001.CurrentTemperature) and are only
+            # returned by /ro/allMandatoryValues. Only changed values are
+            # republished, so polling this is cheap.
+            if topic == "refresh":
+                if dev[device_name].connected:
+                    dev[device_name].get("/ro/allMandatoryValues")
+                else:
+                    hcprint(device_name, "ERROR cant refresh as websocket is not connected")
+                return
 
             try:
                 msg = json.loads(mqtt_state)
@@ -279,12 +307,25 @@ def client_connect(
     name = device["name"]
     mydevice = None
     published_state = {}
+    # Unlike published_state this is NOT cleared on reconnect: a reconnect
+    # re-sends every event's current value, and republishing those would show
+    # up in Home Assistant as a burst of duplicate events (issue #269).
+    published_events = {}
     discovery_published = False
 
     def on_message(msg):
         nonlocal discovery_published
         try:
-            handle_device_message(msg, mydevice, published_state, client, mqtt_topic, name, debug)
+            handle_device_message(
+                msg,
+                mydevice,
+                published_state,
+                client,
+                mqtt_topic,
+                name,
+                debug,
+                published_events=published_events,
+            )
             # Wait until /ci/info or /iz/info has been processed so discovery
             # has access to MAC, firmware, etc.
             device_info_ready = "mac" in mydevice.state or "swVersion" in mydevice.state
