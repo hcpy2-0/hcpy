@@ -53,6 +53,17 @@ The https://github.com/bruestel/homeconnect-profile-downloader can now be used t
 The login process has changed as the HomeConnect SingleKey pages now implement a CAPTCHA. hc-login.py will now prompt users with a URL that they must follow in 
 a normal browser window (Chromium), and use Development tools (F12) to monitor the network tab and retrieve the `code` and `state` values from the request to `hcauth://auth`
 
+On a computer with Chrome, Chromium, Edge or Brave you can skip the developer tools: run `hc-login.py` with `--browser` and it opens the login in a fresh browser window, then captures the `code` and `state` from the `hcauth://auth` redirect by itself. You only sign in (and solve the CAPTCHA) on the Home Connect page. If the browser isn't found, pass its path: `--browser "/path/to/chrome"`. This needs a desktop browser on the same machine, so it doesn't work inside the Docker container; run it on your computer and copy `devices.json` over.
+
+```bash
+hc-login.py config/devices.json --browser
+
+Sign in to your Home Connect account in the browser window that opens.
+The code and state are captured automatically once the login finishes.
+```
+
+Without `--browser`, the manual steps are:
+
 **This step is time-sensitive, but we have not identified the expiry time for the challenge. There is time to perform this step without too much haste but consider performing this process within 60s to avoid issues.**
 
 ![hc-login developer example](images/hclogin_dev_tools.png)

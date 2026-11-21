@@ -1,4 +1,5 @@
 ## In Progress
+* hc-login.py `--browser` opens the login in a local Chromium-based browser and captures the code and state automatically (@enesigneci)
 * Added Unit Tests (@cibernox)
 * Added BSH.Common.Option.Duration as a number (@cibernox)
 * Allow generic number overrides
