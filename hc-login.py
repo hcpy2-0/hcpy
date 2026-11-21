@@ -3,6 +3,7 @@
 # https://github.com/openid/AppAuth-Android
 # A really nice walk through of how it works is:
 # https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce
+import argparse
 import io
 import json
 import re
@@ -41,7 +42,21 @@ def debug(*args):
     print(*args, file=sys.stderr)
 
 
-devicefile = sys.argv[1]
+parser = argparse.ArgumentParser(
+    description="Download the device keys for your Home Connect account."
+)
+parser.add_argument("devicefile", help="where to write the devices file, e.g. config/devices.json")
+parser.add_argument(
+    "--browser",
+    nargs="?",
+    const="auto",
+    metavar="PATH",
+    help="open the login in a local Chrome/Chromium/Edge/Brave and capture the code and state "
+    "automatically instead of copying them from the developer tools; optionally the "
+    "browser's path",
+)
+args = parser.parse_args()
+devicefile = args.devicefile
 
 session = requests.Session()
 
@@ -92,15 +107,27 @@ login_query = {
 loginpage_url = base_url + "authorize?" + urlencode(login_query)
 token_url = base_url + "token"
 
-print(
-    "Visit the following URL in Chrome, use the F12 developer tools "
-    "to monitor the network responses, and look for the request starting "
-    "hcauth://auth for the relevant authentication tokens:"
-)
-print(loginpage_url)
+if args.browser:
+    from HCBrowserLogin import capture_hcauth, code_and_state
 
-code = unquote(input("Input code:"))
-state = input("Input state:")
+    print("Sign in to your Home Connect account in the browser window that opens.")
+    print("The code and state are captured automatically once the login finishes.")
+    try:
+        raw_code, state = code_and_state(capture_hcauth(loginpage_url, args.browser))
+    except (RuntimeError, ValueError) as e:
+        print(e, file=sys.stderr)
+        exit(1)
+    code = unquote(raw_code)
+else:
+    print(
+        "Visit the following URL in Chrome, use the F12 developer tools "
+        "to monitor the network responses, and look for the request starting "
+        "hcauth://auth for the relevant authentication tokens:"
+    )
+    print(loginpage_url)
+
+    code = unquote(input("Input code:"))
+    state = input("Input state:")
 grant_type = "authorization_code"
 
 debug(f"{code=} {grant_type=} {state=}")
